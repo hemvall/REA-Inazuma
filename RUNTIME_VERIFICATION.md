@@ -13,6 +13,8 @@ the player advances the text, so duration is not fixed.
 Observed scene checks:
 
 - Native title, new-game naming and legal notices lead into the new event.
+- The original power-on Mobiclip movie `op00` still plays. A button press skips
+  it to the title; the authored event is reached through New Game.
 - The club sign, technique notebook and old football illustrations appear
   behind named portraits and dialogue on the lower screen.
 - Hatch, Aphrodite/Byron and Nathan portraits identify the requested characters.

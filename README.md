@@ -15,7 +15,9 @@ the message window. The lower screen carries the scene; the upper screen remains
 black during these illustrated sequences. The unresolved native 3D map renderer
 is no longer used as the visible scene background. Full result/replay and save
 acceptance remain separate runtime checks.
-The original title/menu remains. See [RUNTIME_VERIFICATION.md](RUNTIME_VERIFICATION.md)
+At power-on the original `op00` opening movie still plays. Press **A** or
+**Start** to skip to the title menu, then choose **Nouvelle partie** to enter the
+episode. See [RUNTIME_VERIFICATION.md](RUNTIME_VERIFICATION.md)
 for evidence and the exact tested build, rather than treating static checks as
 gameplay acceptance.
 

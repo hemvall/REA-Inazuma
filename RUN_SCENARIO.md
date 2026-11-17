@@ -4,12 +4,15 @@ Double-click `Jouer au Defi Mystere.cmd` in the project folder. It opens the
 scenario ROM directly in the downloaded portable DeSmuME. It does not require
 Codex Computer Use permissions, change file associations, or install software.
 
+The original `op00` opening movie plays at power-on. Press **A** or **Start** to
+skip it, then select **Nouvelle partie**. The new episode begins after the
+save-name entry and the original legal/story introduction.
+
 At the game title choose **Nouvelle partie**, enter a save-file name and confirm
-with **OK**. Advance the native legal notices and introduction, then the authored
-scene starts. Advance the dialogue
-with the Nintendo DS **A** button. Use the emulator's touchscreen with the mouse
-for football controls. The title intro may play before the menu; it can also be
-allowed to finish normally. Use a fresh game, not an old campaign save state.
+with **OK**. Advance the two legal notices and story introduction with the
+Nintendo DS **A** button. The authored scene then starts. Use the emulator's
+touchscreen with the mouse for football controls. Use a fresh game, not an old
+campaign save state.
 
 The ROM to open manually is `build/inazuma_mystery.nds`.
 The patch for the exact supported original is `dist/inazuma_mystery.xdelta`.
