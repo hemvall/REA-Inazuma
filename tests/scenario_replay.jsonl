@@ -1,0 +1,148 @@
+{"frames": 1500}
+{"frames": 2, "keys": ["A", "B", "START"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 180}
+{"frames": 2, "keys": ["A"]}
+{"frames": 60}
+{"frames": 2, "keys": ["A"]}
+{"frames": 5}
+{"frames": 2, "touch": [61, 166]}
+{"frames": 660}
+{"frames": 2, "keys": ["A"]}
+{"frames": 600}
+{"frames": 2, "keys": ["A"]}
+{"frames": 900}
+{"frames": 2, "keys": ["A", "B", "START"]}
+{"frames": 900, "capture": "build/scenario-final/opening.png", "memory": "build/scenario-final/team-memory.bin"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-3.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-4.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-5.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-6.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-13.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-25.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-39.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400}
+{"frames": 2, "keys": ["A"]}
+{"frames": 400, "capture": "build/scenario-final/dialogue-44.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 900, "capture": "build/scenario-final/dialogue-45.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 240}
+{"frames": 1, "capture": "build/scenario-final/match-setup.png", "memory": "build/scenario-final/match-memory.bin"}
+{"frames": 4, "touch": [100, 175]}
+{"frames": 120}
+{"frames": 4, "touch": [128, 30]}
+{"frames": 900}
+{"frames": 4, "touch": [60, 170]}
+{"frames": 600}
+{"frames": 4, "touch": [150, 93]}
+{"frames": 600}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 1200}
+{"frames": 4, "touch": [190, 174]}
+{"frames": 1200}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-0.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-1.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-2.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-3.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-4.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-5.png"}
+{"frames": 4, "touch": [55, 174]}
+{"frames": 2400, "capture": "build/scenario-final/football-6.png"}
+{"frames": 600, "capture": "build/scenario-final/outcome.png"}
+{"quit": true}

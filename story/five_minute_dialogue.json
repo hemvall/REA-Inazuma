@@ -1,0 +1,209 @@
+{
+  "title": "Le Defi Mystere - Repartir de zero",
+  "target_minutes": 5,
+  "timing_note": "Approximate reading and staging time, excluding football; player advances dialogue.",
+  "scene_breaks_before_line": [
+    0,
+    12,
+    24,
+    38
+  ],
+  "opening": [
+    {
+      "speaker": "Jack",
+      "text": "Mark, ce rendez-vous est pour\\nnous ? Une enveloppe nous\\nattendait sur le ballon."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Elle porte notre nom ! Ouvre-la.\\nQuelqu'un nous propose peut-etre\\nun match."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Alors pourquoi venir en secret ?\\nMeme un entrainement peut cacher\\nun piege."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Un terrain, un ballon et cinq\\njoueurs... C'est deja un debut\\nprometteur."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Lis, Jack. Nous sommes venus.\\nAutant savoir ce qu'on attend de\\nnous."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Vous avez du talent. Mais\\nsauriez-vous tout recommencer au\\nniveau un ?"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Ca me va ! Tout le monde\\ncommence quelque part. C'est la\\nsuite qui compte !"
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Tu acceptes sans connaitre les\\nregles ! Finissons au moins de\\nlire cette lettre."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Pas de reputation. Construisez\\nune action a laquelle chacun\\naura participe."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Notre inconnu veut donc mesurer\\nautre chose que la puissance de\\nnos tirs."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Tres bien. Mais pour suivre ma\\nvitesse, il faudra penser a\\nlever les yeux."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Et toi, regarde derriere ! Une\\nequipe avance ensemble, meme\\nquand tu acceleres."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Une passe a Jack, puis a Byron.\\nNathan revient chercher le\\nballon. Mark termine."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Facile ! Enfin... si ma passe ne\\ndecide pas de finir directement\\ndans la riviere."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Vise ton partenaire, pas la\\nperfection. Une passe simple\\nsuffit pour commencer."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Je suis pret. Donnez-moi un\\nespace, et j'y serai avant tout\\nle monde."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Pas encore ! Si tu pars\\nmaintenant, Byron n'aura plus\\npersonne devant lui."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Je voulais gagner du temps.\\nAttendre laisse aussi les\\nadversaires se replacer."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Tu gagnes trois metres, mais\\nnous perdons le lien. Reduis\\nplutot cette distance."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Je peux avancer aussi. Moins\\nvite, mais assez pour t'aider si\\nca se ferme."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Tu quitterais ta position juste\\npour recevoir une passe en\\narriere ?"
+    },
+    {
+      "speaker": "Jack",
+      "text": "Bien sur ! Je prefere t'aider\\nque te regarder te debrouiller\\ntout seul."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Voila une premiere reponse. Le\\nniveau un n'efface pas ce qu'on\\npartage."
+    },
+    {
+      "speaker": "Mark",
+      "text": "On recommence ! Chacun doit\\nseulement savoir ou se trouvera\\nle suivant."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Nathan, ta tenue des Empereurs\\nNoirs... Tu veux impressionner\\nnos adversaires ?"
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Peut-etre. Comme ca, personne ne\\nse demande si je suis capable de\\ngagner."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Ils peuvent craindre ta\\nsilhouette. Mais leur peur ne te\\ndonnera aucun partenaire."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "C'est difficile de repartir de\\nzero quand on doit toujours\\nprouver sa force."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Aujourd'hui, ne prouve rien tout\\nseul. Confie-nous ta vitesse :\\non t'aidera !"
+    },
+    {
+      "speaker": "Jack",
+      "text": "Mes mauvaises blagues sont\\ncomprises. Une equipe, c'est\\naussi ca !"
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Bon, notre ballon attend\\ntoujours. Jack, cette fois je\\ncommence. A toi !"
+    },
+    {
+      "speaker": "Jack",
+      "text": "Je l'ai ! Byron, a gauche !\\nViens vers moi, je ne frappe pas\\ntres fort."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Bien recu. Nathan, attends...\\nMaintenant ! Cette fois, ta\\npasse est prete."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Le chemin vers Mark est ferme.\\nJack, je te la remets ! Je fais\\nle tour !"
+    },
+    {
+      "speaker": "Jack",
+      "text": "Hatch, prends-la ! Ne regardez\\npas mes pieds, continuez notre\\naction !"
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Nathan revient ! A toi ! Pas\\nbesoin de forcer : Mark est\\nlibre de l'autre cote."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Mark ! Je ne cours plus pour\\nfinir seul. Je cours pour te\\ndonner ce ballon !"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Oui ! Gardez cette sensation !\\nEnsemble, on trouvera toujours\\nun nouveau passage."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Une phrase au dos : En vous\\nparlant pour reussir, vous avez\\ntrouve la reponse."
+    },
+    {
+      "speaker": "Byron",
+      "text": "On cherchait un inconnu. Il\\nfallait commencer par regarder\\nnos propres partenaires."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Il reste un match. Restons au\\nniveau un : nous progresserons\\nsur le terrain."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Je garde ma tenue, mais pas mes\\nmauvais reflexes. Appelez-moi si\\nvous etes coinces."
+    },
+    {
+      "speaker": "Jack",
+      "text": "Nathan ! Evite quand meme de\\nm'envoyer toutes tes passes a\\npleine vitesse !"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Hatch, Byron, Nathan, Jack ! On\\ncommence au niveau un, mais\\nensemble. En avant !"
+    }
+  ],
+  "victory": [
+    {
+      "speaker": "Mark",
+      "text": "On l'a fait ! Cette victoire\\nappartient a toutes les passes\\nqui l'ont construite."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Nous irons plus loin. Et\\nmaintenant, je sais exactement\\navec qui je cours."
+    }
+  ],
+  "defeat": [
+    {
+      "speaker": "Jack",
+      "text": "On a perdu le match, mais pas\\nnotre equipe. On peut reprendre\\ndepuis le debut ?"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Bien sur ! Le niveau un est un\\ndepart. Gardons la lecon, puis\\nreessayons ensemble !"
+    }
+  ]
+}

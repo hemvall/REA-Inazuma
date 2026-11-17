@@ -1,0 +1,17 @@
+{
+  "rom_sha256": "1e67c699a6b3ecfb5230e8c2245746879fab57123277651da74b4cc9b8ba25d3",
+  "game_code": "BEBF",
+  "revision": 0,
+  "resource": "data_iz/script/fr/evet.pkb",
+  "index_resource": "data_iz/script/fr/evet.pkh",
+  "entry_index": 12,
+  "entry_key": 22010100,
+  "command": 751,
+  "text_id": 13,
+  "record_offset": 1796,
+  "original_text_sha256": "157118d420537d965e743a1bb2d77df60efa89f5881ddb9954326dae66ccdb99",
+  "replacement": "Raimon, a nous le defi!",
+  "speaker": "Mark (inferred from the wake-up dialogue; visual verification pending)",
+  "scene": "Opening wake-up scene in Mark's home, new game",
+  "encoding": "ASCII subset only, exact original text byte count; preserve terminator and record padding"
+}

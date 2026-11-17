@@ -1,0 +1,27 @@
+{
+  "title": "Inazuma Eleven 2 : Le Défi Mystère",
+  "status": "Authored dialogue only; no ROM slots or speaker IDs confirmed",
+  "proof": {"speaker": "Mark", "text": "Raimon, relevons ce defi !", "note": "Unaccented first candidate; encode only after verifying the actual font and text format"},
+  "scenes": [
+    {"id": "message", "location": "Existing Raimon scene, pending identification", "lines": [
+      {"speaker": "Nathan", "text": "Mark ! On a trouvé un message près du terrain."},
+      {"speaker": "Mark", "text": "Un message ? Pour nous ?"},
+      {"speaker": "Jude", "text": "Il n'y a aucune signature. C'est étrange..."},
+      {"speaker": "Axel", "text": "Qu'est-ce qu'il dit ?"},
+      {"speaker": "Nathan", "text": "Raimon, prouvez que vous méritez votre réputation."},
+      {"speaker": "Kevin", "text": "Un défi ? Parfait ! Qu'ils viennent !"},
+      {"speaker": "Jack", "text": "Euh... on ne sait même pas qui c'est..."},
+      {"speaker": "Mark", "text": "Peu importe ! On répondra sur le terrain !"}
+    ]},
+    {"id": "challenge", "match": "Reuse existing trigger, opponent and conditions, pending identification", "lines": [
+      {"speaker": "Jude", "text": "Je me demande qui a organisé tout ça..."},
+      {"speaker": "Axel", "text": "On le découvrira après le match."},
+      {"speaker": "Mark", "text": "Raimon, en avant !"}
+    ]},
+    {"id": "aftermath", "optional": true, "lines": [
+      {"speaker": "Kevin", "text": "Alors ? C'était qui, ces types ?"},
+      {"speaker": "Jude", "text": "Je ne sais pas... Mais ce défi n'était peut-être qu'un début."},
+      {"speaker": "Mark", "text": "Dans ce cas, on sera prêts pour le prochain !"}
+    ]}
+  ]
+}

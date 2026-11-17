@@ -1,0 +1,11 @@
+rom/**
+build/**
+dist/**
+local/**
+*.nds
+*.sav
+*.dsv
+*.pkb
+*.pki
+__pycache__/
+*.pyc
