@@ -9,3 +9,5 @@ local/**
 *.pki
 __pycache__/
 *.pyc
+*.zip
+graphify-out/

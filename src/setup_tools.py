@@ -1,4 +1,5 @@
 """Download official portable Windows tools into ignored local storage."""
+import argparse
 import hashlib
 import json
 import urllib.request
@@ -14,21 +15,33 @@ def fetch(url):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--only', choices=('xdelta', 'melonds', 'melonds-core', 'tinke'))
+    args = parser.parse_args()
     root = Path('local/tools')
     root.mkdir(parents=True, exist_ok=True)
     record_path = root / 'downloads.json'
     records = json.loads(record_path.read_text(encoding='utf-8')) if record_path.exists() else []
     for name, repo, matches in [
         ('xdelta', 'jmacd/xdelta', lambda s: 'windows-x86_64' in s and s.endswith('.zip')),
-        ('desmume', 'TASEmulators/desmume', lambda s: 'win64' in s and s.endswith('.zip')),
+        ('melonds', 'melonDS-emu/melonDS', lambda s: s.endswith('-windows-x86_64.zip')),
+        ('melonds-core', None, lambda s: s == 'melonds_libretro.dll.zip'),
         ('tinke', 'pleonex/tinke', lambda s: s.lower().startswith('tinke-') and s.endswith('.zip')),
     ]:
-        existing = next((r for r in records if r['tool'] == name), None)
-        if existing and existing['executables'] and all(Path(p).exists() for p in existing['executables']):
+        if args.only and args.only != name:
+            continue
+        existing = next((r for r in reversed(records) if r['tool'] == name), None)
+        artifacts = existing.get('artifacts', existing.get('executables', [])) if existing else []
+        if artifacts and all(Path(p).is_file() for p in artifacts):
             print(f'{name} already downloaded', flush=True)
             continue
         try:
-            release = json.loads(fetch(f'https://api.github.com/repos/{repo}/releases/latest'))
+            if repo is None:
+                url = 'https://buildbot.libretro.com/nightly/windows/x86_64/latest/melonds_libretro.dll.zip'
+                release = {'tag_name': 'nightly', 'html_url': 'https://github.com/libretro/melonDS',
+                           'assets': [{'name': 'melonds_libretro.dll.zip', 'browser_download_url': url}]}
+            else:
+                release = json.loads(fetch(f'https://api.github.com/repos/{repo}/releases/latest'))
         except urllib.error.HTTPError as error:
             if repo != 'pleonex/tinke' or error.code != 403:
                 raise
@@ -54,10 +67,15 @@ def main():
                 if not (destination / member.filename).resolve().is_relative_to(destination):
                     raise ValueError('Unsafe archive member')
             zipped.extractall(destination)
+        if name == 'melonds':
+            # melonDS detects this directory and keeps settings local to the project.
+            (destination / 'portable').mkdir(exist_ok=True)
         records.append({'tool': name, 'version': release['tag_name'],
                         'source': release['html_url'], 'download': asset['browser_download_url'],
                         'sha256': digest, 'publisher_digest_verified': bool(asset.get('digest')),
-                        'executables': [str(p) for p in destination.rglob('*.exe')]})
+                        'executables': [str(p) for p in destination.rglob('*.exe')],
+                        'artifacts': [str(p) for p in destination.rglob('*')
+                                      if p.suffix.lower() in ('.exe', '.dll')]})
         (root / 'downloads.json').write_text(json.dumps(records, indent=2), encoding='utf-8')
         print(f'Extracted to {destination}', flush=True)
 

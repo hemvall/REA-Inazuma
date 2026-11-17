@@ -1,9 +1,9 @@
 @echo off
 setlocal
-set "EMU=%~dp0local\tools\desmume\DeSmuME_0.9.13_x64.exe"
+set "EMU=%~dp0local\tools\melonds\melonDS.exe"
 set "ROM=%~dp0build\inazuma_mystery.nds"
 if not exist "%EMU%" (
-  echo DeSmuME is missing. Run python src/setup_tools.py from the project folder.
+  echo melonDS is missing. Run python src/setup_tools.py --only melonds from the project folder.
   pause
   exit /b 1
 )
