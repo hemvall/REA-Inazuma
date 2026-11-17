@@ -25,6 +25,14 @@ class SystemInfo(C.Structure):
     _fields_ = [('name', C.c_char_p), ('version', C.c_char_p), ('extensions', C.c_char_p), ('fullpath', C.c_bool), ('block_extract', C.c_bool)]
 
 
+def pointer_coordinates(x, y):
+    """Map lower-screen pixels to pixel centres in the 256x384 output."""
+    if type(x) is not int or type(y) is not int or not (0 <= x < 256 and 0 <= y < 192):
+        raise ValueError('Touch coordinates must be integer DS pixels: x=0..255, y=0..191')
+    return ((2*x+1)*65536//512 - 32768,
+            (2*(y+192)+1)*65536//768 - 32768)
+
+
 def png(path, width, height, pixels, pitch, pixel_format):
     rows = []
     for y in range(height):
@@ -49,19 +57,17 @@ class Emulator:
     BUTTONS = {'B': 0, 'Y': 1, 'SELECT': 2, 'START': 3, 'UP': 4, 'DOWN': 5,
                'LEFT': 6, 'RIGHT': 7, 'A': 8, 'X': 9, 'L': 10, 'R': 11}
 
-    def __init__(self, rom, core, directory, frame_skip=0):
+    def __init__(self, rom, core, directory):
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
         self.directory_bytes = str(self.directory).encode()
         self.options = {
-            b'desmume_cpu_mode': b'jit', b'desmume_opengl_mode': b'disabled',
-            b'desmume_jit_block_size': b'100',
-            b'desmume_use_external_bios': b'disabled', b'desmume_boot_into_bios': b'disabled',
-            b'desmume_firmware_language': b'French', b'desmume_screens_layout': b'top/bottom',
-            b'desmume_pointer_type': b'touch', b'desmume_frameskip': b'0',
-            b'desmume_num_cores': b'1'}
+            b'melonds_console_mode': b'DS', b'melonds_boot_directly': b'enabled',
+            b'melonds_use_fw_settings': b'disabled', b'melonds_language': b'French',
+            b'melonds_opengl_renderer': b'disabled', b'melonds_threaded_renderer': b'disabled',
+            b'melonds_screen_layout': b'Top/Bottom', b'melonds_screen_gap': b'0',
+            b'melonds_touch_mode': b'Touch', b'melonds_jit_enable': b'enabled'}
         self.pixel_format = 0
-        self.options[b'desmume_frameskip'] = str(frame_skip).encode('ascii')
         self.last_frame = None
         self.pressed = set()
         self.touch = None
@@ -75,11 +81,6 @@ class Emulator:
                 self.callbacks.append(instance)
                 return instance
             return decorate
-
-        @callback(None, C.c_int, C.c_char_p)
-        def log(level, message):
-            if level >= 3:
-                print('CORE: '+message.decode(errors='replace'), file=sys.stderr, flush=True)
 
         @callback(C.c_bool, C.c_uint, C.c_void_p)
         def environment(command, data):
@@ -108,8 +109,9 @@ class Emulator:
                 C.cast(data, C.POINTER(C.c_bool))[0] = False
                 return True
             if command == 27:
-                C.cast(data, C.POINTER(C.c_void_p))[0] = C.cast(log, C.c_void_p).value
-                return True
+                # The ABI uses a variadic printf callback; ctypes callbacks cannot
+                # implement varargs. Let the core use its native stderr logger.
+                return False
             if command == 39:
                 C.cast(data, C.POINTER(C.c_uint))[0] = 2
                 return True
@@ -142,10 +144,11 @@ class Emulator:
             if device == 6 and self.touch is not None:
                 # Pointer coordinates cover the combined 256x384 framebuffer.
                 x, y = self.touch
+                pointer_x, pointer_y = pointer_coordinates(x, y)
                 if ident == 0:
-                    return round(x/255*65534-32767)
+                    return pointer_x
                 if ident == 1:
-                    return round((y+192)/383*65534-32767)
+                    return pointer_y
                 if ident == 2:
                     return 1
             return 0
@@ -159,6 +162,8 @@ class Emulator:
         self.lib.retro_get_system_info.argtypes = [C.POINTER(SystemInfo)]
         info = SystemInfo()
         self.lib.retro_get_system_info(C.byref(info))
+        if info.name != b'melonDS':
+            raise ValueError('Expected the melonDS libretro core (melonds_libretro.dll)')
         self.lib.retro_init()
         self.lib.retro_load_game.argtypes = [C.POINTER(GameInfo)]
         self.lib.retro_load_game.restype = C.c_bool
@@ -188,6 +193,8 @@ class Emulator:
                 raise RuntimeError('State load failed')
         self.pressed = {self.BUTTONS[x.upper()] for x in data.get('keys', [])}
         self.touch = data.get('touch')
+        if self.touch is not None:
+            pointer_coordinates(*self.touch)
         count = data.get('frames', 0)
         for _ in range(count):
             self.lib.retro_run()
@@ -218,12 +225,11 @@ class Emulator:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('rom')
-    parser.add_argument('--core', default='local/tools/libretro/desmume_libretro.dll')
-    parser.add_argument('--directory', default='build/emulator')
+    parser.add_argument('--core', default='local/tools/melonds-core/melonds_libretro.dll')
+    parser.add_argument('--directory', default='build/emulator-melonds')
     parser.add_argument('--commands', help='Optional JSONL input sequence instead of interactive stdin')
-    parser.add_argument('--frame-skip', type=int, choices=range(10), default=0)
     args = parser.parse_args()
-    emulator = Emulator(args.rom, args.core, args.directory, args.frame_skip)
+    emulator = Emulator(args.rom, args.core, args.directory)
     stream = open(args.commands, encoding='utf-8') if args.commands else sys.stdin
     for line in stream:
         try:

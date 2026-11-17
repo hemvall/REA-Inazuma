@@ -1,8 +1,24 @@
 # Run Le Defi Mystere locally
 
 Double-click `Jouer au Defi Mystere.cmd` in the project folder. It opens the
-scenario ROM directly in the downloaded portable DeSmuME. It does not require
+scenario ROM directly in the downloaded portable melonDS. It does not require
 Codex Computer Use permissions, change file associations, or install software.
+
+Install it with `python src/setup_tools.py --only melonds`. The launcher expects
+`local/tools/melonds/melonDS.exe`; configuration lives in its `portable/` folder.
+Configure DS buttons under **Config > Input and hotkeys** if no keys are mapped.
+Use a new game and do not import DeSmuME save states.
+
+For the separate automated Libretro port:
+
+```powershell
+python src/setup_tools.py --only melonds-core
+python src/emulator_probe.py build/inazuma_mystery.nds --commands tests/scenario_replay.jsonl
+```
+
+Replay timings were measured on DeSmuME and require validation on melonDS.
+A black screen after the new-game notices remains an unresolved standalone
+melonDS 1.1 issue. The historical runtime report is not melonDS acceptance.
 
 The original `op00` opening movie plays at power-on. Press **A** or **Start** to
 skip it, then select **Nouvelle partie**. The new episode begins after the

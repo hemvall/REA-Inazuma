@@ -35,7 +35,7 @@ The Downloads source remains unchanged.
 - `story/standalone_scene.json`: authored French text and measured character IDs.
 - `story/five_minute_scenario.md`: readable French script with stage directions.
 - `TEAM_INITIALIZATION.md`: native roster/level evidence and memory layout.
-- `Jouer au Defi Mystere.cmd`: portable DeSmuME launcher.
+- `Jouer au Defi Mystere.cmd`: portable melonDS launcher.
 
 ROMs, extracted resources, private manifests, emulator states and downloaded
 tools are ignored by Git. Do not commit or redistribute copyrighted ROM assets.
@@ -96,9 +96,31 @@ it does not rely on the pre-match event counter surviving native return.
 
 `src/emulator_probe.py` is a small libretro test host. It executes the actual ROM,
 feeds emulated DS input and writes framebuffer PNGs, without controlling Windows
-apps. It needs the separately downloaded official DeSmuME libretro DLL. The input
+apps. It needs the separately downloaded melonDS libretro DLL. The input
 sequence is `tests/scenario_replay.jsonl`; this is a regression aid, not a bundled
 save state or a substitute for the ROM.
+
+The launcher now uses standalone melonDS (tested binary: 1.1). The automated
+probe uses the separate Libretro melonDS port (tested: 0.9.3 4081e83), not the
+same executable or core version. Install either with:
+
+```powershell
+python src/setup_tools.py --only melonds
+python src/setup_tools.py --only melonds-core
+```
+
+Standalone settings stay in `local/tools/melonds/portable/`. The probe uses DS
+direct boot, French, software rendering and vertically stacked screens without
+a gap. Touch input uses lower-screen pixels `x=0..255, y=0..191`. The old
+DeSmuME-specific `--frame-skip` option is removed. Save states are not shared
+between the standalone emulator, Libretro port or DeSmuME.
+
+This migration does not change the ROM, menu, movies or scenario scripts. A
+black screen after the new-game notices was reported in standalone melonDS 1.1
+and remains unresolved. Libretro checks do not establish standalone acceptance.
+Downloaded archive hashes are recorded in `local/tools/downloads.json`; keep
+the nightly Libretro archive to reproduce the exact tested binary. No Nintendo
+BIOS or firmware is downloaded.
 
 Older `prepare_proof.py`, `patch_dialogues.py` and `validate_proof.py` retain the
 one-line proof workflow. Running the proof build against the default output would
@@ -110,7 +132,7 @@ replace the current scenario build; use the scene commands above for this projec
 - [SceneScriptData](https://github.com/Tiniifan/SceneScriptData): SSD/SST format
   research; independent parsing was also used during investigation.
 - [libretro C ABI](https://github.com/libretro/libretro-common/blob/master/include/libretro.h)
-  and [DeSmuME core](https://github.com/libretro/desmume).
+  and [melonDS core](https://github.com/libretro/melonDS).
 - [Dialogue research](https://gbatemp.net/threads/inazuma-text-editor.604619/):
   `evet.pkb` is relevant, but index 1174 was not assumed for this ROM.
 

@@ -1,5 +1,11 @@
 # Runtime verification — 2026-11-17
 
+The evidence below is historical DeSmuME evidence. The launcher and probe now
+use melonDS; this change does not modify the ROM. Standalone melonDS 1.1 has a
+reported black screen after the new-game notices which remains unresolved.
+Libretro smoke checks cover startup, framebuffer and state serialization only;
+they do not establish full scenario or standalone acceptance.
+
 Current ROM: `build/inazuma_mystery.nds`.
 SHA-256: `7a9435be30fea323a5d445d9f91355dd89f9e0bce714ca96954cc0f64d865033`.
 Cold boot uses the official DeSmuME libretro core `git 95b4d79`, software
