@@ -1,12 +1,48 @@
 # Runtime verification — 2026-11-17
 
-The evidence below is historical DeSmuME evidence. The launcher and probe now
-use melonDS; this change does not modify the ROM. Standalone melonDS 1.1 has a
-reported black screen after the new-game notices which remains unresolved.
-Libretro smoke checks cover startup, framebuffer and state serialization only;
-they do not establish full scenario or standalone acceptance.
+## Current exploration and Paradoxe FC candidate
 
-Current ROM: `build/inazuma_mystery.nds`.
+ROM: `build/inazuma_mystery.nds`.
+SHA-256: `3e23f678ccbafeb9ff59ac553995b5a22f188ced3db993b9cd11892209d89367`.
+Core: melonDS Libretro 0.9.3 `4081e83`, software rendering and generated FreeBIOS.
+Standalone melonDS 1.1 is a separate, unverified target.
+
+Observed on this exact final ROM from a fresh boot:
+
+- Native Club de foot scenery, free movement and the entrance sparkle interaction.
+- All 44 opening lines and seven surprise-opponent exchanges reach match setup.
+- All four opponent actors and portraits appear during the reveal, including
+  Canon Evans (`build/aftermath-final/line-47.png`).
+- Native match setup displays Paradoxe FC and the recognizable opponent sprites
+  (`build/aftermath-final/setup.png`).
+
+A shortened-opening diagnostic ROM uses the same opponent template and return
+logic. Its read-only match RAM confirms Nero 2141, Joseph King 21, young Seymour
+Hillman 2221 and Canon Evans 2470, all at level 1. Gameplay reaches full time.
+The scoped result helper records defeat 3, preserves tutorial bits (10022=E39),
+clears return registration 1001A and enters the native return. **The lower screen
+then remains black; neither the authored conversation nor free movement resumes.**
+Diagnostic evidence: `build/aftermath-probe/end-4.png`, `end-memory.bin`.
+Do not treat the authored victory/defeat/replay paths as accepted gameplay.
+
+The final cold-boot input sequence is `tests/exploration_replay.jsonl`.
+Screenshots and states are private generated artifacts and are ignored by Git.
+The final ROM passed exact-manifest, byte reversal and xdelta round-trip checks.
+All 39 tests pass, covering item gates, named opponent identities and preserved
+native match-return helpers. Independent validation checks 24 story entries,
+the scoped MCH/MCHT pair, string bindings and unchanged unrelated resources.
+Static checks do not establish runtime acceptance; `gameplay_tested` stays false.
+
+Remaining work: fix native end-to-world handoff, exercise both result branches,
+replay, save/reload and the standalone executable. Existing campaign saves and
+states from earlier ROM builds are unsupported.
+
+## Historical illustrated build (DeSmuME)
+
+The following evidence belongs to the older illustrated ROM and its exact hash;
+it does not describe the current exploration build.
+
+Historical ROM: `build/inazuma_mystery.nds`.
 SHA-256: `7a9435be30fea323a5d445d9f91355dd89f9e0bce714ca96954cc0f64d865033`.
 Cold boot uses the official DeSmuME libretro core `git 95b4d79`, software
 renderer and JIT. No save state from another ROM is used. Runtime evidence is

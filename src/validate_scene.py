@@ -69,17 +69,33 @@ def main():
                     old_rows, _ = read_ssd(decompress_lz10(old[1][offset:offset+size])[0])
                     wanted = [r.args[1] for r in old_rows if r.opcode == 0x3001 and r.args[1] < 0x2000]
                     route = rows[166]
-                    if route.opcode != 0x4047 or route.types != [1,1] or route.args != [2, config['entry_key']]:
-                        raise ValueError('First-chapter event requests are not redirected')
+                    if route.opcode != 0x4047 or route.types != [1,5] or route.args != [2, 9]:
+                        raise ValueError('Native chapter return queue was modified')
+                    wanted += [0x1017, 0x1014]
+                    # The sole authored event request is inside the appended
+                    # item interaction, never an automatic arrival callback.
+                    requests = [r for r in rows if r.opcode in (0x2010, 0x200F)
+                                and r.id > 556]
+                    if len(requests) != 2 or any(r.args != [config['entry_key']] for r in requests):
+                        raise ValueError('Unexpected campaign or automatic event request')
+                    if rows[2662].opcode != 0x4019:
+                        raise ValueError('Native initial map loader missing')
                     team_rows = rows[2584:2608]
                     additions = [r.args for r in team_rows if r.opcode == 0x403E]
                     expected = [[unit,1,i+1] for i,unit in enumerate(config['team']['units'])]
                     if additions != expected or any(r.opcode == 0x403F for r in team_rows):
                         raise ValueError('Native chapter still rebuilds original squad')
                 else:
-                    wanted = [0x1023, 0x1017, 0x1013] if key == config['entry_key'] else [0x1017]
+                    wanted = [0x1023, 0x1013] if key == config['entry_key'] else [0x1017]
                 if callbacks != wanted:
                     raise ValueError('Unexpected reachable engine callback set')
+                if key == config['entry_key']:
+                    authored = rows[645:]
+                    if any(r.opcode in (0x3008, 0x300F) for r in authored):
+                        raise ValueError('Authored scene hides the native map with a sprite')
+                    launches = [r.args for r in authored if r.opcode == 0x4046]
+                    if launches != [[config['native_match_id']]]:
+                        raise ValueError('Missing or duplicate native challenge launch')
                 parsed[key] = (rows, header)
             else:
                 records = text_records(data)
@@ -90,13 +106,51 @@ def main():
                     for kind, value in zip(row.types, row.args):
                         if kind == 3 and (value >= len(records) or records[value]['command'] != row.id):
                             raise ValueError('String argument does not bind to its SST record')
+                if key == 21010000:
+                    if records[rows[2662].args[0]]['text'] != config['map'].encode('ascii'):
+                        raise ValueError('Initial map is not the authored clubhouse')
+                    item = config['exploration']
+                    sparkle = [r for r in rows if r.opcode == 0x308C and
+                               r.args[:2] == [item['object_unit'], item['object_group']]]
+                    if not any(r.args[2:] == [round(v*4096) & 0xFFFFFFFF
+                                             for v in item['object_position']] for r in sparkle):
+                        raise ValueError('Missing entrance interaction object')
                 if key == config['entry_key']:
-                    expected_lines = [line['text'].encode('ascii') for scene in ('opening', 'victory', 'defeat') for line in config[scene]]
+                    expected_lines = [line['text'].encode('ascii') for scene in
+                        ('victory', 'defeat', 'aftermath', 'opening', 'opponent_reveal', 'replay') for line in config[scene]]
                     observed_lines = [records[row.args[0]]['text'] for row in rows if row.opcode == 0x301D and row.id > 645]
                     if observed_lines != expected_lines:
                         raise ValueError('Standalone dialogue differs from authored scene')
             details.append({'entry_key': key, 'archive': stem, 'decoded_sha256': sha(data)})
     allowed = {base+stem+suffix for stem in ('eve', 'evet') for suffix in ('.pkb', '.pkh')}
+    # Match 35 alone may change its end-of-match presentation/return script.
+    # Independently require every other MCH allocation and payload to survive.
+    match_pair = []
+    for stem in ('mch','mcht'):
+        mch_parts = [[rom.data[slice(*rom.files[base+stem+s])] for s in ('.pkh','.pkb')]
+                     for rom in (original,modified)]
+        old_mch, new_mch = [unpack_index(*parts) for parts in mch_parts]
+        if len(old_mch) != len(new_mch):
+            raise ValueError('Match archive count changed')
+        for before, after in zip(old_mch, new_mch):
+            key, offset, size = before
+            if key != 24010035:
+                if before != after or mch_parts[0][1][offset:offset+size] != mch_parts[1][1][offset:offset+size]:
+                    raise ValueError('Unrelated match script changed')
+            else:
+                _, pos, length = after
+                match_pair.append(decompress_lz10(mch_parts[1][1][pos:pos+length])[0])
+        allowed.update({base+stem+'.pkh', base+stem+'.pkb'})
+    match_rows, _ = read_ssd(match_pair[0])
+    match_texts = text_records(match_pair[1])
+    for row in match_rows:
+        for kind,value in zip(row.types,row.args):
+            if kind == 3 and match_texts[value]['command'] != row.id:
+                raise ValueError('Invalid match text binding')
+    start = next(i for i,r in enumerate(match_rows) if r.opcode == 0x3001 and r.args[1] == 0x2010)
+    calls = match_rows[start+2:start+9]
+    if [(r.opcode,r.args) for r in calls] != [(0x2011,[bit]) for bit in (8,16,32,512,1024,2048)]+[(0x200F,[])]:
+        raise ValueError('Challenge return does not preserve native teardown and tutorial bits')
     from scene_team import TEAM_PATH, ROSTER
     import struct
     for team_path in (TEAM_PATH,'data_iz/logic/fr/team.pkb'):
@@ -106,7 +160,16 @@ def main():
         if observed_team != list(ROSTER)+[0]*27 or any(team[0x44+i*8] for i in range(5)):
             raise ValueError('Initial five-player level-one template mismatch')
         oa,ob = original.files[team_path]
-        if modified.data[a+320:b] != original.data[oa+320:ob]:
+        allowed_tail = bytearray(original.data[oa+320:ob])
+        if team_path == 'data_iz/logic/fr/team.pkb':
+            from scene_opponents import prepare_opponents
+            opponent_edits, _ = prepare_opponents(original, config)
+            edit = opponent_edits[0]
+            pos = edit['offset']-320
+            allowed_tail[pos:pos+320] = bytes.fromhex(edit['after_hex'])
+            if modified.data[a+edit['offset']:a+edit['offset']+320] != bytes.fromhex(edit['after_hex']):
+                raise ValueError('Surprise opponent lineup differs from authored team')
+        if modified.data[a+320:b] != bytes(allowed_tail):
             raise ValueError('Unrelated team template changed')
         allowed.add(team_path)
     for path, (start, end) in original.files.items():
@@ -115,6 +178,9 @@ def main():
     report = {'rom_sha256': sha(modified.data), 'selected_entries_verified': len(details),
               'unselected_archive_offsets_preserved': True, 'callback_sets_verified': True,
               'ssd_sst_bindings_verified': True, 'authored_dialogues_verified': True,
+              'native_exploration_verified_structurally': True,
+              'native_challenge_launch_verified_structurally': True,
+              'surprise_opponents_verified_structurally': True,
               'native_boot_bypass': False, 'gameplay_tested': False,
               'entries': details}
     Path('build/scene_semantics.json').write_text(json.dumps(report, indent=2), encoding='utf-8')

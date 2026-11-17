@@ -16,9 +16,9 @@ python src/setup_tools.py --only melonds-core
 python src/emulator_probe.py build/inazuma_mystery.nds --commands tests/scenario_replay.jsonl
 ```
 
-Replay timings were measured on DeSmuME and require validation on melonDS.
-A black screen after the new-game notices remains an unresolved standalone
-melonDS 1.1 issue. The historical runtime report is not melonDS acceptance.
+Use `tests/exploration_replay.jsonl` for the current cold-boot exploration
+route on the melonDS Libretro port. `scenario_replay.jsonl` is the historical
+illustrated route. Standalone melonDS acceptance remains a separate check.
 
 The original `op00` opening movie plays at power-on. Press **A** or **Start** to
 skip it, then select **Nouvelle partie**. The new episode begins after the
@@ -36,15 +36,21 @@ The older `inazuma_scene_experimental.nds` is an earlier candidate, not this bui
 
 ## Current episode
 
-The new story has 44 opening lines in four illustrated sequences, approximately
-five minutes excluding football and depending on reading speed. Mark, Jack,
-Daniel Hatch, Byron Love and Nathan Empereur Noir form the level-one team.
-The scene uses native illustrations on the lower screen; the upper screen is
-black during the illustrated dialogue. The reused native football
-event is a four-a-side, first-goal challenge, with the fifth squad member available
-in the roster. Full result/replay and save acceptance remain experimental.
-The normal title screen remains; automatic power-on entry is not implemented.
-See `RUNTIME_VERIFICATION.md` for exact tested builds and remaining checks.
+After the original introduction you control Mark on the native **Club de foot**
+map. Use the D-pad or the touchscreen to move. Walk north along the path towards
+the clubhouse. Examine the sparkling object just to the left of the entrance
+with **A** (the DS button, according to your emulator key mapping).
+
+The story does not start just by arriving or pressing A away from the object.
+The interaction gathers Mark, Jack, Hatch, Byron and Nathan in the actual 3D
+scenery. Advance the 44 opening lines and seven Paradoxe FC introductions with A;
+the native football challenge then follows. The reading target remains around five minutes, depending on pace.
+
+The native challenge is a first-goal four-a-side event. All five requested
+players are in the level-one squad. Full match result/replay and save/reload
+acceptance remain experimental. The authored post-match conversations are
+currently blocked by a black screen after native return; they are not accepted
+as reachable gameplay. See `RUNTIME_VERIFICATION.md` for evidence.
 
 ## Rebuild
 

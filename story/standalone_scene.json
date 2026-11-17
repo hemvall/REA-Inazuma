@@ -3,8 +3,8 @@
   "rom_sha256": "1e67c699a6b3ecfb5230e8c2245746879fab57123277651da74b4cc9b8ba25d3",
   "entry_key": 22010100,
   "standalone_story_flag": 10500,
-  "map": "mr02b03",
-  "map_description": "Existing riverside football training ground",
+  "map": "mr07b05",
+  "map_description": "Native sunny Raimon football clubhouse exterior",
   "native_match_id": 35,
   "native_match_source_event": 22010700,
   "characters": [
@@ -12,9 +12,9 @@
       "name": "Mark",
       "unit": 1,
       "position": [
-        -0.8,
-        0.21,
-        0.8999
+        8,
+        0.29,
+        -16.2
       ],
       "base_index": 1
     },
@@ -22,9 +22,9 @@
       "name": "Nathan",
       "unit": 2430,
       "position": [
-        -2.05,
-        0.21,
-        -0.8501
+        8.7,
+        0.29,
+        -14.7
       ],
       "base_index": 1589
     },
@@ -32,9 +32,9 @@
       "name": "Jack",
       "unit": 3,
       "position": [
-        -4.05,
-        0.21,
-        0.45
+        6.6,
+        0.29,
+        -16
       ],
       "base_index": 3
     },
@@ -42,9 +42,9 @@
       "name": "Hatch",
       "unit": 29,
       "position": [
-        -1.5,
-        0.21,
-        0.0
+        9.4,
+        0.29,
+        -16
       ],
       "base_index": 28
     },
@@ -52,9 +52,9 @@
       "name": "Byron",
       "unit": 190,
       "position": [
-        -1.6499,
-        0.21,
-        1.3
+        7.1,
+        0.29,
+        -14.7
       ],
       "base_index": 157
     }
@@ -62,7 +62,7 @@
   "opening": [
     {
       "speaker": "Jack",
-      "text": "Mark, ce rendez-vous est pour\\nnous ? Une enveloppe nous\\nattendait sur le ballon."
+      "text": "Mark, regarde cet objet devant\\nle local ! Une enveloppe est\\nposee sur le ballon."
     },
     {
       "speaker": "Mark",
@@ -240,21 +240,85 @@
   "victory": [
     {
       "speaker": "Mark",
-      "text": "On l'a fait ! Cette victoire\\nappartient a toutes les passes\\nqui l'ont construite."
+      "text": "On l'a fait ! Contre une equipe\\npareille, on ne pouvait pas\\ngagner chacun dans notre coin."
+    },
+    {
+      "speaker": "Jack",
+      "text": "J'ai defendu sur Joseph King.\\nJoseph. King. Il voulait me\\ndribbler au lieu d'arreter !"
+    },
+    {
+      "speaker": "King",
+      "text": "Et tu as tenu ta position.\\nNe t'habitue pas : la prochaine\\nfois, mon tir passera."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "On a arrete de regarder leurs\\nnoms. On a cherche nos\\npartenaires. Ca change tout."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Meme une equipe impossible\\nlaisse des espaces. Encore\\nfaut-il les voir ensemble."
     },
     {
       "speaker": "Nathan",
-      "text": "Nous irons plus loin. Et\\nmaintenant, je sais exactement\\navec qui je cours."
+      "text": "J'allais repartir seul. Puis\\nj'ai entendu Mark. Cette fois,\\nj'ai leve la tete."
+    },
+    {
+      "speaker": "Canon",
+      "text": "C'est cette equipe que je\\nvoulais rencontrer. Pas cinq\\nvedettes : cinq partenaires."
+    },
+    {
+      "speaker": "Hillman",
+      "text": "Vous avez compris la lecon.\\nLe talent commence l'action.\\nLa confiance la termine."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Alors notre entrainement\\ncommence vraiment maintenant !\\nMerci a tous les quatre."
+    },
+    {
+      "speaker": "Jack",
+      "text": "La prochaine invitation, on\\nla lit ensemble avant de\\ndire oui. Promis, Mark ?"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Promis ! Enfin... si le defi\\nest aussi fou, je risque\\nquand meme de dire oui !"
     }
   ],
   "defeat": [
     {
       "speaker": "Jack",
-      "text": "On a perdu le match, mais pas\\nnotre equipe. On peut reprendre\\ndepuis le debut ?"
+      "text": "Bon... on vient de perdre\\ncontre deux gardiens, notre\\ncoach jeune et un autre Evans."
+    },
+    {
+      "speaker": "Hatch",
+      "text": "Ce n'est pas leur nom qui a\\ngagne. On a laisse trop\\nd'espace entre nos passes."
+    },
+    {
+      "speaker": "Nero",
+      "text": "Vous nous avez regardes comme\\ndes apparitions. Nous, on\\nregardait seulement le ballon."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Voila notre erreur. On a\\nlaisse la surprise decider\\na notre place."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "J'ai accelere sans vous.\\nAu prochain essai, je vous\\ndonne une solution, pas un vide."
+    },
+    {
+      "speaker": "Hillman",
+      "text": "Une defaite n'est utile que\\nsi vous en faites quelque\\nchose. Parlez-vous davantage."
+    },
+    {
+      "speaker": "Canon",
+      "text": "Nous resterons disponibles\\npour la revanche. Cette\\nrencontre vaut un nouvel essai."
     },
     {
       "speaker": "Mark",
-      "text": "Bien sur ! Le niveau un est un\\ndepart. Gardons la lecon, puis\\nreessayons ensemble !"
+      "text": "On garde cette equipe. On\\ncorrige nos passes, puis on\\nrevient jouer ensemble !"
+    },
+    {
+      "speaker": "Jack",
+      "text": "D'accord. Mais quelqu'un\\nm'explique comment notre coach\\na pu rajeunir entre-temps ?"
     }
   ],
   "target_minutes": 5,
@@ -275,11 +339,102 @@
       2430
     ]
   },
-  "backgrounds": [
-    "c2t0104",
-    "c2t0701",
-    "c2t0803",
-    "c2t0104"
+  "backgrounds": [],
+  "background_description": "Native 3D clubhouse scenery and upper-screen area map; no fullscreen background sprite",
+  "exploration": {
+    "object_unit": 2004,
+    "object_group": 28,
+    "object_position": [
+      7.8,
+      0.29,
+      -18.48
+    ],
+    "spawn": [
+      8,
+      0.29,
+      -12
+    ]
+  },
+  "opponents": {
+    "name": "Paradoxe FC",
+    "players": [
+      {
+        "unit": 2141,
+        "base_index": 1396,
+        "full_name": "Nero",
+        "name": "Nero"
+      },
+      {
+        "unit": 21,
+        "base_index": 20,
+        "full_name": "Joseph King",
+        "name": "King"
+      },
+      {
+        "unit": 2221,
+        "base_index": 1440,
+        "full_name": "Seymour Hillman",
+        "name": "Hillman"
+      },
+      {
+        "unit": 2470,
+        "base_index": 1616,
+        "full_name": "Canon Evans",
+        "name": "Canon"
+      }
+    ]
+  },
+  "opponent_reveal": [
+    {
+      "speaker": "Jack",
+      "text": "Attendez... Nero ? Joseph King ?\\nEt ce jeune joueur, on dirait\\nnotre entraineur !"
+    },
+    {
+      "speaker": "Hillman",
+      "text": "Seymour Hillman. A mon epoque,\\nje jouais aussi au football,\\nvous savez !"
+    },
+    {
+      "speaker": "Canon",
+      "text": "Et moi, Canon Evans. Votre\\ninvitation a fait un sacre\\ndetour avant de me trouver."
+    },
+    {
+      "speaker": "Mark",
+      "text": "Un autre Evans ? Deux gardiens\\net notre coach rajeuni...\\nQui a forme cette equipe ?"
+    },
+    {
+      "speaker": "King",
+      "text": "Je joue dans le champ.\\nNero garde les cages. Essaie\\nde ne pas rire avant mon tir."
+    },
+    {
+      "speaker": "Byron",
+      "text": "Le passe, le futur et Genesis.\\nNotre mysterieux correspondant\\na un certain sens du spectacle."
+    },
+    {
+      "speaker": "Nero",
+      "text": "Paradoxe FC. Retenez ce nom.\\nLe premier but decide de tout.\\nA vous de nous surprendre !"
+    }
   ],
-  "background_description": "Native illustrated club sign, notebook and football; lower-screen cutscene backgrounds"
+  "aftermath": [
+    {
+      "speaker": "Hillman",
+      "text": "Fin de la seance. Reprenez\\nvotre souffle devant le local.\\nVous avez de quoi discuter !"
+    },
+    {
+      "speaker": "Mark",
+      "text": "Examinons a nouveau l'objet\\nquand on voudra une revanche.\\nCette fois, on sait qui vient !"
+    }
+  ],
+  "replay": [
+    {
+      "speaker": "Mark",
+      "text": "Paradoxe FC nous attend pour\\nla revanche ! Cette fois,\\non connait nos adversaires."
+    },
+    {
+      "speaker": "Nathan",
+      "text": "Alors gardons les yeux sur\\nnos passes. On y retourne\\nensemble !"
+    }
+  ],
+  "completed_story_flag": 10510,
+  "post_match_victory_flag": 10506,
+  "post_match_defeat_flag": 10507
 }
