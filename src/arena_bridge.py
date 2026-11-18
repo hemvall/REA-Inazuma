@@ -8,10 +8,12 @@ import ctypes as C
 import json
 import struct
 import unicodedata
+import uuid
 from functools import lru_cache
 from pathlib import Path
 from nds import read_rom, sha
 from scene_team import inspect_party_memory
+from frame_state import screen_phase
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -60,6 +62,12 @@ class ArenaBridge:
         self.sst = (folder/'scene.sst').read_bytes()
         self.teams = {team['id']: team for team in catalogue()}
         self.fixture = None
+        self.completed = False
+
+    def poll_frame(self):
+        if self.fixture and screen_phase(self.emulator.last_frame)=='result':
+            self.completed=True
+        return self.completed
 
     def memory(self):
         pointer = self.emulator.lib.retro_get_memory_data(2)
@@ -69,6 +77,7 @@ class ArenaBridge:
         return pointer, C.string_at(pointer, size)
 
     def state(self):
+        self.poll_frame()
         _, memory = self.memory()
         base = self.profile['global_base']-0x02000000
         flag, = struct.unpack_from('<I', memory, base+5*4)
@@ -78,13 +87,16 @@ class ArenaBridge:
         phase = {0:'idle', 4:'idle', 1:'starting', 2:'dialogue', 10:'playing', 3:'result'}.get(counter, 'unknown')
         if flag != 10500 or not loaded:
             phase = 'booting' if self.fixture is None else ('playing' if counter == 10 else 'loading')
-        players = inspect_party_memory(memory) if phase in ('playing','result') else []
+        if self.completed:phase='result'
+        elif phase=='playing' and screen_phase(self.emulator.last_frame)=='halftime':phase='halftime'
+        players = inspect_party_memory(memory) if phase in ('playing','halftime','result') else []
         return {'phase': phase, 'native_counter': counter,
                 'home_units': [p['unit'] for p in players if not p['team_field'] & 0x8000],
                 'away_units': [p['unit'] for p in players if p['team_field'] & 0x8000],
                 'roster_source':'BEBF native player database at 0x020E0300',
-                'native_result':result if phase=='result' else None,
-                'result': ('victory' if result == 1 else 'not_victory') if phase == 'result' else None,
+                'native_result':result if phase=='result' and not self.completed else None,
+                'result': ('completed' if self.completed else ('victory' if result == 1 else 'not_victory')) if phase == 'result' else None,
+                'result_source':'native_final_screen' if self.completed else ('native_callback' if phase=='result' else None),
                 'fixture': self.fixture}
 
     def prepare(self, home, away, lines):
@@ -142,7 +154,7 @@ class ArenaBridge:
             C.memmove(pointer+offset, value, len(value))
             if C.string_at(pointer+offset,len(value)) != value:
                 raise RuntimeError('Arena write verification failed')
-        self.fixture = {'home': home, 'away': away, 'lines': lines}
+        self.fixture = {'id':uuid.uuid4().hex,'home': home, 'away': away, 'lines': lines}
         return {'prepared': True, 'script_buffers': len(script_bases), 'text_buffers': len(text_bases), **self.state()}
 
     def start(self):

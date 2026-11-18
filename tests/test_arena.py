@@ -58,3 +58,11 @@ class ArenaTests(unittest.TestCase):
         self.arena.thread.join(2)
         self.assertEqual(self.arena.job['message'],'Quelle équipe adverse ?')
         self.arena.prepare.assert_not_called()
+
+    def test_checkpoint_restoration_updates_visible_fixture(self):
+        self.arena.fixture={'home':3,'away':10,'lines':['old']*6}
+        restored={'revision':9,'match':{'phase':'dialogue','fixture':{'home':10,'away':3,'lines':['new']*6}}}
+        self.arena.session.request=Mock(return_value=restored)
+        self.arena.call('checkpoint_load',{'session_id':'test','checkpoint_id':'saved','revision':8})
+        self.assertEqual(self.arena.fixture['home'],10)
+        self.assertEqual(self.arena.fixture['lines'],['new']*6)

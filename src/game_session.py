@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _worker(pipe, rom, core, directory, profile):
     from emulator_probe import Emulator, png
-    from emulator_worker import Controller
+    from emulator_worker import Controller,validate_step,execute_step
     emulator = None
     try:
         Path(directory).mkdir(parents=True,exist_ok=True)
@@ -24,9 +24,9 @@ def _worker(pipe, rom, core, directory, profile):
         os.dup2(log_fd,2)
         os.close(log_fd)
         emulator = Emulator(rom, core, directory)
-        controller = Controller(emulator)
-        checkpoints = {}
         bridge = None
+        controller = Controller(emulator,lambda:bool(bridge and bridge.poll_frame()))
+        checkpoints = {}
         baseline = None
         def snapshot():
             size = emulator.lib.retro_serialize_size()
@@ -45,7 +45,9 @@ def _worker(pipe, rom, core, directory, profile):
                 raise RuntimeError('Checkpoint restore failed; close session')
             emulator.frames,emulator.last_frame = frames,image
             emulator.pressed,emulator.touch = set(),None
-            if bridge: bridge.fixture = fixture
+            if bridge:
+                bridge.fixture = fixture
+                bridge.completed=False
 
         if profile == 'arena':
             from arena_bridge import ArenaBridge
@@ -76,21 +78,18 @@ def _worker(pipe, rom, core, directory, profile):
                     frames = request.get('frames', 1)
                     keys = request.get('keys', [])
                     touch = request.get('touch')
-                    if type(frames) is not int or not 1 <= frames <= 120:
-                        raise ValueError('Expected 1..120 frames')
-                    if not isinstance(keys, list) or any(k not in Emulator.BUTTONS for k in keys):
-                        raise ValueError('Invalid keys')
+                    validate_step(frames,keys,touch)
                     try:
-                        emulator.command({'frames': frames, 'keys': keys, 'touch': touch})
-                        if keys or touch is not None:
-                            for _ in range(4):
-                                emulator.lib.retro_run()
-                                emulator.frames += 1
+                        if bridge and bridge.poll_frame():
+                            if keys or touch is not None:restore(baseline)
+                        else:
+                            execute_step(emulator,frames,keys,touch,lambda:bool(bridge and bridge.poll_frame()))
                     finally:
                         emulator.pressed = set()
                         emulator.touch = None
                         controller.revision += 1
                 elif op == 'touch_path':
+                    if bridge and bridge.poll_frame():raise ValueError('Rencontre terminée : utilisez reset_match.')
                     controller.touch_path(request['revision'], request['points'])
                 elif op == 'checkpoint_save':
                     if len(checkpoints) >= 8:
@@ -125,6 +124,9 @@ def _worker(pipe, rom, core, directory, profile):
                     target = Path(directory) / 'frame.png'
                     png(target, *emulator.last_frame)
                     result['image'] = base64.b64encode(target.read_bytes()).decode('ascii')
+                    if bridge and bridge.completed:
+                        proof=Path(directory)/('result-'+bridge.fixture['id']+'.png')
+                        if not proof.exists():proof.write_bytes(target.read_bytes())
                 with (Path(directory)/'replay.jsonl').open('a',encoding='utf-8') as log:
                     log.write(json.dumps({'request':request,'result':{k:v for k,v in result.items() if k!='image'}},ensure_ascii=False)+'\n')
                 pipe.send(result)

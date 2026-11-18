@@ -41,6 +41,9 @@ Les buffers SSD/SST et les en-têtes d'équipes sont ensuite préparés à chaud
 avec contrôle des tailles, de la phase, du hash et lecture de vérification.
 
 Le build d'arène et son rapport de réversibilité restent dans `build/arena/`.
+L'écran final natif est conservé par le contrôleur, qui assure ensuite le retour
+au salon par checkpoint ; le retour direct de la ROM dans un frontend autonome
+n'est pas pris en charge. L'arène constitue un composant du système web/MCP livré.
 `python src/package_release.py` produit `dist/InazumIA-develop-source.zip`,
 avec un manifeste SHA-256 interne. Les preuves privées ne sont pas empaquetées.
 

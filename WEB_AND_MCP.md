@@ -30,6 +30,13 @@ ni reconstruite ni rechargée. Une nouvelle affiche et de nouveaux dialogues
 peuvent alors être injectés. Les checkpoints utilisateur restent éphémères et
 appartiennent exclusivement à la session courante.
 
+À l'écran natif « Fin du match », le contrôleur conserve le résultat et suspend
+le cœur. « Nouvelle rencontre », B ou un clic de continuation rétablit le salon
+depuis le checkpoint de cette même session. Ce retour est géré par le worker :
+le retour natif direct de cette arène a provoqué un crash pendant les essais et
+n'est pas utilisé. La ROM d'arène doit donc être jouée avec ce contrôleur, et
+non comme une ROM autonome dans un autre frontend.
+
 ## Agents et connexion
 
 Les agents utilisent le CLI Codex déjà installé et l'authentification existante.
@@ -55,6 +62,11 @@ local/agent-venv/Scripts/python.exe -m pip install -r requirements-agent.txt
 
 Le SDK officiel est fixé à `mcp==1.30.0`, API v1 :
 https://py.sdk.modelcontextprotocol.io/v1/.
+
+L'installateur génère aussi `build/mcp-client.json` et `build/mcp-codex.toml`,
+avec les chemins absolus de votre installation. Importer le premier dans un
+client compatible, ou ajouter le contenu du second à la configuration Codex.
+`python src/configure_mcp.py` régénère ces fichiers si le dossier a été déplacé.
 
 Configurer votre client MCP avec l'exécutable absolu
 `<projet>/local/agent-venv/Scripts/python.exe` et l'argument absolu
@@ -95,3 +107,13 @@ Les deux derniers tests utilisent le service ouvert et modifient sa session.
 dans le même worker. Il conserve des captures et des identités dans
 `build/delivery/`. Une suite de tests verts n'est pas une garantie que le joueur
 visuel gagnera un match ; ses décisions et son niveau de jeu restent observables.
+
+Pour exiger aussi un résultat final dans l'essai du joueur visuel, avec un budget
+plus long et une durée maximale explicite :
+
+```powershell
+python tests/smoke_delivery.py --max-decisions 400 --require-result --timeout 7200
+```
+
+Ce mode échoue si l'agent s'arrête avant le résultat ; il ne transforme pas une
+limite de budget en réussite de match.

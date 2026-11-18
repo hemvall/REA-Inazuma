@@ -63,6 +63,10 @@ class Arena:
             if self.latest and 'revision' in result:self.latest={**self.latest,'revision':result['revision']}
             raise ValueError(result['error'])
         self.latest = result
+        if 'match' in result:
+            native_fixture=result['match'].get('fixture')
+            self.fixture=({**native_fixture,'status':'ready' if result['match']['phase']=='idle' else result['match']['phase']}
+                          if native_fixture else None)
         return result
 
     def prepare(self, home, away, lines):
@@ -75,6 +79,8 @@ class Arena:
         opened = self.session.open('arena',cancel=self.cancel)
         sid = opened['session_id']
         observation = self.checked('observe',session_id=sid)
+        if observation['match']['phase']=='result':
+            observation=self.checked('reset_match',session_id=sid,revision=observation['revision'],actor=self.session.owner)
         if observation['match']['native_counter'] != 4:
             raise ValueError('Réinitialisez la rencontre avant d’en préparer une autre.')
         observation = self.checked('prepare_match',session_id=sid,revision=observation['revision'],
@@ -117,7 +123,8 @@ class Arena:
                 observation = self.checked('observe',session_id=session_id)
                 match = observation.get('match',{})
                 if match.get('phase')=='result':
-                    self.update(message='Match terminé : victoire.' if match.get('result')=='victory' else
+                    self.update(message='Match terminé. Le résultat final est affiché dans le jeu.' if match.get('result_source')=='native_final_screen' else
+                                'Match terminé : victoire.' if match.get('result')=='victory' else
                                 'Rencontre terminée, retour natif confirmé (code '+str(match.get('native_result'))+').')
                     return
                 if match.get('native_counter')==4:

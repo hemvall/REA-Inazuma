@@ -1,5 +1,6 @@
 """Exercise the live shared service. Requires a running web server and Codex auth."""
 import base64
+import argparse
 import json
 from pathlib import Path
 import time
@@ -25,18 +26,25 @@ def wait_job(timeout=900):
     call('stop_agent');raise TimeoutError('Delivery integration timed out')
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--max-decisions',type=int,default=80)
+    parser.add_argument('--timeout',type=int,default=1800)
+    parser.add_argument('--require-result',action='store_true')
+    args=parser.parse_args()
     folder=Path('build/delivery');folder.mkdir(parents=True,exist_ok=True)
     state=call('status');sid=state['session_id']
     if not sid or not state['fixture']:
         call('chat',message='Occulte contre Zeus');state=wait_job(180);sid=state['session_id']
-    call('delegate_player',session_id=sid,max_decisions=80)
-    state=wait_job(1800)
+    call('delegate_player',session_id=sid,max_decisions=args.max_decisions)
+    state=wait_job(args.timeout)
     observation=call('observe',session_id=sid)
     (folder/'agent-final.png').write_bytes(base64.b64decode(observation.pop('image')))
     (folder/'agent-final.json').write_text(json.dumps({'status':state['job'],'observation':observation,
         'actions':state['agent_actions']},ensure_ascii=False,indent=2),encoding='utf-8')
     assert state['agent_actions']>0,'Agent never acted'
     assert state['owner']=='human','Control was not returned'
+    if args.require_result:
+        assert observation['match']['phase']=='result','Agent did not reach the native final result within its budget'
     first_identity=call('session_open',profile='arena')
     reset=call('reset_match',session_id=sid,revision=observation['revision'])
     assert reset['match']['native_counter']==4

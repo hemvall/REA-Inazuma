@@ -14,11 +14,11 @@
 | Essai | Preuve |
 |---|---|
 | Construction et réversibilité exacte | `build/arena/verification.json` : manifeste exact, 223946 octets modifiés, inversion vérifiée. |
-| Contrats et régressions | 47 tests unitaires passent ; compilation Python, syntaxe JavaScript et `git diff --check` passent. |
+| Contrats et régressions | 54 tests unitaires passent ; compilation Python, syntaxe JavaScript et `git diff --check` passent. |
 | Worker réel | Boot, capture PNG, révisions périmées, restauration du checkpoint et contrôle exclusif : `tests/smoke_session.py`. |
 | Chat et organisateur réel | Demande « Fais s'affronter Occulte et Zeus », six répliques générées, arène prête : `build/browser/desktop-ready.png`. |
 | Dialogue natif dynamique | Portrait de Talisman et texte généré visibles dans le jeu : `build/browser/desktop-dialogue.png`. |
-| Affichage ordinateur/mobile | Captures à 1360×1000 et 390×844, aucun débordement horizontal ni erreur JavaScript : `build/browser/result.json`. |
+| Affichage ordinateur/mobile | Captures à 1360×1000 et 390×844, aucun débordement horizontal ni erreur JavaScript : `build/browser/desktop-final.png`, `build/browser/mobile-final.png`, `build/browser/result.json`. |
 | Effectif Occulte–Zeus | 16 unités domicile 41..56 et 16 unités adverses 181..196, lues dans la base native : `build/delivery/agent-final.json`. |
 | Effectif Zeus–Occulte | Les deux ensembles inversés sont confirmés dans une nouvelle exécution : `build/delivery/reverse-rosters.json`. |
 | Joueur visuel réel | 71 décisions/actions exécutées, passes, course et duels ; match à 17:43 de la première mi-temps : `build/delivery/agent-final.png`. |
@@ -38,7 +38,18 @@ de 400 itérations, annulable à tout moment. Les décisions peuvent être lente
 et leur qualité tactique reste expérimentale. L'émulation reste en pause
 pendant la réflexion ; un budget épuisé ne fabrique pas de résultat.
 
-## Retour natif
+## Fin et retour au salon
+
+Un match natif complet a atteint « Fin du match » à 0–9 avec le contrôleur de
+régression, distinct de l'agent Codex : `build/delivery/native-final-score.png`.
+Le retour natif par B a ensuite fait arrêter le cœur. Ce défaut n'est pas
+présenté comme un retour accepté.
+
+La correction reconnaît le titre natif par une signature de pixels mesurée,
+y compris dans un écran assombri, suspend immédiatement les entrées et conserve
+la capture finale. Le retour utilisateur restaure le checkpoint initial au lieu
+d'appeler le retour natif défectueux. Des tests vérifient l'arrêt sans frames
+de relâchement supplémentaires et la distinction avec la mi-temps.
 
 L'essai de durée dans une session fraîche est suivi séparément dans
 `build/native-session/`. Son résultat sera consigné ici à la fin de l'essai.

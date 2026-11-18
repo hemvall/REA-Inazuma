@@ -19,8 +19,9 @@ function show(result){
 function controls(){
   const manual=!!session&&owner==='human'&&!jobRunning;
   $('start').disabled=!manual||!fixture||!['idle'].includes(window.currentPhase);
-  $('delegate').disabled=!manual||!fixture;
-  $('play').disabled=!manual;
+  $('delegate').disabled=!manual||!fixture||window.currentPhase==='result';
+  $('play').disabled=!manual||window.currentPhase==='result';
+  if(window.currentPhase==='result'){running=false;$('play').textContent='Continuer';}
   $('reset').disabled=!manual;
   $('close').disabled=!manual;
   $('external').disabled=!manual;
