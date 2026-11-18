@@ -52,6 +52,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 struct.pack_into('<IQ', video.get_obj(), 0, len(encoded), sequence)
                 video.get_obj()[12:12+len(encoded)] = encoded
             video_frame = emulator.frames
+        club_return = None
         def snapshot():
             size = emulator.lib.retro_serialize_size()
             if not 0 < size <= 128*1024*1024:
@@ -73,18 +74,20 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 bridge.fixture = fixture
                 bridge.completed=False
 
-        if profile == 'arena':
+        if profile in ('arena', 'club'):
             from arena_bridge import ArenaBridge
-            bridge = ArenaBridge(emulator)
+            from club_bridge import ClubBridge
+            bridge = ClubBridge(emulator) if profile == 'club' else ArenaBridge(emulator)
             commands = json.loads((ROOT/'profiles/arena_boot.json').read_text(encoding='utf-8'))
             for command in commands:
                 emulator.command(command)
-                if bridge.state()['native_counter'] == 4:
+                if (bridge.state()['phase'] == 'club' if profile == 'club' else bridge.state()['native_counter'] == 4):
                     emulator.command({'frames':600})
                     break
-            if bridge.state()['native_counter'] != 4:
+            if (bridge.state()['phase'] != 'club' if profile == 'club' else bridge.state()['native_counter'] != 4):
                 raise RuntimeError('Arena boot failed: waiting dialogue not reached')
             baseline = snapshot()
+            club_return = baseline
         pipe.send({'ready': True})
         while True:
             if live and not pipe.poll(max(0, next_tick-time.monotonic())):
@@ -118,29 +121,35 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                     keys = request.get('keys', [])
                     touch = request.get('touch')
                     validate_step(frames,keys,touch)
+                    continuous = request.get('continuous',False)
+                    if type(continuous) is not bool: raise ValueError('Expected boolean continuous input')
+                    if profile == 'club' and bridge.state()['phase'] == 'club' and ('A' in keys or touch is not None):
+                        club_return = snapshot()
                     try:
                         if bridge and bridge.poll_frame():
-                            if keys or touch is not None:restore(baseline)
+                            if keys or touch is not None:restore(club_return if profile == 'club' else baseline)
                         else:
-                            execute_step(emulator,frames,keys,touch,lambda:bool(bridge and bridge.poll_frame()))
+                            execute_step(emulator,frames,keys,touch,lambda:bool(bridge and bridge.poll_frame()),release=not continuous)
                     finally:
                         emulator.pressed = set()
                         emulator.touch = None
                         controller.revision += 1
                 elif op == 'touch_path':
                     if bridge and bridge.poll_frame():raise ValueError('Rencontre terminée : utilisez reset_match.')
+                    if profile == 'club' and bridge.state()['phase'] == 'club': club_return = snapshot()
                     controller.touch_path(request['revision'], request['points'])
                 elif op == 'checkpoint_save':
                     if len(checkpoints) >= 8:
                         raise ValueError('Checkpoint limit reached (8)')
                     checkpoint_id = uuid.uuid4().hex
-                    checkpoints[checkpoint_id] = snapshot()
+                    checkpoints[checkpoint_id] = (snapshot(), club_return)
                     pipe.send({'checkpoint_id': checkpoint_id, 'revision': controller.revision})
                     continue
                 elif op == 'checkpoint_load':
                     if type(request['revision']) is not int or request['revision'] != controller.revision:
                         raise ValueError('Stale revision')
-                    restore(checkpoints[request['checkpoint_id']])
+                    saved, club_return = checkpoints[request['checkpoint_id']]
+                    restore(saved)
                     controller.revision += 1
                 elif op in ('prepare_match','start_match','reset_match'):
                     if not bridge:
@@ -148,8 +157,9 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                     if type(request['revision']) is not int or request['revision'] != controller.revision:
                         raise ValueError('Stale revision')
                     if op == 'reset_match':
-                        restore(baseline)
+                        restore(club_return if profile == 'club' else baseline)
                     elif op == 'prepare_match':
+                        if profile == 'club': raise ValueError('Choisissez votre affiche en parlant au PNJ.')
                         bridge.prepare(request['home'],request['away'],request['lines'])
                     else:
                         bridge.start()
@@ -213,21 +223,24 @@ class GameSession:
 
     def open(self, profile='scenario', cancel=None):
         with self.lock:
-            if profile not in ('scenario','arena'):
+            if profile not in ('scenario','arena','club'):
                 raise ValueError('Unknown session profile')
             if self.process and self.process.is_alive():
                 if profile != self.profile:
                     raise ValueError('Close the current session before changing profile')
                 return {'session_id': self.session_id,'profile':self.profile, **self.identity}
             self.close()
-            rom = ROOT / ('build/arena/arena.nds' if profile=='arena' else 'build/inazuma_mystery.nds')
+            if profile in ('arena', 'club'):
+                from prepare_arena import ensure_built
+                ensure_built(profile)
+            rom = ROOT / (f'build/{profile}/arena.nds' if profile in ('arena','club') else 'build/inazuma_mystery.nds')
             core = ROOT / 'local/tools/melonds-core/melonds_libretro.dll'
             if not rom.is_file() or not core.is_file():
                 raise ValueError('ROM ou cœur melonDS manquant. Voir README.md.')
             self.identity = {name: hashlib.sha256(path.read_bytes()).hexdigest()
                              for name, path in [('rom_sha256', rom), ('core_sha256', core)]}
-            if profile=='arena':
-                expected=json.loads((ROOT/'build/arena/profile.json').read_text())
+            if profile in ('arena','club'):
+                expected=json.loads((ROOT/f'build/{profile}/profile.json').read_text())
                 if expected.get('core_sha256',self.identity['core_sha256']) != self.identity['core_sha256']:
                     raise ValueError('Cœur melonDS incompatible avec le profil validé de cette arène.')
             self.session_id = uuid.uuid4().hex
@@ -242,7 +255,7 @@ class GameSession:
             self.process.start()
             child.close()
             try:
-                result = self._receive(120 if profile=='arena' else 30,cancel)
+                result = self._receive(120 if profile in ('arena','club') else 30,cancel)
                 if 'error' in result:
                     raise RuntimeError(result['error'])
             except Exception:

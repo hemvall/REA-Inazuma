@@ -121,10 +121,13 @@ def prepare(rom, config):
     if config.get('arena'):
         # Native chapter remove/add commands. Literal roster slots are replaced
         # by the host only while the arena is idle, before this callback starts.
-        for unit in config['team']['units']:
-            event.emit(0x403F, unit)
+        from scene_team import emit_dynamic_removals
+        emit_dynamic_removals(event)
         for slot in range(1, 17):
+            event.emit(0x6008, expression(0x7002, expression(0x7003, slot, 0)))
+            nonzero = event.emit(0x6001, 1, 0)
             event.emit(0x403E, slot, 30, slot)
+            event.end(nonzero)
     event.emit(0x3005, 1, 30)
     if config.get('backgrounds'):
         event.emit(0x202B, 1, 0)
@@ -182,6 +185,22 @@ def prepare(rom, config):
     from scene_team import isolate_first_chapter_roster
     generated[21010000] = (isolate_first_chapter_roster(
         first_ssd[:32]+b''.join(row.encode() for row in first_rows)), first_sst)
+    if config.get('club'):
+        from club_scene import event_pair
+        from scene_exploration import exploration_chapter
+        if config.get('native_club'):
+            from native_club_scene import event_pair as native_event_pair
+            from arena_bridge import catalogue
+            generated[config['entry_key']] = native_event_pair(*original_pair(25030300), config,
+                {t['id']:t for t in catalogue()})
+        else:
+            generated[config['entry_key']] = event_pair(*original_pair(config['entry_key']), config)
+        generated[21010000] = exploration_chapter(*original_pair(21010000), config)
+        room_ssd, room_sst = original_pair(25042030)
+        if room_sst.count(b'Abri du directeur') != 1:
+            raise ValueError('Unexpected room title')
+        title = b'Abri du directeur'
+        generated[25042030] = (room_ssd, room_sst.replace(title, b'Local du club'.ljust(len(title), b'\0')))
     from scene_archive import replace_entries
     edits, details = [], []
     for pair in generated.values():

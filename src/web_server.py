@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 from arena_service import Arena
+from local_address import HOST, PORT, URL
 
 ARENA = Arena()
 WEB = Path(__file__).resolve().parents[1] / 'web'
@@ -22,7 +23,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def valid_host(self):
-        return self.headers.get('Host') in ('127.0.0.1:8765', 'localhost:8765')
+        return self.headers.get('Host') in (f'{HOST}:{PORT}', f'localhost:{PORT}')
 
     def do_GET(self):
         if not self.valid_host():
@@ -59,7 +60,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         origin = self.headers.get('Origin')
-        if not self.valid_host() or origin not in (None, 'http://127.0.0.1:8765', 'http://localhost:8765'):
+        if not self.valid_host() or origin not in (None, URL, f'http://localhost:{PORT}'):
             return self.reply(403, {'error': 'Invalid origin'})
         if self.headers.get('Content-Type') != 'application/json' or not self.path.startswith('/api/'):
             return self.reply(400, {'error': 'Expected JSON API request'})
@@ -77,10 +78,11 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(503, {'error': str(error)})
 
 
-def main():
-    server = ThreadingHTTPServer(('127.0.0.1', 8765), Handler)
-    print('InazumIA : http://127.0.0.1:8765', flush=True)
+def main(on_ready=None):
+    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    print('InazumIA : '+URL, flush=True)
     try:
+        if on_ready: on_ready()
         server.serve_forever()
     except KeyboardInterrupt:
         pass

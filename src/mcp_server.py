@@ -3,12 +3,13 @@ import base64
 import json
 from urllib.request import Request, urlopen
 from mcp.server.fastmcp import FastMCP, Image
+from local_address import URL
 
 mcp = FastMCP('InazumIA')
 
 
 def call(operation, **arguments):
-    request = Request('http://127.0.0.1:8765/api/' + operation,
+    request = Request(URL+'/api/' + operation,
                       data=json.dumps(arguments).encode(),
                       headers={'Content-Type': 'application/json'}, method='POST')
     with urlopen(request, timeout=130) as response:
