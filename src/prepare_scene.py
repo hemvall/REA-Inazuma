@@ -10,6 +10,7 @@ from nds import read_rom, sha
 from ie2_formats import unpack_index, decompress_lz10, compress_lz10_padded, text_records
 from ssd import Program, helper_prefix, expression, variable, fixed, string, read_ssd
 from scene_background import show_background
+from scene_staging import gather_raimon, begin_enemy_arrival, end_enemy_arrival
 
 BASE = 'data_iz/script/fr/'
 
@@ -63,34 +64,34 @@ def prepare(rom, config):
     chapter_pair = chapter.encode()
 
     event = common(config['entry_key'])
-    begin = event.function(0x1023)
-    event.emit(0x2012)
-    event.assign(0x10005, config['standalone_story_flag'])
-    event.assign(0x10008, 1)
-    event.emit(0x3005, 1)
-    event.emit(0x4090, string(config['map']), -1, fixed(0), fixed(0), fixed(0), fixed(0))
-    event.end(begin)
-    units = {c['name']: c['unit'] for c in config['characters']}
     portraits = {c['name']: c.get('portrait_unit', c['unit']) for c in config['characters']}
+    portraits.update({c['name']: c['unit'] for c in config['opponents']['players']})
 
-    def cast():
-        # The original outdoor cutscene initializes this helper before actors.
+    def opponents(arrival=False):
+        if arrival:
+            begin_enemy_arrival(event)
+        for i, player in enumerate(config['opponents']['players']):
+            event.emit(0x3059, player['unit'], 0)
+            event.emit(0x3058, player['unit'], 0)
+            event.emit(0x305A, player['unit'], 0, fixed(5.8+i*1.4), fixed(0.29), fixed(-18.7))
+            event.emit(0x305C, player['unit'], 0, fixed(90))
+        if arrival:
+            end_enemy_arrival(event, config['characters'], config['opponents']['players'][0]['unit'])
+
+    def cast(gather=False):
+        if gather:
+            gather_raimon(event, config['characters'])
+            return
         event.emit(0x2011)
         # Same deletion pattern as original cutscenes; no party/team stat edits.
         for index in range(5):
             event.emit(0x3059, expression(0x4045, index), 0)
-        # Remove the stock riverside roster created by preserved map callbacks.
-        for unit in (2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 1097):
-            event.emit(0x3059, unit, 0)
         for character in config['characters']:
             event.emit(0x3058, character['unit'], 0)
             event.emit(0x305A, character['unit'], 0, *(fixed(v) for v in character['position']))
             event.emit(0x305C, character['unit'], 0, fixed(90 if character['unit'] != 1 else 270))
-        event.emit(0x2000)
-        event.emit(0x3002, 60)
         event.emit(0x201A, 1)
-        event.emit(0x3004, 1, 30)
-        event.emit(0x2015)
+        event.emit(0x3004, 0, 20)
         event.emit(0x3002, 30)
         if config.get('backgrounds'):
             show_background(event, config['backgrounds'][0])
@@ -109,65 +110,87 @@ def prepare(rom, config):
             text_id += 1
         event.emit(0x301E)
 
-    begin = event.function(0x1017, expression(0x7003, variable(0x10008), 1))
-    event.assign(0x10008, 2)
+    aftermath_helper = max(r.args[1] for r in event.rows if r.opcode == 0x3001)+1
+    # The chapter requeues this scene only after the map is fully loaded.
+    # Store the outcome in the persistent story flag, not reset-prone counters.
+    begin = event.function(aftermath_helper)
+    event.assign(0x10008, 21)
     cast()
-    lines(config['opening'], staged=True)
-    event.emit(0x3005, 1, 30)
-    if config.get('backgrounds'):
-        event.emit(0x202B, 1, 0)
-    for character in config['characters']:
-        event.emit(0x3059, character['unit'], 0)
-    # Original match-launch sequence in event 22010700 (function 0x2024).
-    event.emit(0x4058, 4)
-    event.assign(0x10008, 10)
-    event.assign(0x1000A, 3)
-    event.assign(0x1002D, 1)
-    # Pin the return event instead of querying an asynchronously entered slot.
-    # Literal self-registration is present in original event 29020002, row 833.
-    # Native match helper 0x200C reloads event slot 2 from global 0x1001A.
-    event.assign(0x1001A, config['entry_key'])
-    event.emit(0x4048, config['entry_key'])
-    event.emit(0x4046, config['native_match_id'])
-    event.emit(0x4016, 2)
-    event.end(begin)
-
-    # Native return can reset the event counter before dispatch. Do not gate the
-    # return callback on the pre-match counter; branch on the result inside it.
-    begin = event.function(0x1013)
-    cast()
+    opponents()
     for outcome in ('victory', 'defeat'):
-        result = expression(0x7003, variable(0x10009), 1)
+        result = expression(0x7003, variable(0x10005), config['post_match_victory_flag'])
         if outcome == 'defeat':
             result = expression(0x7002, result)
         event.emit(0x6008, result)
         branch = event.emit(0x6001, 1, 0)
         lines(config[outcome])
         event.end(branch)
-    event.assign(0x10008, 1)
+    lines(config['aftermath'])
+    event.assign(0x10005, config['completed_story_flag'])
+    for character in config['opponents']['players']:
+        event.emit(0x3059, character['unit'], 0)
+    event.assign(0x10008, 0)
+    event.emit(0x2000)
+    event.emit(0x2015)
+    event.emit(0x2014)
+    event.end(begin)
+
+    # The item queues this callback on interaction; arrival never launches it.
+    begin = event.function(0x1023)
+    event.emit(0x2012)
+    pending = expression(0x700E,
+        expression(0x7003, variable(0x10005), config['post_match_victory_flag']),
+        expression(0x7003, variable(0x10005), config['post_match_defeat_flag']))
+    event.emit(0x6008, pending)
+    after_match = event.emit(0x6001, 1, 0)
+    event.emit(aftermath_helper)
+    event.end(after_match)
+    event.emit(0x600C, 1)
+    play_match = event.emit(0x6001, 1, 0)
+    event.assign(0x10008, 2)
+    cast(gather=True)
+    completed = expression(0x7003, variable(0x10005), config['completed_story_flag'])
+    event.emit(0x6008, expression(0x7002, completed))
+    first_time = event.emit(0x6001, 1, 0)
+    lines(config['opening'], staged=True)
+    opponents(arrival=True)
+    lines(config['opponent_reveal'])
+    event.end(first_time)
+    event.emit(0x6008, completed)
+    replay = event.emit(0x6001, 1, 0)
+    opponents(arrival=True)
+    lines(config['replay'])
+    event.end(replay)
     event.emit(0x3005, 1, 30)
-    event.emit(0x4090, string(config['map']), -1, fixed(0), fixed(0), fixed(0), fixed(0))
+    if config.get('backgrounds'):
+        event.emit(0x202B, 1, 0)
+    for character in config['characters']:
+        event.emit(0x3059, character['unit'], 0)
+    for character in config['opponents']['players']:
+        event.emit(0x3059, character['unit'], 0)
+    # Original match-launch sequence in event 22010700 (function 0x2024).
+    event.emit(0x4058, 4)
+    event.assign(0x10008, 10)
+    event.assign(0x1000A, 2)
+    event.assign(0x1002D, 1)
+    # A regular challenge returns to the chapter's native 1013 restoration,
+    # after the engine has completed results/rewards. The chapter then queues
+    # the authored continuation using the captured native outcome.
+    event.assign(0x1001A, variable(0x10006))
+    event.emit(0x4048, variable(0x10006))
+    event.emit(0x4046, config['native_match_id'])
+    event.emit(0x4016, 2)
+    event.end(play_match)
     event.end(begin)
 
     generated = {config['entry_key']: event.encode()}
     # Disconnect all original chapter dispatchers, including old-save chapter loads.
     for chapter_no in range(1, 12):
         generated[21000000+chapter_no*10000] = chapter_pair
-    # Preserve native first-chapter map/portal initialization. Only its shared
-    # event-queue helper is redirected; chapter-return calls remain untouched.
+    # Keep the original map loader and return queue intact for free movement.
     first_ssd, first_sst = original_pair(21010000)
-    first_rows, _ = read_ssd(first_ssd)
-    redirected = []
-    for row in first_rows:
-        if row.opcode == 0x4047 and row.types == [1, 5] and row.args[0] == 2 and row.args[1] < 0x10000:
-            row.types[1] = 1
-            row.args[1] = config['entry_key']
-            redirected.append(row.id)
-    if redirected != [167]:
-        raise ValueError('Unexpected native first-chapter event helper layout')
-    from scene_team import isolate_first_chapter_roster
-    generated[21010000] = (isolate_first_chapter_roster(
-        first_ssd[:32]+b''.join(row.encode() for row in first_rows)), first_sst)
+    from scene_exploration import exploration_chapter
+    generated[21010000] = exploration_chapter(first_ssd, first_sst, config)
     from scene_archive import replace_entries
     edits, details = [], []
     for pair in generated.values():
@@ -214,12 +237,23 @@ def prepare(rom, config):
     from scene_team import prepare_team
     team_edits, team_evidence = prepare_team(rom, tuple(config['team']['units']))
     edits.extend(team_edits)
+    from scene_opponents import prepare_opponents
+    opponent_edits, opponent_evidence = prepare_opponents(rom, config)
+    edits.extend(opponent_edits)
+    # Preserve the native result presentation and reward/XP phase. Switching
+    # back to the world from match callback 1005 skips the engine's result flow.
+    return_evidence = {'entry_key': 24010035, 'native_match_scripts_unchanged': True,
+                       'native_result_and_xp_flow_preserved': True, 'runtime_verified': False}
     return {'rom_sha256': config['rom_sha256'], 'edits': edits}, {
         'status': 'EXPERIMENTAL: gameplay not tested', 'native_boot_bypass': False,
         'campaign_callbacks_replaced': True, 'entry_key': config['entry_key'],
         'team': team_evidence,
+        'opponents': opponent_evidence,
+        'match_return': return_evidence,
         'map': config['map'], 'native_match_id': config['native_match_id'],
-        'entries': details, 'event_callbacks': ['0x1023', '0x1017', '0x1013 (result branches)']}
+        'exploration': config['exploration'],
+        'entries': details, 'event_callbacks': ['0x1023 (item interaction/continuation)',
+            'chapter 0x1013 (native restoration and result capture)']}
 
 
 def main():
