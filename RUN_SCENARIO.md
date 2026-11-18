@@ -1,6 +1,6 @@
 # Run Le Defi Mystere locally
 
-Double-click `Jouer au Defi Mystere.cmd` in the project folder. It opens the
+Double-click `Ouvrir le Club dans melonDS.cmd` in the project folder. It opens the
 scenario ROM directly in the downloaded portable melonDS. It does not require
 Codex Computer Use permissions, change file associations, or install software.
 
@@ -30,7 +30,7 @@ Nintendo DS **A** button. The authored scene then starts. Use the emulator's
 touchscreen with the mouse for football controls. Use a fresh game, not an old
 campaign save state.
 
-The ROM to open manually is `build/inazuma_mystery.nds`.
+The combined ROM opened by the launcher is `build/club_native/arena.nds`.
 The patch for the exact supported original is `dist/inazuma_mystery.xdelta`.
 The older `inazuma_scene_experimental.nds` is an earlier candidate, not this build.
 

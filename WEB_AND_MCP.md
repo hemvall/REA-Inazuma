@@ -3,7 +3,7 @@
 ## Démarrage local
 
 Double-cliquer `Lancer InazumIA.cmd`. Le lanceur construit ou vérifie la ROM
-d'arène, démarre le serveur sur `127.0.0.1:8765` et ouvre le navigateur.
+d'arène, démarre le serveur sur `127.0.0.1:18765` et ouvre le navigateur.
 La première ouverture initialise une nouvelle partie dans melonDS ; cette
 préparation peut prendre environ une minute. Sa progression reste visible dans
 le salon. Les commandes suivantes partagent ce même processus d'émulation.
@@ -127,7 +127,7 @@ python tests/smoke_hybrid_session.py
 
 ## Installer et configurer MCP
 
-Exécuter `Installer MCP.cmd`, ou :
+Installer l'environnement MCP avec les commandes suivantes :
 
 ```powershell
 python -m venv local/agent-venv

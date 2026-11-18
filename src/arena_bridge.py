@@ -32,14 +32,14 @@ def catalogue():
     result = []
     for i in range(len(blob)//320):
         key = struct.unpack_from('<I', index, 48+i*4)[0]
-        if key not in (3, 10): continue
+        if key not in (1, 2, 3, 10): continue
         row = blob[i*320:(i+1)*320]
         roster = [struct.unpack_from('<H', row, 64+j*8)[0] for j in range(16)]
         captain = struct.unpack_from('<H', row, 46)[0]
         result.append({'id': key, 'name': row[:32].split(b'\0')[0].decode('ascii'),
                        'captain_id': captain, 'captain': names[captain], 'roster': roster,
                        'header_hex': row[:64].hex(),
-                       'native_match_id': 52 if key == 3 else 33})
+                       'native_match_id': {1:500, 2:51, 3:52, 10:33}[key]})
     return result
 
 
@@ -53,9 +53,9 @@ def occurrences(data, pattern):
 
 
 class ArenaBridge:
-    def __init__(self, emulator):
+    def __init__(self, emulator, profile='arena'):
         self.emulator = emulator
-        folder = ROOT/'build/arena'
+        folder = ROOT/'build'/profile
         self.profile = json.loads((folder/'profile.json').read_text())
         if sha(Path(emulator.rom_path.decode()).read_bytes()) != self.profile['rom_sha256']:
             raise ValueError('Arena profile/ROM mismatch')
@@ -133,8 +133,16 @@ class ArenaBridge:
         if not script_bases or not text_bases:
             raise ValueError('Native arena buffers unavailable')
         writes=[]
+        owned = [p['unit'] for p in inspect_party_memory(memory) if not p['team_field'] & 0x8000]
+        if len(owned) > len(slots['removals']): raise ValueError('Native owned roster exceeds removal slots')
+        removals = owned + [0] * (len(slots['removals'])-len(owned))
         for base in script_bases:
+            for field in ('removals', 'removal_guards'):
+                for slot, unit in zip(slots[field], removals):
+                    writes.append((base+slot, struct.pack('<I', unit)))
             for slot, unit in zip(slots['roster'], self.teams[home]['roster']):
+                writes.append((base+slot, struct.pack('<I', unit)))
+            for slot, unit in zip(slots.get('roster_guards', []), self.teams[home]['roster']):
                 writes.append((base+slot, struct.pack('<I', unit)))
             for i, slot in enumerate(slots['portraits']):
                 writes.append((base+slot, struct.pack('<I', self.teams[home if i%2==0 else away]['captain_id'])))
@@ -145,7 +153,7 @@ class ArenaBridge:
         # 0x0206B704 returns team manager +0x17C + side*0x40. The measured
         # manager is 0x020E8720; native loader copies its 64-byte team header.
         header_offset = 0x020E889C-0x02000000
-        if memory[header_offset:header_offset+32].split(b'\0')[0] not in (b'Raimon',b'Occulte',b'Zeus'):
+        if memory[header_offset:header_offset+32].split(b'\0')[0] not in (b'Raimon',b'Royal Academy',b'Occulte',b'Zeus'):
             raise ValueError('Native home-team header invariant failed')
         header = bytearray.fromhex(self.teams[home]['header_hex'])
         struct.pack_into('<H',header,62,home)

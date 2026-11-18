@@ -9,7 +9,11 @@
 5. Reprendre la main à tout moment. « Nouvelle rencontre » prépare le prochain
    match dans la même session, depuis son checkpoint initial.
 
-La livraison propose les deux sens de l'affiche Occulte–Zeus, leurs effectifs
+Le bouton **Entrer dans le local** ouvre aussi les amicaux proposés par Hillman,
+avec Occulte–Zeus et Royal Academy–Raimon dans les deux sens, indépendamment du
+groupe d'exploration. Voir [CLUB_FRIENDLIES.md](CLUB_FRIENDLIES.md).
+
+La livraison propose Raimon, Royal Academy, Occulte et Zeus, leurs effectifs
 natifs et leurs capitaines. Les six répliques apparaissent dans le jeu avant
 le lancement football. Le serveur MCP tourne sur le PC et pilote le même worker
 que le navigateur. Les rencontres sont configurées en RAM ; aucune compilation
@@ -25,7 +29,7 @@ de ROM par affiche n'est nécessaire.
   Un autre cœur est rejeté pour éviter d'utiliser des adresses non validées.
 - Codex CLI installé et connecté pour l'organisateur et le joueur visuel.
   La préparation et le contrôle manuels n'appellent pas de modèle.
-- Pour MCP uniquement : installer l'environnement avec `Installer MCP.cmd`.
+- Pour MCP uniquement, suivre les commandes d'installation de WEB_AND_MCP.md.
 
 Le dossier de travail possède déjà la ROM et le cœur privés. Le ZIP source ne
 contient ni ROM, ni DLL, ni sauvegardes, ni credentials. Sur une autre machine,
