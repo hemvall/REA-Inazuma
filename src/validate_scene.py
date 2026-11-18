@@ -71,12 +71,12 @@ def main():
                     route = rows[166]
                     if route.opcode != 0x4047 or route.types != [1,5] or route.args != [2, 9]:
                         raise ValueError('Native chapter return queue was modified')
-                    wanted += [0x1017, 0x1014]
+                    wanted += [0x1017, 0x1013, 0x1014]
                     # The sole authored event request is inside the appended
                     # item interaction, never an automatic arrival callback.
                     requests = [r for r in rows if r.opcode in (0x2010, 0x200F)
                                 and r.id > 556]
-                    if len(requests) != 2 or any(r.args != [config['entry_key']] for r in requests):
+                    if len(requests) != 3 or any(r.args != [config['entry_key']] for r in requests):
                         raise ValueError('Unexpected campaign or automatic event request')
                     if rows[2662].opcode != 0x4019:
                         raise ValueError('Native initial map loader missing')
@@ -86,7 +86,7 @@ def main():
                     if additions != expected or any(r.opcode == 0x403F for r in team_rows):
                         raise ValueError('Native chapter still rebuilds original squad')
                 else:
-                    wanted = [0x1023, 0x1013] if key == config['entry_key'] else [0x1017]
+                    wanted = [0x1023] if key == config['entry_key'] else [0x1017]
                 if callbacks != wanted:
                     raise ValueError('Unexpected reachable engine callback set')
                 if key == config['entry_key']:
@@ -123,34 +123,12 @@ def main():
                         raise ValueError('Standalone dialogue differs from authored scene')
             details.append({'entry_key': key, 'archive': stem, 'decoded_sha256': sha(data)})
     allowed = {base+stem+suffix for stem in ('eve', 'evet') for suffix in ('.pkb', '.pkh')}
-    # Match 35 alone may change its end-of-match presentation/return script.
-    # Independently require every other MCH allocation and payload to survive.
-    match_pair = []
-    for stem in ('mch','mcht'):
-        mch_parts = [[rom.data[slice(*rom.files[base+stem+s])] for s in ('.pkh','.pkb')]
-                     for rom in (original,modified)]
-        old_mch, new_mch = [unpack_index(*parts) for parts in mch_parts]
-        if len(old_mch) != len(new_mch):
-            raise ValueError('Match archive count changed')
-        for before, after in zip(old_mch, new_mch):
-            key, offset, size = before
-            if key != 24010035:
-                if before != after or mch_parts[0][1][offset:offset+size] != mch_parts[1][1][offset:offset+size]:
-                    raise ValueError('Unrelated match script changed')
-            else:
-                _, pos, length = after
-                match_pair.append(decompress_lz10(mch_parts[1][1][pos:pos+length])[0])
-        allowed.update({base+stem+'.pkh', base+stem+'.pkb'})
-    match_rows, _ = read_ssd(match_pair[0])
-    match_texts = text_records(match_pair[1])
-    for row in match_rows:
-        for kind,value in zip(row.types,row.args):
-            if kind == 3 and match_texts[value]['command'] != row.id:
-                raise ValueError('Invalid match text binding')
-    start = next(i for i,r in enumerate(match_rows) if r.opcode == 0x3001 and r.args[1] == 0x2010)
-    calls = match_rows[start+2:start+9]
-    if [(r.opcode,r.args) for r in calls] != [(0x2011,[bit]) for bit in (8,16,32,512,1024,2048)]+[(0x200F,[])]:
-        raise ValueError('Challenge return does not preserve native teardown and tutorial bits')
+    # Native result animations, reward/XP screens and match teardown must survive.
+    for stem in ("mch","mcht"):
+        for suffix in (".pkh",".pkb"):
+            path=base+stem+suffix
+            if original.data[slice(*original.files[path])] != modified.data[slice(*modified.files[path])]:
+                raise ValueError("Native match result/XP archive changed")
     from scene_team import TEAM_PATH, ROSTER
     import struct
     for team_path in (TEAM_PATH,'data_iz/logic/fr/team.pkb'):
@@ -181,6 +159,7 @@ def main():
               'native_exploration_verified_structurally': True,
               'native_challenge_launch_verified_structurally': True,
               'surprise_opponents_verified_structurally': True,
+              'native_result_archives_unchanged': True,
               'native_boot_bypass': False, 'gameplay_tested': False,
               'entries': details}
     Path('build/scene_semantics.json').write_text(json.dumps(report, indent=2), encoding='utf-8')

@@ -42,6 +42,9 @@ the clubhouse. Examine the sparkling object just to the left of the entrance
 with **A** (the DS button, according to your emulator key mapping).
 
 The story does not start just by arriving or pressing A away from the object.
+After a brief native fade, Mark steps into place and Jack, Hatch, Byron and
+Nathan walk in from the path. Wait until the group settles and dialogue begins.
+The opponent reveal then uses the native sound and white flash.
 The interaction gathers Mark, Jack, Hatch, Byron and Nathan in the actual 3D
 scenery. Advance the 44 opening lines and seven Paradoxe FC introductions with A;
 the native football challenge then follows. The reading target remains around five minutes, depending on pace.

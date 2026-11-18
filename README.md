@@ -12,6 +12,9 @@ The five-player squad is Mark, Jack, Daniel Hatch, Byron Love and Nathan from
 the Empereurs noirs, initialized at level 1. The conversation gathers their
 native actors in the 3D clubhouse scenery; it no longer covers the map with
 fullscreen illustrations. The upper screen retains the native area map.
+The entrance interaction uses a native fade and staggered walking arrivals for
+Raimon. The Paradoxe FC reveal uses the original 2D_170/770 sound and mode-33
+white flash, with the opponents created while the lower screen is white.
 
 Victory/defeat conversations and a short replay exchange are authored and wired
 into the scene. **Their automatic runtime entry is still blocked after the
@@ -97,9 +100,9 @@ ROM size and NitroFS allocation remain unchanged. Archive ownership, bounds
 and non-overlap are independently checked. Both initial-team templates and the
 first chapter's explicit roster initialization use the five requested players.
 `scene_opponents.py` changes only team 70, used exclusively by match 35.
-`scene_match_return.py` changes only that match's SSD/SST result helper, preserving
-native result calculation, slot teardown and tutorial flags. Other match scripts
-and football rules are unchanged. The authored aftermath uses persistent outcome
+The native MCH/MCHT archives are now preserved byte for byte. The earlier
+experimental result bypass has been removed. Regular-challenge mode returns to
+the chapter restoration callback, which captures the outcome before continuation. The authored aftermath uses persistent outcome
 flags and a chapter map-arrival queue. Runtime return remains blocked; see the
 current evidence and limitations in `RUNTIME_VERIFICATION.md`.
 

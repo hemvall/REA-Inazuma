@@ -1,0 +1,32 @@
+{"frames": 1500}
+{"frames": 2, "keys": ["A", "B", "START"]}
+{"frames": 240}
+{"frames": 2, "keys": ["A"]}
+{"frames": 180}
+{"frames": 2, "keys": ["A"]}
+{"frames": 60}
+{"frames": 2, "keys": ["A"]}
+{"frames": 5}
+{"frames": 2, "touch": [61, 166]}
+{"frames": 660}
+{"frames": 2, "keys": ["A"]}
+{"frames": 600}
+{"frames": 2, "keys": ["A"]}
+{"frames": 900}
+{"frames": 2, "keys": ["A", "B", "START"]}
+{"frames": 900, "capture": "build/staging/arrival.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 120, "capture": "build/staging/away-a.png"}
+{"frames": 60, "keys": ["UP"], "capture": "build/staging/movement.png"}
+{"frames": 20, "keys": ["UP"], "capture": "build/staging/object.png"}
+{"frames": 2, "keys": ["A"]}
+{"frames": 12, "capture": "build/staging/gather-0.png"}
+{"frames": 15, "capture": "build/staging/gather-1.png"}
+{"frames": 15, "capture": "build/staging/gather-2.png"}
+{"frames": 20, "capture": "build/staging/gather-3.png"}
+{"frames": 20, "capture": "build/staging/gather-4.png"}
+{"frames": 20, "capture": "build/staging/gather-5.png"}
+{"frames": 20, "capture": "build/staging/gather-6.png"}
+{"frames": 20, "capture": "build/staging/gather-7.png"}
+{"frames": 30, "capture": "build/staging/gather-8.png"}
+{"frames": 550, "capture": "build/staging/gather-9.png", "save": "build/staging/dialogue-1.state"}

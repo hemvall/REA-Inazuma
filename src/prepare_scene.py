@@ -10,6 +10,7 @@ from nds import read_rom, sha
 from ie2_formats import unpack_index, decompress_lz10, compress_lz10_padded, text_records
 from ssd import Program, helper_prefix, expression, variable, fixed, string, read_ssd
 from scene_background import show_background
+from scene_staging import gather_raimon, begin_enemy_arrival, end_enemy_arrival
 
 BASE = 'data_iz/script/fr/'
 
@@ -66,14 +67,21 @@ def prepare(rom, config):
     portraits = {c['name']: c.get('portrait_unit', c['unit']) for c in config['characters']}
     portraits.update({c['name']: c['unit'] for c in config['opponents']['players']})
 
-    def opponents():
+    def opponents(arrival=False):
+        if arrival:
+            begin_enemy_arrival(event)
         for i, player in enumerate(config['opponents']['players']):
             event.emit(0x3059, player['unit'], 0)
             event.emit(0x3058, player['unit'], 0)
             event.emit(0x305A, player['unit'], 0, fixed(5.8+i*1.4), fixed(0.29), fixed(-18.7))
             event.emit(0x305C, player['unit'], 0, fixed(90))
+        if arrival:
+            end_enemy_arrival(event, config['characters'], config['opponents']['players'][0]['unit'])
 
-    def cast():
+    def cast(gather=False):
+        if gather:
+            gather_raimon(event, config['characters'])
+            return
         event.emit(0x2011)
         # Same deletion pattern as original cutscenes; no party/team stat edits.
         for index in range(5):
@@ -140,17 +148,17 @@ def prepare(rom, config):
     event.emit(0x600C, 1)
     play_match = event.emit(0x6001, 1, 0)
     event.assign(0x10008, 2)
-    cast()
+    cast(gather=True)
     completed = expression(0x7003, variable(0x10005), config['completed_story_flag'])
     event.emit(0x6008, expression(0x7002, completed))
     first_time = event.emit(0x6001, 1, 0)
     lines(config['opening'], staged=True)
-    opponents()
+    opponents(arrival=True)
     lines(config['opponent_reveal'])
     event.end(first_time)
     event.emit(0x6008, completed)
     replay = event.emit(0x6001, 1, 0)
-    opponents()
+    opponents(arrival=True)
     lines(config['replay'])
     event.end(replay)
     event.emit(0x3005, 1, 30)
@@ -163,36 +171,16 @@ def prepare(rom, config):
     # Original match-launch sequence in event 22010700 (function 0x2024).
     event.emit(0x4058, 4)
     event.assign(0x10008, 10)
-    event.assign(0x1000A, 3)
+    event.assign(0x1000A, 2)
     event.assign(0x1002D, 1)
-    # Pin the return event instead of querying an asynchronously entered slot.
-    # Literal self-registration is present in original event 29020002, row 833.
-    # Native match helper 0x200C reloads event slot 2 from global 0x1001A.
-    event.assign(0x1001A, config['entry_key'])
-    event.emit(0x4048, config['entry_key'])
+    # A regular challenge returns to the chapter's native 1013 restoration,
+    # after the engine has completed results/rewards. The chapter then queues
+    # the authored continuation using the captured native outcome.
+    event.assign(0x1001A, variable(0x10006))
+    event.emit(0x4048, variable(0x10006))
     event.emit(0x4046, config['native_match_id'])
     event.emit(0x4016, 2)
     event.end(play_match)
-    event.end(begin)
-
-    # Native return can reset the event counter before dispatch. Do not gate the
-    # return callback on the pre-match counter; branch on the result inside it.
-    begin = event.function(0x1013)
-    # Re-enter the real map before staging the aftermath. Match rendering is
-    # still active at native return; actors alone do not restore world scenery.
-    for outcome, flag in (('victory', config['post_match_victory_flag']),
-                          ('defeat', config['post_match_defeat_flag'])):
-        result = expression(0x7003, variable(0x10009), 1)
-        if outcome == 'defeat':
-            result = expression(0x7002, result)
-        event.emit(0x6008, result)
-        branch = event.emit(0x6001, 1, 0)
-        event.assign(0x10005, flag)
-        event.end(branch)
-    event.emit(0x3005, 0, 15)
-    event.emit(0x4090, string(config['map']), -1, fixed(90),
-               *(fixed(v) for v in config['exploration']['spawn']))
-    event.emit(0x2014)
     event.end(begin)
 
     generated = {config['entry_key']: event.encode()}
@@ -252,9 +240,10 @@ def prepare(rom, config):
     from scene_opponents import prepare_opponents
     opponent_edits, opponent_evidence = prepare_opponents(rom, config)
     edits.extend(opponent_edits)
-    from scene_match_return import prepare_match_return
-    return_edits, return_evidence = prepare_match_return(rom)
-    edits.extend(return_edits)
+    # Preserve the native result presentation and reward/XP phase. Switching
+    # back to the world from match callback 1005 skips the engine's result flow.
+    return_evidence = {'entry_key': 24010035, 'native_match_scripts_unchanged': True,
+                       'native_result_and_xp_flow_preserved': True, 'runtime_verified': False}
     return {'rom_sha256': config['rom_sha256'], 'edits': edits}, {
         'status': 'EXPERIMENTAL: gameplay not tested', 'native_boot_bypass': False,
         'campaign_callbacks_replaced': True, 'entry_key': config['entry_key'],
@@ -263,8 +252,8 @@ def prepare(rom, config):
         'match_return': return_evidence,
         'map': config['map'], 'native_match_id': config['native_match_id'],
         'exploration': config['exploration'],
-        'entries': details, 'event_callbacks': ['0x1023 (item interaction)',
-            '0x1013 (restore map)', 'shared aftermath helper before engine callbacks']}
+        'entries': details, 'event_callbacks': ['0x1023 (item interaction/continuation)',
+            'chapter 0x1013 (native restoration and result capture)']}
 
 
 def main():

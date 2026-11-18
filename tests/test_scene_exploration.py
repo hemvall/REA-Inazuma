@@ -44,6 +44,7 @@ class ExplorationIntegrationTests(unittest.TestCase):
             if callback < 0x2000 and row.opcode in (0x2010, 0x200F):
                 requests.append((callback, row.args))
         self.assertEqual(requests, [(0x1017, [self.config['entry_key']]),
+                                    (0x1013, [self.config['entry_key']]),
                                     (0x1014, [self.config['entry_key']])])
 
     def test_interaction_is_restricted_to_map_actor_and_group(self):

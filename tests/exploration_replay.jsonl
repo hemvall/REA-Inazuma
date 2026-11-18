@@ -20,7 +20,7 @@
 {"frames": 60, "keys": ["UP"], "capture": "build/exploration-replay/movement.png"}
 {"frames": 20, "keys": ["UP"], "capture": "build/exploration-replay/object.png"}
 {"frames": 2, "keys": ["A"]}
-{"frames": 400, "capture": "build/exploration-replay/dialogue-1.png"}
+{"frames": 800, "capture": "build/exploration-replay/dialogue-1.png"}
 {"frames": 2, "keys": ["A"]}
 {"frames": 400}
 {"frames": 2, "keys": ["A"]}

@@ -1,6 +1,52 @@
 # Runtime verification — 2026-11-17
 
-## Current exploration and Paradoxe FC candidate
+## Latest regular-challenge checkpoint
+
+Native result/XP scripts are restored unchanged; the early return bypass has
+been removed. The challenge now uses regular mode 2 and returns through the
+chapter's native restoration callback. A shortened-opening diagnostic run
+reached the defeat conversation and resumed free movement afterward.
+Victory, the XP menu and its following scene are still being verified. This
+checkpoint must not be described as full victory/XP acceptance.
+All 42 tests passed during this work. Earlier build evidence follows.
+
+## Previous native staging build
+
+ROM: `build/inazuma_mystery.nds`.
+SHA-256: `8be90b93eadc816c79f4658adcd6b9d0275ad2015ffb32b1b6621800dc49f14b`.
+Tested with melonDS Libretro 0.9.3 `4081e83`, software rendering.
+
+Observed on this exact ROM:
+
+- Cold boot, new game and entrance-object interaction reach a native black fade.
+- Controlled Mark is retained and walks to his position. Jack, Hatch, Byron and
+  Nathan enter the frame from the path and walk into formation in staggered
+  native child threads; all settle before the first dialogue.
+- Screenshots `build/staging/gather-6.png`, `gather-9.png` and `settled.png`
+  show arrival, formation and the first readable message.
+- Advancing all 44 opening lines reaches the native opponent arrival effect.
+- `build/staging/enemy-8.png` records the white ramp, `enemy-10.png` and
+  `enemy-11.png` the fully white lower screen, and `enemy-13.png` all four
+  opponents visible with the first reveal message. Their creation is under white.
+- The native sound bank 2D_170 and effect 770 are played at the start of the flash.
+  A stereo 32768 Hz PCM capture, `build/staging/enemy-arrival.wav`, contains
+  647716 bytes of nonzero audio over this sequence. No external SFX is used.
+
+The walk command/thread pattern is measured in original EVE 22010700. The
+opponent sound and five-frame mode-33 white fades match original EVE 22080100
+(sound-bank load row 853, effect row 899, appearance rows 903-907).
+
+`tests/staging_replay.jsonl` reproduces the new-game gathering. The longer
+`tests/exploration_replay.jsonl` now allows time for the formation before dialogue.
+All 42 tests pass, as do independent archive/text validation, exact manifest,
+byte reversal and xdelta round trip. ROM assets, screenshots, audio and states
+are private generated artifacts and remain ignored by Git.
+
+The previously documented post-match return blocker remains unresolved.
+Standalone melonDS, a complete result/replay cycle and save/reload are not
+accepted by these staging checks. The older build evidence follows for context.
+
+## Previous exploration and Paradoxe FC candidate
 
 ROM: `build/inazuma_mystery.nds`.
 SHA-256: `3e23f678ccbafeb9ff59ac553995b5a22f188ced3db993b9cd11892209d89367`.

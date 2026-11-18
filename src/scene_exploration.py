@@ -22,6 +22,13 @@ def exploration_chapter(ssd, sst, config):
             in_callback = row.args[1] < 0x2000
         if in_callback and row.opcode in (0x2010, 0x200F, 0x2009, 0x200A):
             row.opcode, row.types, row.args = 0x3002, [1], [0]
+    # The native regular-challenge callback restores map/audio and clears the
+    # result at row 2053. Defer only that clear so our following callback can
+    # choose the continuation; keep every native restoration command intact.
+    clear = rows[2052]
+    if clear.opcode != 0x7001 or clear.types != [6,1] or clear.args != [0x10009,0]:
+        raise ValueError('Unexpected native regular-challenge restoration')
+    clear.opcode, clear.types, clear.args = 0x3002, [1], [0]
     start = rows[2662]
     if start.opcode != 0x4019 or records[start.args[0]]['text'] != b'mr07i02':
         raise ValueError('Unexpected native new-game map load')
@@ -47,6 +54,21 @@ def exploration_chapter(ssd, sst, config):
     branch = p.emit(0x6001, 1, 0)
     p.emit(0x2010, config['entry_key'])
     p.end(branch)
+    p.end(begin)
+    result_ready = expression(0x700F, on_map(),
+        expression(0x700E, expression(0x7003,variable(0x10009),1),
+                           expression(0x7003,variable(0x10009),3)))
+    begin=p.function(0x1013,result_ready)
+    p.emit(0x6008,expression(0x7003,variable(0x10009),1))
+    branch=p.emit(0x6001,1,0)
+    p.assign(0x10005,config['post_match_victory_flag'])
+    p.end(branch)
+    p.emit(0x600C,1)
+    branch=p.emit(0x6001,1,0)
+    p.assign(0x10005,config['post_match_defeat_flag'])
+    p.end(branch)
+    p.assign(0x10009,0)
+    p.emit(0x2010,config['entry_key'])
     p.end(begin)
     # All three guards must hold: map, actor identity and instance group.
     # 6012 accepts multiple guards in the original scripts; nest the conjunction
