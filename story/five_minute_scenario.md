@@ -5,18 +5,18 @@ La durée réelle dépend de la vitesse à laquelle le joueur avance les dialogu
 Distribution : Mark, Jack, Hatch, Byron Love et Nathan dans sa tenue des Empereurs
 Noirs. Cette tenue ne change pas son nom dans les dialogues.
 
-Version intégrée à la ROM : quatre séquences illustrées sur l'écran inférieur,
-avec l'enseigne du club, le carnet de techniques et le vieux ballon de Mark.
-Les mouvements et plans ci-dessous décrivent la mise en scène souhaitée ; la
-version actuelle présente les dialogues sur ces illustrations natives.
+Version intégrée à la ROM : exploration libre de la vraie carte « Club de foot »
+de Raimon, puis interaction avec l'objet scintillant à gauche de l'entrée du
+local. Les cinq acteurs se réunissent dans le décor 3D pendant la conversation.
+Les indications de passes et de mouvements ci-dessous restent des intentions
+d'écriture ; elles ne constituent pas des animations de ballon implémentées.
 
-## Scène 1 — Le rendez-vous au bord de l'eau
+## Scène 1 — Le rendez-vous devant le local
 
-*Décor : terrain de football près de la rivière. Plan large du terrain, puis
-rapprochement sur les cinq joueurs. Jack examine une enveloppe déposée sur le
-ballon. Une pause laisse apparaître le titre de l'épisode.*
+*Décor : extérieur du local de football. Le joueur approche l'objet avec Mark
+et appuie sur A. Le groupe se réunit devant le local pour lire l'enveloppe.*
 
-**Jack :** Mark, tu es certain que ce rendez-vous est pour nous ? Cette enveloppe était déjà là quand je suis arrivé.
+**Jack :** Mark, regarde cet objet devant le local ! Une enveloppe est posée sur le ballon.
 
 **Mark :** Elle porte notre nom d'équipe. Ouvre-la ! Avec un peu de chance, quelqu'un nous propose un match d'entraînement.
 
@@ -121,12 +121,76 @@ dernière phrase était écrite au dos. Le match natif suit ce dernier échange.
 
 **Mark :** Marché conclu ! Hatch, Byron, Nathan, Jack : on commence au niveau un, mais on commence ensemble. En avant !
 
-## Sortie du match
+## Paradoxe FC
 
-**Victoire — Mark :** On l'a fait ! Notre première victoire vaut surtout pour toutes les passes qui l'ont rendue possible.
+**Jack :** Attendez... Nero ? Joseph King ? Et ce jeune joueur, on dirait notre entraineur !
 
-**Victoire — Nathan :** La prochaine fois, nous irons plus loin. Et cette fois, je saurai exactement avec qui je cours.
+**Hillman :** Seymour Hillman. A mon epoque, je jouais aussi au football, vous savez !
 
-**Défaite — Jack :** On a perdu le match… mais on n'a pas perdu notre équipe. On peut reprendre depuis le début ?
+**Canon :** Et moi, Canon Evans. Votre invitation a fait un sacre detour avant de me trouver.
 
-**Défaite — Mark :** Évidemment ! Le niveau un, c'est un départ. On garde ce qu'on vient d'apprendre, et on essaie encore ensemble.
+**Mark :** Un autre Evans ? Deux gardiens et notre coach rajeuni... Qui a forme cette equipe ?
+
+**King :** Je joue dans le champ. Nero garde les cages. Essaie de ne pas rire avant mon tir.
+
+**Byron :** Le passe, le futur et Genesis. Notre mysterieux correspondant a un certain sens du spectacle.
+
+**Nero :** Paradoxe FC. Retenez ce nom. Le premier but decide de tout. A vous de nous surprendre !
+
+## Sortie du match — victoire
+
+*Dialogues intégrés ; déclenchement automatique après match encore bloqué en émulation.*
+
+**Mark :** On l'a fait ! Contre une equipe pareille, on ne pouvait pas gagner chacun dans notre coin.
+
+**Jack :** J'ai defendu sur Joseph King. Joseph. King. Il voulait me dribbler au lieu d'arreter !
+
+**King :** Et tu as tenu ta position. Ne t'habitue pas : la prochaine fois, mon tir passera.
+
+**Hatch :** On a arrete de regarder leurs noms. On a cherche nos partenaires. Ca change tout.
+
+**Byron :** Meme une equipe impossible laisse des espaces. Encore faut-il les voir ensemble.
+
+**Nathan :** J'allais repartir seul. Puis j'ai entendu Mark. Cette fois, j'ai leve la tete.
+
+**Canon :** C'est cette equipe que je voulais rencontrer. Pas cinq vedettes : cinq partenaires.
+
+**Hillman :** Vous avez compris la lecon. Le talent commence l'action. La confiance la termine.
+
+**Mark :** Alors notre entrainement commence vraiment maintenant ! Merci a tous les quatre.
+
+**Jack :** La prochaine invitation, on la lit ensemble avant de dire oui. Promis, Mark ?
+
+**Mark :** Promis ! Enfin... si le defi est aussi fou, je risque quand meme de dire oui !
+
+## Sortie du match — défaite
+
+**Jack :** Bon... on vient de perdre contre deux gardiens, notre coach jeune et un autre Evans.
+
+**Hatch :** Ce n'est pas leur nom qui a gagne. On a laisse trop d'espace entre nos passes.
+
+**Nero :** Vous nous avez regardes comme des apparitions. Nous, on regardait seulement le ballon.
+
+**Byron :** Voila notre erreur. On a laisse la surprise decider a notre place.
+
+**Nathan :** J'ai accelere sans vous. Au prochain essai, je vous donne une solution, pas un vide.
+
+**Hillman :** Une defaite n'est utile que si vous en faites quelque chose. Parlez-vous davantage.
+
+**Canon :** Nous resterons disponibles pour la revanche. Cette rencontre vaut un nouvel essai.
+
+**Mark :** On garde cette equipe. On corrige nos passes, puis on revient jouer ensemble !
+
+**Jack :** D'accord. Mais quelqu'un m'explique comment notre coach a pu rajeunir entre-temps ?
+
+## Fin de séance
+
+**Hillman :** Fin de la seance. Reprenez votre souffle devant le local. Vous avez de quoi discuter !
+
+**Mark :** Examinons a nouveau l'objet quand on voudra une revanche. Cette fois, on sait qui vient !
+
+## Revanche
+
+**Mark :** Paradoxe FC nous attend pour la revanche ! Cette fois, on connait nos adversaires.
+
+**Nathan :** Alors gardons les yeux sur nos passes. On y retourne ensemble !

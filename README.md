@@ -25,25 +25,31 @@ conservé comme profil séparé. Ses anciennes captures ne prouvent pas le parco
 de l'arène ; les vérifications de livraison sont consignées séparément.
 
 A local modification of the user-supplied French Tempete de Glace Nintendo DS
-ROM. The current build contains a four-part, 44-line opening story targeting
-five minutes of reading/staging, native illustrated backgrounds and an existing
-football match. The five-player team is Mark, Jack, Daniel Hatch, Byron Love and
-Nathan from the Empereurs noirs, initialized at level 1.
+ROM. New Game now starts in the real, sunny Raimon **Club de foot** map,
+with free movement. Walk north towards the clubhouse and examine the sparkling
+object just to the left of its entrance with **A**. Only that interaction starts
+the 44-line French opening, seven surprise-opponent introductions, and the
+native football challenge against **Paradoxe FC**: Nero, Joseph King, young
+Seymour Hillman and Canon Evans.
+
+The five-player squad is Mark, Jack, Daniel Hatch, Byron Love and Nathan from
+the Empereurs noirs, initialized at level 1. The conversation gathers their
+native actors in the 3D clubhouse scenery; it no longer covers the map with
+fullscreen illustrations. The upper screen retains the native area map.
+The entrance interaction uses a native fade and staggered walking arrivals for
+Raimon. The Paradoxe FC reveal uses the original 2D_170/770 sound and mode-33
+white flash, with the opponents created while the lower screen is white.
+
+Victory/defeat conversations and a short replay exchange are authored and wired
+into the scene. **Their automatic runtime entry is still blocked after the
+match**: the diagnostic native return currently leaves the lower screen black.
+This build is not accepted as a complete playable episode.
 
 **Run:** double-click `Jouer au Defi Mystere.cmd`, choose **Nouvelle partie**,
-enter a save-file name and confirm **OK**. See [RUN_SCENARIO.md](RUN_SCENARIO.md).
-The launcher needs no Codex desktop-control permission.
-
-The scene uses existing club-sign, notebook and football illustrations behind
-the message window. The lower screen carries the scene; the upper screen remains
-black during these illustrated sequences. The unresolved native 3D map renderer
-is no longer used as the visible scene background. Full result/replay and save
-acceptance remain separate runtime checks.
-At power-on the original `op00` opening movie still plays. Press **A** or
-**Start** to skip to the title menu, then choose **Nouvelle partie** to enter the
-episode. See [RUNTIME_VERIFICATION.md](RUNTIME_VERIFICATION.md)
-for evidence and the exact tested build, rather than treating static checks as
-gameplay acceptance.
+enter a save-file name and confirm **OK**. Use a fresh game. Skip the original
+opening movie with A or Start, then advance the original introduction notices.
+See [RUN_SCENARIO.md](RUN_SCENARIO.md) for controls and
+[RUNTIME_VERIFICATION.md](RUNTIME_VERIFICATION.md) for observed runtime evidence.
 
 ## Input and output
 
@@ -102,21 +108,27 @@ layout and checks one-based references, paired blocks and SST bindings.
 `prepare_scene.py` verifies unit names against the actual ROM and emits the new
 callbacks while retaining required common helper code from the original.
 
-The first chapter retains its native initialization and redirects its event-queue
-helper into the new scene. The other ten chapter dispatchers are replaced to
-disconnect original campaign triggers. The opening uses entry key 22010100 and map
-`mr02b03`, and uses native match 35 from original event 22010700. Shared resources,
-native executable code, original football data and unrelated event entries remain
-present. Their physical deletion would risk shared dependencies.
+The first chapter retains its native new-game/map/portal initialization and
+event-return queue. Campaign event requests are neutralized at their callers;
+the queue itself is no longer redirected. `scene_exploration.py` changes the
+initial map to `mr07b05`, places a native 2004/group-28 sparkle at the entrance,
+and gates callback 0x1014 on map, actor ID and actor group. Arrival callback
+0x1017 places the object and initial player position without launching dialogue.
+The object queues entry 22010100, whose 0x1023 callback stages the conversation
+and launches native match 35 from original event 22010700. Other chapter
+dispatchers remain isolated; existing campaign saves are unsupported.
 
 Twenty-four selected compressed entries use space reclaimed from replaced
 chapter scripts. Selected PKH offsets/sizes may change; unrelated entries,
 ROM size and NitroFS allocation remain unchanged. Archive ownership, bounds
 and non-overlap are independently checked. Both initial-team templates and the
 first chapter's explicit roster initialization use the five requested players.
-Native football scripts are unchanged; result/replay remains experimental.
-The current post-match handler branches on the match result inside one callback;
-it does not rely on the pre-match event counter surviving native return.
+`scene_opponents.py` changes only team 70, used exclusively by match 35.
+The native MCH/MCHT archives are now preserved byte for byte. The earlier
+experimental result bypass has been removed. Regular-challenge mode returns to
+the chapter restoration callback, which captures the outcome before continuation. The authored aftermath uses persistent outcome
+flags and a chapter map-arrival queue. Runtime return remains blocked; see the
+current evidence and limitations in `RUNTIME_VERIFICATION.md`.
 
 `src/emulator_probe.py` is a small libretro test host. It executes the actual ROM,
 feeds emulated DS input and writes framebuffer PNGs, without controlling Windows
@@ -139,9 +151,10 @@ a gap. Touch input uses lower-screen pixels `x=0..255, y=0..191`. The old
 DeSmuME-specific `--frame-skip` option is removed. Save states are not shared
 between the standalone emulator, Libretro port or DeSmuME.
 
-This migration does not change the ROM, menu, movies or scenario scripts. A
-black screen after the new-game notices was reported in standalone melonDS 1.1
-and remains unresolved. Libretro checks do not establish standalone acceptance.
+The earlier illustrated build had a reported black screen after the new-game
+notices in standalone melonDS 1.1. The current exploration build changes the
+new-game map path and has runtime checks in the Libretro port. These checks
+do not establish acceptance in the standalone executable.
 Downloaded archive hashes are recorded in `local/tools/downloads.json`; keep
 the nightly Libretro archive to reproduce the exact tested binary. No Nintendo
 BIOS or firmware is downloaded.

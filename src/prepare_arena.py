@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def source_identity():
-    names=('prepare_arena.py','prepare_scene.py','scene_archive.py','scene_background.py','scene_team.py','ssd.py','ie2_formats.py','nds.py')
+    names=('prepare_arena.py','prepare_scene.py','prepare_arena_scene.py','scene_archive.py','scene_background.py','scene_team.py','ssd.py','ie2_formats.py','nds.py')
     return sha(b''.join((ROOT/'src'/name).read_bytes() for name in names)+(ROOT/'story/standalone_scene.json').read_bytes())
 
 
