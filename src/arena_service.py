@@ -1,11 +1,12 @@
 """Shared match organiser, emulator and optional visual player."""
 import base64
-import shutil
+import json
+import os
 import threading
 import time
 import uuid
 from game_session import GameSession, ROOT
-from agent_runtime import CodexAgent, AgentCancelled, BUTTONS
+from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, BUTTONS
 from arena_bridge import catalogue
 
 
@@ -19,13 +20,33 @@ class Arena:
         self.latest = None
         self.fixture = None
         self.history = []
-        self.agent = CodexAgent(ROOT/'build/agents')
+        settings = ROOT/'build/agents/settings.json'
+        try:
+            backend = json.loads(settings.read_text(encoding='utf-8')).get('backend', 'local')
+        except (OSError, ValueError, AttributeError):
+            backend = 'local'
+        backend = os.environ.get('INAZUMIA_AGENT_BACKEND', backend)
+        self.agent = (CodexAgent if backend == 'codex' else LocalAgent)(ROOT/'build/agents')
 
     def capabilities(self):
         built = (ROOT/'build/arena/profile.json').is_file()
-        return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':bool(shutil.which('codex')),
-                'external_agent_control':True,'teams':[3,10], 'agent_backend':'Codex CLI',
+        return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':self.agent.available(),
+                'external_agent_control':True,'teams':[3,10], 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
+
+    def select_agent(self, backend):
+        if backend not in ('local', 'codex'):
+            raise ValueError('Moteur attendu : local ou codex.')
+        with self.lock:
+            if self.thread and self.thread.is_alive():
+                raise ValueError('Arrêtez l’opération en cours avant de changer de moteur.')
+            candidate = (LocalAgent if backend == 'local' else CodexAgent)(ROOT/'build/agents')
+            settings = ROOT/'build/agents/settings.json'
+            temporary = settings.with_suffix('.tmp')
+            temporary.write_text(json.dumps({'backend':backend}),encoding='utf-8')
+            temporary.replace(settings)
+            self.agent = candidate
+        return {'agent_backend':self.agent.backend, 'agent_model':self.agent.model}
 
     def list_teams(self):
         return [{k:v for k,v in row.items() if k not in ('header_hex','native_match_id')} for row in catalogue()]
@@ -139,8 +160,20 @@ class Arena:
                     continue
                 image = ROOT/'build/agents'/f'{session_id}-current.png'
                 image.write_bytes(base64.b64decode(observation['image']))
-                self.update(message=f'L’agent choisit son action ({index+1}/{max_decisions})…')
-                decision = self.agent.play(image,observation.get('match',{}),self.history,self.cancel)
+                choosing = f'L’agent choisit son action ({index+1}/{max_decisions})'
+                self.update(message=choosing+'…',decision_started_at=time.time())
+                feedback_done = threading.Event()
+                def feedback():
+                    started = time.monotonic()
+                    while not feedback_done.wait(1):
+                        self.update(message=choosing+f' · {int(time.monotonic()-started)} s (jeu en pause)…')
+                feedback_thread = threading.Thread(target=feedback,daemon=True)
+                feedback_thread.start()
+                try:
+                    decision = self.agent.play(image,observation.get('match',{}),self.history,self.cancel)
+                finally:
+                    feedback_done.set()
+                    feedback_thread.join()
                 validate_decision(decision)
                 if self.cancel.is_set():return
                 self.history.append(decision)
@@ -170,6 +203,7 @@ class Arena:
         return {'stopping':True}
 
     def call(self, operation, arguments):
+        if operation=='select_agent':return self.select_agent(**arguments)
         if operation=='capabilities':return self.capabilities()
         if operation=='list_teams':return {'teams':self.list_teams()}
         if operation=='status':return self.status()
