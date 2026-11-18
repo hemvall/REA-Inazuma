@@ -1,0 +1,17 @@
+[
+  {"frames":1500},
+  {"frames":2,"keys":["A","B","START"]},
+  {"frames":240},
+  {"frames":2,"keys":["A"]},
+  {"frames":180},
+  {"frames":2,"keys":["A"]},
+  {"frames":60},
+  {"frames":2,"keys":["A"]},
+  {"frames":5},
+  {"frames":2,"touch":[61,166]},
+  {"frames":660},
+  {"frames":2,"keys":["A"]},
+  {"frames":600},
+  {"frames":2,"keys":["A"]},
+  {"frames":900}
+]

@@ -1,0 +1,73 @@
+"""Loopback-only web service. Run python src/web_server.py."""
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import json
+from pathlib import Path
+from arena_service import Arena
+
+ARENA = Arena()
+WEB = Path(__file__).resolve().parents[1] / 'web'
+
+
+class Handler(BaseHTTPRequestHandler):
+    def reply(self, status, data, content_type='application/json; charset=utf-8'):
+        if not isinstance(data, bytes):
+            data = json.dumps(data, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.end_headers()
+        self.wfile.write(data)
+
+    def valid_host(self):
+        return self.headers.get('Host') in ('127.0.0.1:8765', 'localhost:8765')
+
+    def do_GET(self):
+        if not self.valid_host():
+            return self.reply(403, {'error': 'Invalid host'})
+        files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                 '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                 '/style.css': ('style.css', 'text/css; charset=utf-8')}
+        if self.path not in files:
+            return self.reply(404, {'error': 'Not found'})
+        name, kind = files[self.path]
+        self.reply(200, (WEB / name).read_bytes(), kind)
+
+    def do_POST(self):
+        origin = self.headers.get('Origin')
+        if not self.valid_host() or origin not in (None, 'http://127.0.0.1:8765', 'http://localhost:8765'):
+            return self.reply(403, {'error': 'Invalid origin'})
+        if self.headers.get('Content-Type') != 'application/json' or not self.path.startswith('/api/'):
+            return self.reply(400, {'error': 'Expected JSON API request'})
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 65536:
+                raise ValueError('Request too large or empty')
+            arguments = json.loads(self.rfile.read(length))
+            if not isinstance(arguments, dict):
+                raise ValueError('Expected object')
+            self.reply(200, ARENA.call(self.path[5:], arguments))
+        except (ValueError, TypeError) as error:
+            self.reply(400, {'error': str(error)})
+        except Exception as error:
+            self.reply(503, {'error': str(error)})
+
+
+def main():
+    server = ThreadingHTTPServer(('127.0.0.1', 8765), Handler)
+    print('InazumIA : http://127.0.0.1:8765', flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        ARENA.stop()
+        if ARENA.thread:
+            ARENA.thread.join(12)
+        ARENA.session.close()
+
+
+if __name__ == '__main__':
+    main()

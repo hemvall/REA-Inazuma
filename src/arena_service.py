@@ -1,0 +1,213 @@
+"""Shared match organiser, emulator and optional visual player."""
+import base64
+import shutil
+import threading
+import time
+import uuid
+from game_session import GameSession, ROOT
+from agent_runtime import CodexAgent, AgentCancelled, BUTTONS
+from arena_bridge import catalogue
+
+
+class Arena:
+    def __init__(self):
+        self.session = GameSession()
+        self.lock = threading.RLock()
+        self.cancel = threading.Event()
+        self.thread = None
+        self.job = {'state':'idle','message':'Choisissez votre rencontre.'}
+        self.latest = None
+        self.fixture = None
+        self.history = []
+        self.agent = CodexAgent(ROOT/'build/agents')
+
+    def capabilities(self):
+        built = (ROOT/'build/arena/profile.json').is_file()
+        return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':bool(shutil.which('codex')),
+                'external_agent_control':True,'teams':[3,10], 'agent_backend':'Codex CLI',
+                'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
+
+    def list_teams(self):
+        return [{k:v for k,v in row.items() if k not in ('header_hex','native_match_id')} for row in catalogue()]
+
+    def update(self, **values):
+        with self.lock:
+            self.job.update(values)
+
+    def launch(self, target, message):
+        with self.lock:
+            if self.thread and self.thread.is_alive():
+                raise ValueError('Une opération est déjà en cours. Arrêtez-la avant de continuer.')
+            self.cancel = threading.Event()
+            self.job = {'id':uuid.uuid4().hex,'state':'running','message':message,'started_at':time.time()}
+            def run():
+                try:
+                    target()
+                    if self.cancel.is_set():
+                        self.update(state='cancelled',message='Opération arrêtée. Le jeu est en pause.')
+                    elif self.job['state']=='running':
+                        self.update(state='complete')
+                except Exception as error:
+                    self.update(state='cancelled' if self.cancel.is_set() else 'error',message=str(error))
+                finally:
+                    sid = self.session.session_id
+                    if sid and self.session.owner=='agent':
+                        self.session.set_control(sid,'human')
+            self.thread = threading.Thread(target=run,daemon=True)
+            self.thread.start()
+            return dict(self.job)
+
+    def checked(self, operation, **arguments):
+        result = self.session.request(op=operation,**arguments)
+        if 'error' in result:
+            if self.latest and 'revision' in result:self.latest={**self.latest,'revision':result['revision']}
+            raise ValueError(result['error'])
+        self.latest = result
+        return result
+
+    def prepare(self, home, away, lines):
+        if type(home) is not int or type(away) is not int or home not in (3,10) or away not in (3,10) or home==away:
+            raise ValueError('Choisissez deux équipes distinctes du catalogue.')
+        if not isinstance(lines,list) or len(lines)!=6 or any(not isinstance(line,str) or not 1<=len(line)<=100 for line in lines):
+            raise ValueError('Six répliques de 1 à 100 caractères sont requises.')
+        if self.cancel.is_set(): raise AgentCancelled()
+        self.update(message='Ouverture de l’arène et préparation des équipes…')
+        opened = self.session.open('arena',cancel=self.cancel)
+        sid = opened['session_id']
+        observation = self.checked('observe',session_id=sid)
+        if observation['match']['native_counter'] != 4:
+            raise ValueError('Réinitialisez la rencontre avant d’en préparer une autre.')
+        observation = self.checked('prepare_match',session_id=sid,revision=observation['revision'],
+                                   home=home,away=away,lines=lines,actor=self.session.owner)
+        self.fixture = {'home':home,'away':away,'lines':lines,'status':'ready'}
+        self.update(message='Rencontre prête. Lancez le dialogue puis jouez, ou confiez le match à l’agent.')
+        return observation
+
+    def chat(self, message):
+        if not isinstance(message,str) or not 1<=len(message.strip())<=2000:
+            raise ValueError('Message attendu : 1 à 2000 caractères')
+        def organise():
+            plan = self.agent.organise(message,self.list_teams(),self.cancel)
+            if plan.get('home') is None or plan.get('away') is None:
+                self.update(message=plan.get('message','Précisez les deux équipes.'))
+                return
+            teams = {row['id'] for row in self.list_teams()}
+            if type(plan['home']) is not int or type(plan['away']) is not int or plan['home'] not in teams or plan['away'] not in teams or plan['home']==plan['away']:
+                raise ValueError('L’organisateur a proposé une affiche invalide.')
+            self.prepare(plan['home'],plan['away'],plan['lines'])
+        return {'job':self.launch(organise,'L’organisateur prépare votre affiche et les dialogues…')}
+
+    def status(self):
+        with self.lock:
+            return {'job':dict(self.job),'session_id':self.session.session_id,
+                    'owner':self.session.owner,'fixture':self.fixture,'observation':self.latest,
+                    'agent_actions':len(self.history)}
+
+    def delegate(self, session_id, max_decisions=400):
+        if type(max_decisions) is not int or not 1<=max_decisions<=500:
+            raise ValueError('Budget attendu : 1 à 500 décisions')
+        if session_id != self.session.session_id: raise ValueError('Session inconnue')
+        if self.session.profile!='arena' or not self.fixture:
+            raise ValueError('Préparez d’abord une rencontre dans l’arène.')
+        def player():
+            self.session.set_control(session_id,'agent')
+            self.history=[]
+            for index in range(max_decisions):
+                if self.cancel.is_set():return
+                observation = self.checked('observe',session_id=session_id)
+                match = observation.get('match',{})
+                if match.get('phase')=='result':
+                    self.update(message='Match terminé : victoire.' if match.get('result')=='victory' else
+                                'Rencontre terminée, retour natif confirmé (code '+str(match.get('native_result'))+').')
+                    return
+                if match.get('native_counter')==4:
+                    observation = self.checked('start_match',session_id=session_id,
+                        revision=observation['revision'],actor='agent')
+                if observation.get('match',{}).get('phase')=='dialogue':
+                    observation=self.checked('step',session_id=session_id,revision=observation['revision'],
+                        actor='agent',frames=3,keys=['A'])
+                    self.checked('step',session_id=session_id,revision=observation['revision'],
+                        actor='agent',frames=120,keys=[])
+                    self.update(message='L’agent avance le dialogue natif des capitaines…')
+                    continue
+                image = ROOT/'build/agents'/f'{session_id}-current.png'
+                image.write_bytes(base64.b64decode(observation['image']))
+                self.update(message=f'L’agent choisit son action ({index+1}/{max_decisions})…')
+                decision = self.agent.play(image,observation.get('match',{}),self.history,self.cancel)
+                validate_decision(decision)
+                if self.cancel.is_set():return
+                self.history.append(decision)
+                if decision['intent'] != 'act':
+                    self.update(message=('Résultat visuel signalé : ' if decision['intent']=='finished' else 'Reprise demandée : ')+decision['reason'])
+                    return
+                arguments = {'session_id':session_id,'revision':observation['revision'],'actor':'agent'}
+                if decision['path']:
+                    self.checked('touch_path',**arguments,points=decision['path'])
+                else:
+                    touch = decision['touch']
+                    repetitions = 4 if not touch and not decision['keys'] and decision['frames']==120 else 1
+                    for _ in range(repetitions):
+                        if self.cancel.is_set():return
+                        result = self.checked('step',**arguments,frames=decision['frames'],keys=decision['keys'],
+                                              touch=[touch['x'],touch['y']] if touch else None)
+                        arguments['revision']=result['revision']
+                        if result.get('match',{}).get('phase')=='result':break
+                self.update(message=decision['reason'])
+            self.update(message='Budget de décisions atteint. Le jeu est en pause ; reprenez ou relancez l’agent.')
+        return {'job':self.launch(player,'Démarrage de l’agent joueur visuel…')}
+
+    def stop(self):
+        self.cancel.set()
+        if self.session.session_id and self.session.owner=='agent':
+            self.session.set_control(self.session.session_id,'human')
+        return {'stopping':True}
+
+    def call(self, operation, arguments):
+        if operation=='capabilities':return self.capabilities()
+        if operation=='list_teams':return {'teams':self.list_teams()}
+        if operation=='status':return self.status()
+        if operation=='chat':return self.chat(**arguments)
+        if operation=='stop_agent':return self.stop()
+        if operation=='delegate_player':return self.delegate(**arguments)
+        if operation=='prepare_match':
+            home,away,lines=arguments['home'],arguments['away'],arguments['lines']
+            return {'job':self.launch(lambda:self.prepare(home,away,lines),'Préparation dynamique…')}
+        if operation=='session_open':return self.session.open(**arguments)
+        if operation=='session_close':
+            if self.thread and self.thread.is_alive():raise ValueError('Arrêtez d’abord l’opération en cours.')
+            if arguments.get('session_id')!=self.session.session_id:raise ValueError('Session inconnue')
+            self.session.close();self.latest=None;self.fixture=None
+            return {'closed':True}
+        if operation=='set_control':
+            if arguments.get('owner')=='human' and self.thread and self.thread.is_alive():self.cancel.set()
+            return self.session.set_control(**arguments)
+        if operation in ('observe','step','touch_path','checkpoint_save','checkpoint_load','start_match','reset_match'):
+            result=self.checked(operation,**arguments)
+            if operation=='reset_match':self.fixture=None
+            return result
+        raise ValueError('Opération inconnue')
+
+
+def validate_decision(value):
+    if not isinstance(value,dict) or set(value)!={'intent','reason','frames','keys','touch','path'}:
+        raise ValueError('Invalid agent action schema')
+    if value['intent'] not in ('act','finished','blocked') or not isinstance(value['reason'],str):raise ValueError('Invalid agent intent')
+    if type(value['frames']) is not int or not 1<=value['frames']<=120:raise ValueError('Invalid agent frame budget')
+    keys=value['keys']
+    if not isinstance(keys,list) or len(keys)>12 or any(k not in BUTTONS for k in keys):raise ValueError('Invalid agent buttons')
+    touch=value['touch']
+    if touch is not None:
+        if not isinstance(touch,dict) or set(touch)!={'x','y'}:raise ValueError('Invalid agent touch')
+        validate_point(touch)
+    path=value['path']
+    if not isinstance(path,list) or len(path)>30:raise ValueError('Invalid agent path')
+    for point in path:
+        if not isinstance(point,dict) or set(point)!={'x','y','frames'}:raise ValueError('Invalid path point')
+        validate_point(point)
+        if type(point['frames']) is not int or not 1<=point['frames']<=120:raise ValueError('Invalid path duration')
+    if sum(p['frames'] for p in path)>120:raise ValueError('Agent path exceeds 120 frames')
+
+
+def validate_point(point):
+    if type(point['x']) is not int or type(point['y']) is not int or not 0<=point['x']<=255 or not 0<=point['y']<=191:
+        raise ValueError('Invalid DS coordinates')

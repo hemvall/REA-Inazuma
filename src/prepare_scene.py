@@ -112,14 +112,25 @@ def prepare(rom, config):
     begin = event.function(0x1017, expression(0x7003, variable(0x10008), 1))
     event.assign(0x10008, 2)
     cast()
+    if config.get('arena'):
+        event.assign(0x10008, 4)
+        lines([{'speaker': 'Mark', 'text': 'Preparez votre rencontre dans\\nInazumIA, puis appuyez sur A.'}])
+        event.assign(0x10008, 2)
     lines(config['opening'], staged=True)
+    if config.get('arena'):
+        # Native chapter remove/add commands. Literal roster slots are replaced
+        # by the host only while the arena is idle, before this callback starts.
+        for unit in config['team']['units']:
+            event.emit(0x403F, unit)
+        for slot in range(1, 17):
+            event.emit(0x403E, slot, 30, slot)
     event.emit(0x3005, 1, 30)
     if config.get('backgrounds'):
         event.emit(0x202B, 1, 0)
     for character in config['characters']:
         event.emit(0x3059, character['unit'], 0)
     # Original match-launch sequence in event 22010700 (function 0x2024).
-    event.emit(0x4058, 4)
+    event.emit(0x4058, 11 if config.get('arena') else 4)
     event.assign(0x10008, 10)
     event.assign(0x1000A, 3)
     event.assign(0x1002D, 1)
@@ -135,6 +146,8 @@ def prepare(rom, config):
     # Native return can reset the event counter before dispatch. Do not gate the
     # return callback on the pre-match counter; branch on the result inside it.
     begin = event.function(0x1013)
+    if config.get('arena'):
+        event.assign(0x10008, 3)
     cast()
     for outcome in ('victory', 'defeat'):
         result = expression(0x7003, variable(0x10009), 1)
@@ -144,7 +157,7 @@ def prepare(rom, config):
         branch = event.emit(0x6001, 1, 0)
         lines(config[outcome])
         event.end(branch)
-    event.assign(0x10008, 1)
+    event.assign(0x10008, 0 if config.get('arena') else 1)
     event.emit(0x3005, 1, 30)
     event.emit(0x4090, string(config['map']), -1, fixed(0), fixed(0), fixed(0), fixed(0))
     event.end(begin)

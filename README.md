@@ -1,5 +1,25 @@
 # Inazuma Eleven 2: Le Defi Mystere
 
+## InazumIA — salon de rencontres dynamiques
+
+Lancer **`Lancer InazumIA.cmd`**, puis demander « Fais s'affronter Occulte et Zeus ».
+Le chat prépare les équipes et six répliques entre leurs capitaines. Le dialogue
+est affiché dans le jeu ; la rencontre peut être jouée manuellement ou confiée
+à l'agent visuel. Le bouton de reprise arrête l'agent et laisse le jeu en pause.
+
+La ROM d'arène est construite une seule fois depuis votre original. Les affiches
+suivantes se préparent en RAM, dans la même session. « Nouvelle rencontre »
+restaure le checkpoint initial de cette session sans recharger la ROM.
+
+Les agents utilisent le CLI Codex installé et votre connexion ChatGPT existante.
+La préparation manuelle reste disponible sans agent. Le serveur et les scripts
+de construction utilisent Python 3.11+ ; l'adaptateur MCP a son environnement
+séparé. Voir [DELIVERY.md](DELIVERY.md) et [WEB_AND_MCP.md](WEB_AND_MCP.md).
+
+Le texte ci-dessous documente également le scénario historique « Défi Mystère »,
+conservé comme profil séparé. Ses anciennes captures ne prouvent pas le parcours
+de l'arène ; les vérifications de livraison sont consignées séparément.
+
 A local modification of the user-supplied French Tempete de Glace Nintendo DS
 ROM. The current build contains a four-part, 44-line opening story targeting
 five minutes of reading/staging, native illustrated backgrounds and an existing
