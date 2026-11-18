@@ -9,6 +9,7 @@ import ctypes as C
 import json
 import time
 import os
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,11 @@ def _worker(pipe, rom, core, directory, profile):
         os.dup2(log_fd,1)
         os.dup2(log_fd,2)
         os.close(log_fd)
+        # WindowsConsoleIO caches the original console HANDLE, which dup2 closes.
+        # Reopen Python streams against the redirected descriptors before the
+        # emulator prints its startup message. Native output still uses fd 1/2.
+        sys.stdout = open(1, 'w', encoding='utf-8', buffering=1, closefd=False)
+        sys.stderr = open(2, 'w', encoding='utf-8', buffering=1, closefd=False)
         emulator = Emulator(rom, core, directory)
         bridge = None
         controller = Controller(emulator,lambda:bool(bridge and bridge.poll_frame()))
