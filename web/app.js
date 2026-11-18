@@ -98,8 +98,8 @@ setInterval(poll,650);poll();
 function showBackend(backend){
   $('agentBackend').value=backend;
   $('agentNote').textContent=backend==='local'
-    ?'Sur ton PC, avec LM Studio et qwen/qwen3.5-9b. Aucun compte requis. Le jeu attend les décisions.'
-    :'Codex CLI : installation et compte connecté requis. Le jeu attend les décisions.';
+    ?'LM Studio et qwen/qwen3.5-9b préparent les rencontres par chat. Le pilote du match fonctionne sans modèle.'
+    :'Codex CLI prépare les rencontres par chat. Le pilote du match fonctionne sans modèle.';
 }
 let selectedBackend='local';
 api('capabilities').then(value=>{selectedBackend=value.agent_backend;showBackend(selectedBackend);}).catch(error=>{$('error').textContent=error.message;});
@@ -133,16 +133,16 @@ $('manual').onsubmit=async event=>{
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
 $('play').onclick=()=>playback(!running);
 $('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session});jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
-$('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent');await poll();}catch(error){$('error').textContent=error.message;}};
+$('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent',session?{session_id:session}:{});await poll();}catch(error){$('error').textContent=error.message;}};
 $('external').onclick=async()=>{running=false;try{await api('set_control',{session_id:session,owner:'agent'});await poll();}catch(error){$('error').textContent=error.message;}};
 $('reset').onclick=async()=>{await playback(false);await mutate('reset_match');renderFixture(null);await poll();};
 $('close').onclick=async()=>{running=false;const result=await mutate('session_close');if(result){session=null;renderFixture(null);setScreenVisible(false);$('status').textContent='Session fermée';}await poll();};
 $('keys').onclick=event=>{if(event.target.dataset.key)step([event.target.dataset.key],null,6);};
 document.addEventListener('keydown',event=>{if(['INPUT','SELECT','BUTTON','TEXTAREA'].includes(event.target.tagName))return;
   const key={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',a:'A',b:'B',x:'X',y:'Y',Enter:'START'}[event.key];if(key&&session){event.preventDefault();step([key],null,6);}});
-let path=[],drawingWasRunning=false;
+let path=[];
 function point(event){const r=$('frame').getBoundingClientRect();const x=Math.floor((event.clientX-r.left)*256/r.width),y=Math.floor((event.clientY-r.top)*384/r.height)-192;return x>=0&&x<256&&y>=0&&y<192?{x,y,frames:2}:null;}
-$('frame').onpointerdown=event=>{if(owner!=='human'||jobRunning||busy)return;const p=point(event);if(!p)return;event.preventDefault();drawingWasRunning=running;path=[p];$('frame').setPointerCapture(event.pointerId);if(running)playback(false);};
+$('frame').onpointerdown=event=>{if(owner!=='human'||jobRunning||busy)return;const p=point(event);if(!p)return;event.preventDefault();path=[p];$('frame').setPointerCapture(event.pointerId);};
 $('frame').onpointermove=event=>{if(!path.length)return;const p=point(event);if(p&&path.length<50&&(p.x!==path.at(-1).x||p.y!==path.at(-1).y))path.push(p);};
-$('frame').onpointerup=async()=>{if(!path.length)return;const points=path;path=[];while(busy)await new Promise(resolve=>setTimeout(resolve,5));const result=points.length===1?await step([],[points[0].x,points[0].y],6):await mutate('touch_path',{points});if(result&&drawingWasRunning)await playback(true);};
-$('frame').onpointercancel=()=>{path=[];if(drawingWasRunning)playback(true);};
+$('frame').onpointerup=async()=>{if(!path.length)return;const points=path;path=[];while(busy)await new Promise(resolve=>setTimeout(resolve,5));if(owner!=='human'||jobRunning)return;if(points.length===1)await step([],[points[0].x,points[0].y],6);else await mutate('touch_path',{points});};
+$('frame').onpointercancel=()=>{path=[];};

@@ -70,6 +70,18 @@ class ArenaBridge:
             self.completed=True
         return self.completed
 
+    def poll_match_result(self):
+        if self.poll_frame():
+            return True
+        if not self.fixture:
+            return False
+        pointer = self.emulator.lib.retro_get_memory_data(2)
+        if not pointer or self.emulator.lib.retro_get_memory_size(2) != 4 * 1024 * 1024:
+            return False
+        offset = self.profile['global_base'] - 0x02000000
+        counter = struct.unpack('<I', C.string_at(pointer + offset + 8 * 4, 4))[0]
+        return counter == 3 and self.state()['phase'] == 'result'
+
     def memory(self):
         pointer = self.emulator.lib.retro_get_memory_data(2)
         size = self.emulator.lib.retro_get_memory_size(2)

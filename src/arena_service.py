@@ -13,8 +13,8 @@ from player_state import text_ready
 
 
 class Arena:
-    def __init__(self):
-        self.session = GameSession()
+    def __init__(self, *, stream_video=True):
+        self.session = GameSession(stream_video=stream_video)
         self.lock = threading.RLock()
         self.cancel = threading.Event()
         self.thread = None
@@ -32,9 +32,9 @@ class Arena:
 
     def capabilities(self):
         built = (ROOT/'build/arena/profile.json').is_file()
-        return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':self.agent.available(),
+        return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':built,
                 'external_agent_control':True,'teams':[3,10], 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
-                'player_mode':'hybrid','player_inputs':['rules','text','vision_fallback'],
+                'player_mode':'deterministic','player_inputs':['rules'],
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
     def select_agent(self, backend):
@@ -142,61 +142,126 @@ class Arena:
         if self.session.profile!='arena' or not self.fixture:
             raise ValueError('Préparez d’abord une rencontre dans l’arène.')
         def player():
-            self.checked('playback', session_id=session_id, running=False)
-            self.session.set_control(session_id,'agent')
-            self.history=[]
-            self.update(rule_actions=0,text_calls=0,vision_calls=0,decision_ms=0)
-            for index in range(max_decisions):
-                if self.cancel.is_set():return
-                observation = self.checked('observe',session_id=session_id,include_image=False)
-                match = observation.get('match',{})
-                if match.get('phase')=='result':
-                    self.update(message='Match terminé. Le résultat final est affiché dans le jeu.' if match.get('result_source')=='native_final_screen' else
-                                'Match terminé : victoire.' if match.get('result')=='victory' else
-                                'Rencontre terminée, retour natif confirmé (code '+str(match.get('native_result'))+').')
+            with self.lock:
+                if self.cancel.is_set():
                     return
-                if match.get('native_counter')==4:
-                    observation = self.checked('start_match',session_id=session_id,
-                        revision=observation['revision'],actor='agent',include_image=False)
-                if observation.get('match',{}).get('phase')=='dialogue':
-                    observation=self.checked('step',session_id=session_id,revision=observation['revision'],
-                        actor='agent',frames=3,keys=['A'],include_image=False)
-                    self.checked('step',session_id=session_id,revision=observation['revision'],
-                        actor='agent',frames=120,keys=[],include_image=False)
-                    self.update(message='L’agent avance le dialogue natif des capitaines…',
-                                decision_mode='rules',rule_actions=self.job['rule_actions']+1)
-                    continue
-                decision,observation = self.choose_action(observation,session_id,index,max_decisions)
-                validate_decision(decision)
-                if self.cancel.is_set():return
-                self.history.append(decision)
-                if decision['intent'] != 'act':
-                    self.update(message=('Résultat visuel signalé : ' if decision['intent']=='finished' else 'Reprise demandée : ')+decision['reason'])
-                    return
-                arguments = {'session_id':session_id,'revision':observation['revision'],'actor':'agent','include_image':False}
-                if decision['path']:
-                    self.checked('touch_path',**arguments,points=decision['path'])
+                self.session.set_control(session_id, 'agent')
+            self.checked('playback', session_id=session_id, actor='agent', running=False, include_image=False)
+            self.history = []
+            self.update(rule_actions=0, text_calls=0, vision_calls=0, decision_mode='rules',
+                        rejected_commands=0, max_action_gap_seconds=None)
+            arguments = {'session_id': session_id, 'actor': 'agent', 'include_image': False}
+            folder = ROOT / 'build/agents'
+            folder.mkdir(parents=True, exist_ok=True)
+            observation = self.checked('observe_match', **arguments)['match_observation']
+            stalled_frames = 0
+            rejected = 0
+            last_action = None
+            repeated = 0
+            cooldown = 0
+            goal_animation_until = 0
+            with (folder / f"{self.job['id']}-match.jsonl").open('a', encoding='utf-8') as log:
+                def record(event, **fields):
+                    log.write(json.dumps({'event': event, 'monotonic': time.monotonic(), **fields},
+                                         ensure_ascii=False) + '\n')
+                    log.flush()
+
+                def finish(reason, **fields):
+                    metrics = {key: self.job[key] for key in ('rule_actions', 'text_calls', 'vision_calls',
+                                                              'rejected_commands', 'max_action_gap_seconds')}
+                    record('summary', reason=reason, **metrics, **fields)
+
+                while len(self.history) < max_decisions and not self.cancel.is_set():
+                    record('observation', **observation)
+                    phase = observation['phase']
+                    frame = observation['frame']
+                    if phase == 'result':
+                        finish('result', observation=observation)
+                        self.update(message='Match terminé. Résultat confirmé par l’émulateur.',
+                                    result=observation)
+                        return
+                    actions = observation['legal_actions']
+                    offered = actions[0]['id'] if actions else None
+                    action_id = None if cooldown else offered
+                    dialogue = phase == 'dialogue' or offered == 'dialogue.continue'
+                    repeat_limit = 24 if dialogue else 3
+                    waiting_for_transition = (observation['screen'] == 'goal_replay_video'
+                                              or (observation['screen'] == 'scoreboard_transition'
+                                                  and self.history[-1:] == ['replay.continue'])
+                                              or frame < goal_animation_until)
+                    frame_limit = 3600 if dialogue or waiting_for_transition else 900
+                    if stalled_frames >= frame_limit or (repeated >= repeat_limit and not cooldown):
+                        screen = observation['screen']
+                        cause = ('no_legal_action' if offered is None else
+                                 'repeated_action' if repeated >= repeat_limit else 'no_progress')
+                        detail = ('Aucune action reconnue' if offered is None else
+                                  f'{offered} ne fait pas progresser le match')
+                        message = f'{detail} en phase {phase} ({screen}), frame {frame}. Reprenez la main.'
+                        finish('blocked', phase=phase, screen=screen, frame=frame, cause=cause,
+                               action_id=offered, stalled_frames=stalled_frames, repeated=repeated,
+                               clock=observation['clock'], possession=observation['possession'])
+                        self.update(state='blocked', message=message, cause=cause)
+                        return
+
+                    revision = observation['revision']
+                    started = time.monotonic()
+                    try:
+                        if action_id:
+                            result = self.checked('apply_match_action', **arguments, revision=revision,
+                                                  frame=frame, action_id=action_id)
+                        else:
+                            result = self.checked('advance_match', **arguments, revision=revision, frames=60)
+                    except ValueError as error:
+                        if self.cancel.is_set():
+                            finish('cancelled', phase=phase, frame=frame)
+                            return
+                        rejected += 1
+                        self.update(rejected_commands=self.job['rejected_commands'] + 1)
+                        record('rejected', action_id=action_id, frame=frame, reason=str(error))
+                        if (rejected >= 3 and str(error) != 'Observation périmée.') or rejected >= 10:
+                            finish('rejected', phase=phase, frame=frame)
+                            self.update(state='blocked', message=f'Commande refusée en phase {phase}, frame {frame}.')
+                            return
+                        observation = self.checked('observe_match', **arguments)['match_observation']
+                        continue
+
+                    current = result['match_observation']
+                    rejected = 0
+                    progressed = (phase, observation['clock'], actions) != (
+                        current['phase'], current['clock'], current['legal_actions'])
+                    previous_score, current_score = observation['score'], current['score']
+                    if previous_score and current_score and sum(current_score.values()) > sum(previous_score.values()):
+                        goal_animation_until = current['frame'] + 3600
+                        progressed = True
+                    stalled_frames = 0 if progressed else stalled_frames + current['frame'] - frame
+                    if action_id:
+                        gap = None if last_action is None else started - last_action
+                        last_action = started
+                        self.history.append(action_id)
+                        repeated = 0 if progressed else repeated + 1
+                        if gap is not None:
+                            self.update(max_action_gap_seconds=max(self.job['max_action_gap_seconds'] or 0, gap))
+                        self.update(rule_actions=len(self.history), message=action_id)
+                        record('accepted', action_id=action_id, frame=frame, gap_seconds=gap)
+                        cooldown = (240 if action_id == 'formation.open' else 120) if not progressed else 0
+                    else:
+                        advanced = current['frame'] - frame
+                        cooldown = 0 if progressed else max(0, cooldown - advanced)
+                        record('advance', frame=frame, frames=advanced, seconds=time.monotonic() - started)
+                        if progressed:
+                            repeated = 0
+                    observation = current
+
+                if self.cancel.is_set():
+                    finish('cancelled', frame=observation['frame'])
+                elif observation['phase'] == 'result':
+                    finish('result', observation=observation)
+                    self.update(message='Match terminé. Résultat confirmé par l’émulateur.',
+                                result=observation)
                 else:
-                    touch = decision['touch']
-                    repetitions = 4 if (self.job.get('decision_mode')=='vision' and not touch
-                                        and not decision['keys'] and decision['frames']==120) else 1
-                    for _ in range(repetitions):
-                        if self.cancel.is_set():return
-                        result = self.checked('step',**arguments,frames=decision['frames'],keys=decision['keys'],
-                                              touch=[touch['x'],touch['y']] if touch else None)
-                        arguments['revision']=result['revision']
-                        if result.get('match',{}).get('phase')=='result':break
-                # Let the native menu transition settle locally. Calling a model
-                # on the intervening fade wastes a decision and can repeat a click.
-                # 120 frames is the bounded interval verified on saved native states.
-                if (self.job.get('decision_mode') in ('rules','text')
-                        and (decision['touch'] is not None or decision['keys'] or decision['path'])
-                        and self.latest.get('match',{}).get('phase')!='result'):
-                    self.checked('step',session_id=session_id,revision=self.latest['revision'],actor='agent',
-                                 frames=120,keys=[],include_image=False)
-                self.update(message=decision['reason'])
-            self.update(message='Budget de décisions atteint. Le jeu est en pause ; reprenez ou relancez l’agent.')
-        return {'job':self.launch(player,'Démarrage de l’agent hybride : règles, texte, vision en secours…')}
+                    finish('budget', frame=observation['frame'])
+                    self.update(message='Budget de décisions atteint. Le jeu est en pause.')
+        return {'job':self.launch(player,'Démarrage du pilote local…')}
 
     def choose_action(self, observation, session_id, index, maximum):
         """Prefer local rules, then legal text choices; request pixels only as fallback."""
@@ -226,10 +291,14 @@ class Arena:
             feedback_thread.start()
             try:
                 decision = self.agent.play(image,state,self.history,self.cancel)
+            except TimeoutError:
+                decision = self.wait_action('Délai du modèle dépassé, le jeu avance')
             finally:
                 feedback_done.set()
                 feedback_thread.join()
         validate_decision(decision)
+        if decision['intent'] == 'finished':
+            decision = self.wait_action('Résultat non confirmé par le jeu')
         elapsed = round((time.monotonic()-started)*1000,2)
         counter = {'rules':'rule_actions','text':'text_calls','vision':'vision_calls'}[mode]
         self.update(decision_ms=elapsed,**{counter:self.job.get(counter,0)+1})
@@ -240,11 +309,18 @@ class Arena:
                                   'screen':state.get('screen',{}).get('name'),'action':decision},ensure_ascii=False)+'\n')
         return decision,observation
 
-    def stop(self):
-        self.cancel.set()
-        if self.session.session_id and self.session.owner=='agent':
-            self.session.set_control(self.session.session_id,'human')
-        return {'stopping':True}
+    @staticmethod
+    def wait_action(reason):
+        return {'intent':'act','reason':reason,'frames':120,'keys':[],'touch':None,'path':[]}
+
+    def stop(self, session_id=None):
+        with self.lock:
+            if session_id is not None and session_id != self.session.session_id:
+                raise ValueError('Session inconnue')
+            self.cancel.set()
+            if self.session.session_id and self.session.owner=='agent':
+                self.session.set_control(self.session.session_id,'human')
+            return {'stopping':True}
 
     def call(self, operation, arguments):
         if operation=='select_agent':return self.select_agent(**arguments)
@@ -252,7 +328,7 @@ class Arena:
         if operation=='list_teams':return {'teams':self.list_teams()}
         if operation=='status':return self.status()
         if operation=='chat':return self.chat(**arguments)
-        if operation=='stop_agent':return self.stop()
+        if operation=='stop_agent':return self.stop(**arguments)
         if operation=='delegate_player':return self.delegate(**arguments)
         if operation=='prepare_match':
             home,away,lines=arguments['home'],arguments['away'],arguments['lines']
@@ -264,9 +340,14 @@ class Arena:
             self.session.close();self.latest=None;self.fixture=None
             return {'closed':True}
         if operation=='set_control':
-            if arguments.get('owner')=='human' and self.thread and self.thread.is_alive():self.cancel.set()
-            return self.session.set_control(**arguments)
-        if operation in ('observe','step','touch_path','checkpoint_save','checkpoint_load','start_match','reset_match','playback'):
+            with self.lock:
+                if (arguments.get('session_id') == self.session.session_id
+                        and arguments.get('owner')=='human' and self.thread and self.thread.is_alive()):
+                    self.cancel.set()
+                return self.session.set_control(**arguments)
+        if operation in ('observe_match', 'apply_match_action', 'advance_match'):
+            return self.checked(operation, **arguments, include_image=False)['match_observation']
+        if operation in ('observe','step','touch_path','choose_duel','checkpoint_save','checkpoint_load','start_match','reset_match','playback'):
             result=self.checked(operation,**arguments)
             if operation=='reset_match':self.fixture=None
             return result

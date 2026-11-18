@@ -78,7 +78,7 @@ def reset_match(session_id: str, revision: int) -> list:
 
 @mcp.tool()
 def delegate_player(session_id: str, max_decisions: int = 400) -> dict:
-    """Invoke the separate visual player agent for a bounded number of decisions."""
+    """Start the deterministic emulator pilot for a bounded number of decisions."""
     return call('delegate_player',session_id=session_id,max_decisions=max_decisions)
 
 
@@ -92,6 +92,25 @@ def stop_player() -> dict:
 def observe(session_id: str) -> list:
     """Read revision and both DS screens without advancing frames."""
     return observation(call('observe', session_id=session_id))
+
+
+@mcp.tool()
+def observe_match(session_id: str) -> dict:
+    """Read the compact match state and legal action IDs without a screenshot."""
+    return call('observe_match', session_id=session_id)
+
+
+@mcp.tool()
+def apply_match_action(session_id: str, revision: int, frame: int, action_id: str) -> dict:
+    """Execute a legal action from the latest match observation under agent control."""
+    return call('apply_match_action', session_id=session_id, revision=revision,
+                frame=frame, action_id=action_id, actor='agent')
+
+
+@mcp.tool()
+def advance_match(session_id: str, revision: int, frames: int) -> dict:
+    """Advance 1–120 frames without input under agent control."""
+    return call('advance_match', session_id=session_id, revision=revision, frames=frames, actor='agent')
 
 
 @mcp.tool()

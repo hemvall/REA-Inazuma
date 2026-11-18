@@ -7,7 +7,7 @@ back to the model. A three-action repeat guard bounds a failed native click.
 
 SIMPLE_SCREENS = {
     'formation_overview','formation_details','kickoff_ready','goal_replay',
-    'stylus_prompt','halftime',
+    'stylus_prompt','halftime','kickoff_pass','native_pitch_dialogue',
 }
 
 

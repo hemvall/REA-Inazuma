@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def _worker(pipe, rom, core, directory, profile, video=None):
     from emulator_probe import Emulator, png
     from emulator_worker import Controller,validate_step,execute_step
+    from match_actions import legal_commands, observe_match
     emulator = None
     try:
         Path(directory).mkdir(parents=True,exist_ok=True)
@@ -31,12 +32,12 @@ def _worker(pipe, rom, core, directory, profile, video=None):
         sys.stderr = open(2, 'w', encoding='utf-8', buffering=1, closefd=False)
         emulator = Emulator(rom, core, directory)
         bridge = None
-        controller = Controller(emulator,lambda:bool(bridge and bridge.poll_frame()))
         checkpoints = {}
         baseline = None
         live = False
         next_tick = time.monotonic()
         video_frame = -1
+        next_video = 0
         def publish_video():
             nonlocal video_frame
             if video is None or emulator.last_frame is None or video_frame == emulator.frames:
@@ -52,6 +53,24 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 struct.pack_into('<IQ', video.get_obj(), 0, len(encoded), sequence)
                 video.get_obj()[12:12+len(encoded)] = encoded
             video_frame = emulator.frames
+        def publish_due():
+            nonlocal next_video
+            if video is None:
+                return
+            now = time.monotonic()
+            if now >= next_video:
+                publish_video()
+                next_video = now + 1/30
+
+        def on_frame():
+            publish_due()
+            return bool(bridge and bridge.poll_frame())
+
+        def on_match_frame():
+            publish_due()
+            return bridge.poll_match_result()
+
+        controller = Controller(emulator, on_frame)
         def snapshot():
             size = emulator.lib.retro_serialize_size()
             if not 0 < size <= 128*1024*1024:
@@ -122,11 +141,61 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                         if bridge and bridge.poll_frame():
                             if keys or touch is not None:restore(baseline)
                         else:
-                            execute_step(emulator,frames,keys,touch,lambda:bool(bridge and bridge.poll_frame()))
+                            execute_step(emulator,frames,keys,touch,on_frame)
                     finally:
                         emulator.pressed = set()
                         emulator.touch = None
                         controller.revision += 1
+                elif op in ('observe_match', 'apply_match_action', 'advance_match'):
+                    if not bridge or not bridge.fixture:
+                        raise ValueError('Préparez une rencontre dans l’arène.')
+                    if op != 'observe_match':
+                        if live:
+                            raise ValueError('Une rencontre en contrôle pas à pas est requise.')
+                        revision = request.get('revision')
+                        if type(revision) is not int or revision != controller.revision:
+                            raise ValueError('Observation périmée.')
+                        if op == 'apply_match_action':
+                            frame = request.get('frame')
+                            if type(frame) is not int or frame != emulator.frames:
+                                raise ValueError('Observation périmée.')
+                            action_id = request.get('action_id')
+                            commands = legal_commands(bridge.state())
+                            if not isinstance(action_id, str) or action_id not in commands:
+                                raise ValueError('Action indisponible pour cet état.')
+                            action = commands[action_id]
+                            try:
+                                if action is None:
+                                    execute_step(emulator, 2, ['A'], None, on_match_frame)
+                                else:
+                                    point = action['touch']
+                                    touch = (point['x'], point['y']) if point else None
+                                    execute_step(emulator, action['frames'], action['keys'], touch, on_match_frame)
+                            finally:
+                                controller.revision += 1
+                        else:
+                            frames = request.get('frames')
+                            validate_step(frames, [], None)
+                            try:
+                                execute_step(emulator, frames, [], None, on_match_frame)
+                            finally:
+                                controller.revision += 1
+                elif op == 'choose_duel':
+                    if not bridge or not bridge.fixture or live:
+                        raise ValueError('Une rencontre en contrôle pas à pas est requise.')
+                    if (type(request.get('revision')) is not int or request['revision'] != controller.revision
+                            or type(request.get('frame')) is not int or request['frame'] != emulator.frames):
+                        raise ValueError('Observation périmée.')
+                    match = bridge.state()
+                    screen = match['screen']
+                    if match['phase'] != 'playing' or not screen['requires_tactics']:
+                        raise ValueError('Aucun duel reconnu dans l’état courant.')
+                    action = next((item for item in screen['actions'] if item['name'] == request.get('choice')), None)
+                    if action is None:
+                        raise ValueError('Choix indisponible pour ce duel.')
+                    touch = action['touch']
+                    execute_step(emulator, action['frames'], action['keys'], (touch['x'], touch['y']), on_frame)
+                    controller.revision += 1
                 elif op == 'touch_path':
                     if bridge and bridge.poll_frame():raise ValueError('Rencontre terminée : utilisez reset_match.')
                     controller.touch_path(request['revision'], request['points'])
@@ -160,6 +229,8 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 publish_video()
                 if bridge:
                     result['match'] = bridge.state()
+                if op in ('observe_match', 'apply_match_action', 'advance_match'):
+                    result['match_observation'] = observe_match(result['match'], emulator.frames, controller.revision)
                 if emulator.last_frame:
                     image_bytes = None
                     if request.get('include_image', True):
@@ -191,7 +262,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
 
 
 class GameSession:
-    def __init__(self):
+    def __init__(self, *, stream_video=True):
         self.lock = threading.RLock()
         self.process = None
         self.pipe = None
@@ -200,6 +271,7 @@ class GameSession:
         self.owner = 'human'
         self.profile = None
         self.video = None
+        self.stream_video = stream_video
 
     def video_frame(self):
         """Read the latest JPEG without waiting for emulator command IPC."""
@@ -236,7 +308,7 @@ class GameSession:
             directory = ROOT / 'build/sessions' / self.session_id
             parent, child = mp.get_context('spawn').Pipe()
             self.pipe = parent
-            self.video = mp.get_context('spawn').Array('B', 512*1024)
+            self.video = mp.get_context('spawn').Array('B', 512*1024) if self.stream_video else None
             self.process = mp.get_context('spawn').Process(
                 target=_worker, args=(child, str(rom), str(core), str(directory),profile,self.video), daemon=True)
             self.process.start()
@@ -269,7 +341,7 @@ class GameSession:
         with self.lock:
             if session_id != self.session_id or not self.process or not self.process.is_alive():
                 raise ValueError('Session inconnue ou arrêtée')
-            if op != 'observe' and actor != self.owner:
+            if op not in ('observe', 'observe_match') and actor != self.owner:
                 raise ValueError('Contrôle détenu par ' + self.owner)
             self.pipe.send({'op': op, **arguments})
             return self._receive(15)

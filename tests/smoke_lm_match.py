@@ -16,7 +16,6 @@ def main():
     started = time.monotonic()
     try:
         arena.select_agent('local')
-        assert arena.agent.available(), 'LM Studio model unavailable'
         arena.prepare(3, 10, ['Occulte est pret.', 'Zeus releve le defi.',
                              'Le terrain nous attend.', 'Que le meilleur gagne.',
                              'Nous jouerons ensemble.', 'En place pour le match.'])
@@ -51,10 +50,11 @@ def main():
         (folder/'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         assert state['job']['state'] == 'complete', state['job']
         assert state['owner'] == 'human', 'Control not returned'
-        assert arena.history, 'No model action executed'
+        assert arena.history, 'No player action executed'
+        assert not state['job']['vision_calls'] and not state['job']['text_calls'], state['job']
         assert observation['match']['phase'] == 'result', 'Native final result not reached'
         assert observation['match']['result_source'] == 'native_final_screen'
-        print('PASS: LM Studio reached the native final match screen', flush=True)
+        print('PASS: local player reached the native final match screen without model calls', flush=True)
     finally:
         arena.stop()
         if arena.thread:
