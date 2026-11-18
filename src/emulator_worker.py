@@ -10,7 +10,7 @@ def validate_step(frames, keys, touch):
         pointer_coordinates(*touch)
 
 
-def execute_step(emulator, frames, keys, touch, should_stop=None):
+def execute_step(emulator, frames, keys, touch, should_stop=None, release=True):
     validate_step(frames,keys,touch)
     should_stop=should_stop or (lambda:False)
     before=emulator.frames
@@ -23,7 +23,7 @@ def execute_step(emulator, frames, keys, touch, should_stop=None):
             emulator.frames+=1
         emulator.pressed=set()
         emulator.touch=None
-        if (keys or touch is not None) and not should_stop():
+        if release and (keys or touch is not None) and not should_stop():
             for _ in range(4):
                 if should_stop():break
                 emulator.lib.retro_run()

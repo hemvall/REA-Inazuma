@@ -1,7 +1,7 @@
 # Standalone scene implementation
 
 The current runnable candidate is `build/inazuma_mystery.nds`, launched with
-`Jouer au Defi Mystere.cmd`. See README, RUN_SCENARIO and RUNTIME_VERIFICATION.
+`Ouvrir le Club dans melonDS.cmd`. See README, RUN_SCENARIO and RUNTIME_VERIFICATION.
 
 The game retains its native title and new-game naming flow. Its chapter dispatch
 routes into the authored event at key 22010100, instead of the original campaign.

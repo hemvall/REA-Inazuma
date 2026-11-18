@@ -33,7 +33,7 @@ class Arena:
     def capabilities(self):
         built = (ROOT/'build/arena/profile.json').is_file()
         return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':built,
-                'external_agent_control':True,'teams':[3,10], 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
+                'external_agent_control':True,'teams':[1,2,3,10], 'club':True, 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
                 'player_mode':'deterministic','player_inputs':['rules'],
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
@@ -94,7 +94,7 @@ class Arena:
         return result
 
     def prepare(self, home, away, lines):
-        if type(home) is not int or type(away) is not int or home not in (3,10) or away not in (3,10) or home==away:
+        if type(home) is not int or type(away) is not int or home not in (1,2,3,10) or away not in (1,2,3,10) or home==away:
             raise ValueError('Choisissez deux équipes distinctes du catalogue.')
         if not isinstance(lines,list) or len(lines)!=6 or any(not isinstance(line,str) or not 1<=len(line)<=100 for line in lines):
             raise ValueError('Six répliques de 1 à 100 caractères sont requises.')
@@ -131,7 +131,7 @@ class Arena:
         if self.session.session_id and self.session.owner == 'human' and not (self.thread and self.thread.is_alive()):
             self.checked('observe', session_id=self.session.session_id, include_image=False)
         with self.lock:
-            return {'job':dict(self.job),'session_id':self.session.session_id,
+            return {'job':dict(self.job),'session_id':self.session.session_id, 'profile':self.session.profile,
                     'owner':self.session.owner,'fixture':self.fixture,'observation':self.latest,
                     'agent_actions':len(self.history)}
 
@@ -139,7 +139,7 @@ class Arena:
         if type(max_decisions) is not int or not 1<=max_decisions<=500:
             raise ValueError('Budget attendu : 1 à 500 décisions')
         if session_id != self.session.session_id: raise ValueError('Session inconnue')
-        if self.session.profile!='arena' or not self.fixture:
+        if self.session.profile not in ('arena','club') or not self.fixture:
             raise ValueError('Préparez d’abord une rencontre dans l’arène.')
         def player():
             with self.lock:
@@ -323,6 +323,14 @@ class Arena:
             return {'stopping':True}
 
     def call(self, operation, arguments):
+        if operation=='open_club':
+            if arguments: raise ValueError('Aucun argument attendu')
+            if self.session.session_id: raise ValueError('Fermez la session actuelle avant d’entrer dans le local.')
+            def enter():
+                opened = self.session.open('club', cancel=self.cancel)
+                self.checked('observe', session_id=opened['session_id'])
+                self.update(message='Parlez au coach dans le local : A ou écran tactile. Non propose l’affiche suivante. Après le match, A revient au local.')
+            return {'job':self.launch(enter, 'Ouverture du local du club…')}
         if operation=='select_agent':return self.select_agent(**arguments)
         if operation=='capabilities':return self.capabilities()
         if operation=='list_teams':return {'teams':self.list_teams()}

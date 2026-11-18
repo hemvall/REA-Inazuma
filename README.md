@@ -47,7 +47,7 @@ into the scene. **Their automatic runtime entry is still blocked after the
 match**: the diagnostic native return currently leaves the lower screen black.
 This build is not accepted as a complete playable episode.
 
-**Run:** double-click `Jouer au Defi Mystere.cmd`, choose **Nouvelle partie**,
+**Run:** double-click `Ouvrir le Club dans melonDS.cmd`, choose **Nouvelle partie**,
 enter a save-file name and confirm **OK**. Use a fresh game. Skip the original
 opening movie with A or Start, then advance the original introduction notices.
 See [RUN_SCENARIO.md](RUN_SCENARIO.md) for controls and
@@ -67,7 +67,7 @@ The Downloads source remains unchanged.
 - `story/standalone_scene.json`: authored French text and measured character IDs.
 - `story/five_minute_scenario.md`: readable French script with stage directions.
 - `TEAM_INITIALIZATION.md`: native roster/level evidence and memory layout.
-- `Jouer au Defi Mystere.cmd`: portable melonDS launcher.
+- `Ouvrir le Club dans melonDS.cmd`: portable melonDS launcher.
 
 ROMs, extracted resources, private manifests, emulator states and downloaded
 tools are ignored by Git. Do not commit or redistribute copyrighted ROM assets.

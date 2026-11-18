@@ -46,3 +46,19 @@ class WorkerTests(unittest.TestCase):
         result=controller.touch_path(0,[{'x':10,'y':20,'frames':10}])
         self.assertEqual(result['frame'],2)
         self.assertEqual(self.samples,[(10,20),(10,20)])
+
+    def test_held_input_has_no_artificial_release_gap(self):
+        keys=[]
+        self.emulator.lib.retro_run=lambda:keys.append(set(self.emulator.pressed))
+        execute_step(self.emulator,6,['UP'],None,release=False)
+        execute_step(self.emulator,6,['UP'],None,release=False)
+        self.assertEqual(len(keys),12)
+        self.assertTrue(all(sample for sample in keys))
+        execute_step(self.emulator,1,[],None,release=False)
+        self.assertEqual(keys[-1],set())
+
+    def test_held_stylus_preserves_position_and_result_guard(self):
+        count=execute_step(self.emulator,6,[],[100,120],lambda:len(self.samples)>=3,release=False)
+        self.assertEqual(count,3)
+        self.assertEqual(self.samples,[[100,120]]*3)
+        self.assertIsNone(self.emulator.touch)

@@ -26,6 +26,12 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
   main{padding-inline:25px}
 }
 
+.skip-link:not(:focus){clip-path:inset(50%)}
+.ds-keys{touch-action:none;user-select:none}
+.ds-keys button[aria-pressed="true"]{background:var(--yellow);color:var(--deep);transform:translateY(2px);box-shadow:0 1px 0 #09132b}
+.team-tile[data-team="2"] select{font-size:22px}
+@media(max-width:620px){.team-tile[data-team="2"] select{font-size:14px;padding-inline:0}}
+
 /* White pixel-art handheld. Each viewport shows one half of the same DS frame. */
 .screen.is-live{width:100%;height:auto;min-height:0;max-width:none;aspect-ratio:auto;outline:0;box-shadow:none;background:none;overflow:visible}
 .stadium-stage.is-live{padding:24px 14px 34px}

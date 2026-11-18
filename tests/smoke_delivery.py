@@ -7,7 +7,7 @@ import time
 from urllib.request import Request,urlopen
 
 def call(op,**arguments):
-    request=Request('http://127.0.0.1:8765/api/'+op,data=json.dumps(arguments).encode(),
+    request=Request('http://127.0.0.1:18765/api/'+op,data=json.dumps(arguments).encode(),
                     headers={'Content-Type':'application/json'})
     with urlopen(request,timeout=140) as response:result=json.load(response)
     if 'error' in result:raise RuntimeError(result['error'])

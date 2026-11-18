@@ -29,7 +29,7 @@ async def main():
             assert not opened.isError, opened
             session_id = json.loads(opened.content[0].text)['session_id']
             from urllib.request import Request, urlopen
-            with urlopen(Request('http://127.0.0.1:8765/api/set_control',
+            with urlopen(Request('http://127.0.0.1:18765/api/set_control',
                     data=json.dumps({'session_id': session_id, 'owner': 'agent'}).encode(),
                     headers={'Content-Type': 'application/json'})) as response:
                 assert json.load(response)['owner'] == 'agent'
