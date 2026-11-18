@@ -28,7 +28,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(403, {'error': 'Invalid host'})
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
-                 '/style.css': ('style.css', 'text/css; charset=utf-8')}
+                 '/style.css': ('style.css', 'text/css; charset=utf-8'),
+                 '/assets/stadium-pixel.png': ('assets/stadium-pixel.png', 'image/png'),
+                 '/assets/PressStart2P-Regular.ttf': ('assets/PressStart2P-Regular.ttf', 'font/ttf')}
         if self.path not in files:
             return self.reply(404, {'error': 'Not found'})
         name, kind = files[self.path]
