@@ -7,6 +7,10 @@ Le chat prépare les équipes et six répliques entre leurs capitaines. Le dialo
 est affiché dans le jeu ; la rencontre peut être jouée manuellement ou confiée
 à l'agent visuel. Le bouton de reprise arrête l'agent et laisse le jeu en pause.
 
+Le catalogue validé de cette livraison contient **Occulte et Zeus**, dans les
+deux sens. Le joueur visuel est expérimental ; sa délégation peut être arrêtée
+à tout moment et ne garantit pas une victoire.
+
 La ROM d'arène est construite une seule fois depuis votre original. Les affiches
 suivantes se préparent en RAM, dans la même session. « Nouvelle rencontre »
 restaure le checkpoint initial de cette session sans recharger la ROM.

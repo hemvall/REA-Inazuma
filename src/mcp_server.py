@@ -96,7 +96,7 @@ def observe(session_id: str) -> list:
 
 @mcp.tool()
 def step(session_id: str, revision: int, frames: int, keys: list[str], touch: list[int] | None = None) -> list:
-    """Execute 1..120 frames using DS buttons and optional lower-screen touch."""
+    """Advance up to 120 frames; freeze on the native final screen. B then restores the arena checkpoint."""
     return observation(call('step', session_id=session_id, revision=revision,
                             frames=frames, keys=keys, touch=touch, actor='agent'))
 

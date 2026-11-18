@@ -24,6 +24,8 @@
 | Joueur visuel réel | 71 décisions/actions exécutées, passes, course et duels ; match à 17:43 de la première mi-temps : `build/delivery/agent-final.png`. |
 | Arrêt et reprise | Annulation d'une décision Codex et retour au contrôle humain testés ; journal `build/delivery-smoke.log`. |
 | Deux affiches dans le même worker | Réinitialisation du checkpoint puis Zeus–Occulte avec nouveau dialogue ; même session et même hash ROM : `build/delivery/second-fixture.json`. |
+| Match complet et retour protégé | Le service HTTP atteint `phase=result`, `result_source=native_final_screen`, puis B restaure le salon sans arrêter le worker : `build/live-lifecycle/final.json`, `final.png`. |
+| Rejeu après résultat | Zeus–Occulte et nouveau dialogue d'Aphrodite dans la même session `7d1c959df6c54e19bc775a4893a2c21b`, même hash ROM et cœur : `build/live-lifecycle/return-and-replay.json`, `return-and-replay.png`. |
 | MCP réel | Initialisation, découverte complète, catalogue, état, commande DS, contenu image et fermeture : `tests/smoke_mcp.py`, avec et sans `--read-only`. |
 
 Les images, ROM, états et journaux cités sont des preuves privées locales,
@@ -51,6 +53,18 @@ la capture finale. Le retour utilisateur restaure le checkpoint initial au lieu
 d'appeler le retour natif défectueux. Des tests vérifient l'arrêt sans frames
 de relâchement supplémentaires et la distinction avec la mi-temps.
 
-L'essai de durée dans une session fraîche est suivi séparément dans
-`build/native-session/`. Son résultat sera consigné ici à la fin de l'essai.
-Une capture de jeu intermédiaire ne vaut pas acceptation du retour.
+L'essai final passe par le service HTTP livré, ses révisions et ses commandes
+bornées. Il a atteint l'écran final à la frame 120008, révision 1363, avec les
+deux effectifs natifs confirmés. La capture est volontairement figée dès la
+première reconnaissance du titre, pendant son apparition, et reste assombrie.
+
+La commande B suivante restaure le compteur 4 et enlève l'affiche ; l'identifiant
+de session reste identique. La préparation inversée et son lancement atteignent
+ensuite le compteur 2 avec Aphrodite et « Zeus accueille Occulte. », révision
+1371. Le journal `build/live-lifecycle.log` termine par
+`PASS FULL NATIVE RESULT, SAFE B RETURN, SAME SESSION AND REVERSE DYNAMIC FIXTURE`.
+
+Ce test de durée utilise un contrôleur de régression et onze décisions Codex
+pour les écrans nécessitant une reprise visuelle. Il prouve le cycle natif et
+le retour du système livré ; il ne constitue pas une preuve de victoire du
+joueur Codex seul. Le retour brut de la ROM demeure remplacé par le contrôleur.

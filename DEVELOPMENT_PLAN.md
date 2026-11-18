@@ -12,7 +12,8 @@
 - [x] Annulation, contrôle exclusif et reprise manuelle.
 - [x] Deux affiches préparées dans le même worker sans reconstruction/rechargement.
 - [x] Lanceur local, documentation et constructeur de ZIP source.
-- [ ] Consigner la fin et le retour du test natif de durée en cours.
+- [x] Match natif complet, retour par B protégé et affiche inversée dans la même
+  session : preuves et identités consignées dans le rapport de livraison.
 
 Le rapport courant est `DELIVERY_VERIFICATION.md`. Les sections suivantes
 conservent le plan initial et les étapes de recherche ; leurs descriptions de
@@ -25,33 +26,23 @@ un bref dialogue entre les capitaines puis jouer ou déléguer à un agent.
 Les rencontres suivantes doivent être chargées dans la même session sans
 reconstruction ni rechargement de la ROM.
 
-## État et ordre d'exécution
+## Architecture livrée
 
-- [x] Créer la branche develop et enregistrer le plan.
-- [ ] Valider le scénario actuel jusqu'au résultat, retour et rejeu sous melonDS.
-- [ ] Extraire un worker isolé : IPC indépendant de stdout natif, pause, frames,
-  capture, maintien tactile, fermeture, timeout et checkpoints liés aux hashes.
-- [ ] Mesurer le chargement natif des équipes et des matchs sur BEBF révision 0.
-  Valider Occulte et Zeus, leurs capitaines et les formats effectivement disponibles.
-- [ ] Réserver une zone RAM avec durée de vie prouvée et installer une seule fois
-  un pont ROM. Préserver overlays, registres, cache et retour du code natif.
-- [ ] Implémenter le protocole dynamique : version, request_id, longueur,
-  configuration, validation ROM, acquittement, erreur et délai maximal.
-  États : idle, preparing, ready, dialogue, playing, result, error.
-- [ ] Charger équipes, compositions et ressources par leurs routines natives,
-  puis quatre à six répliques validées et le lancement du match.
-  Refuser les changements pendant le jeu et les identifiants inconnus.
-- [ ] Exposer le MCP local : list_teams, prepare_match, get_match_status,
-  start_match, observe, step, touch_path, checkpoint_save/load, session_close.
-  Un seul contrôleur par session ; toute action vérifie sa révision.
-- [ ] Construire le front local : chat, fiche de rencontre, deux écrans DS,
-  clavier/tactile, pause, délégation et reprise de contrôle dans le même worker.
-- [ ] Ajouter l'organisateur : résolution des noms, dialogues structurés,
-  outils autorisés et restitution des erreurs réelles.
-- [ ] Ajouter l'agent joueur optionnel : observation validée, actions DS bornées,
-  pause pendant les décisions, interruption et journal rejouable.
-- [ ] Valider deux affiches/dialogues successifs sans recharger la ROM, puis
-  délégation, reprise manuelle, résultat et rejeu dans le navigateur.
+| Besoin | Réalisation |
+|---|---|
+| Isolation de l'émulation | Worker melonDS séparé, IPC Pipe, captures, révisions, délais et checkpoints liés aux identités ROM/cœur. |
+| Chargement dynamique | Coque fixe ; remplacement borné et relu des buffers SSD/SST vivants et des données d'équipe, uniquement dans l'attente native. |
+| Équipes et capitaines | Données mesurées sur BEBF révision 0 ; 16 joueurs par équipe, onze sur le terrain, Occulte et Zeus dans les deux sens. |
+| Dialogue avant match | Six répliques et portraits injectés dans la scène native ; démarrage par les entrées DS ordinaires. |
+| Contrat de contrôle | Identifiant de session, révision, propriétaire humain/agent, validation des phases, erreurs et journal JSONL. Le prototype de mailbox binaire n'est pas utilisé. |
+| Chat et MCP | Front local et 16 outils MCP partagent le même service et la même session. |
+| Agents distincts | Organisateur Codex à sortie structurée et joueur Codex visuel, actions bornées, interruption et reprise humaine. |
+| Retour et nouvelle affiche | Conservation de l'écran final, retour par checkpoint dans le même worker et préparation de la rencontre suivante sans recharger la ROM. |
+
+L'implémentation emploie les buffers natifs existants plutôt qu'une allocation
+RAM arbitraire ou un hook de code supplémentaire. Les mesures et captures
+réelles font foi ; les notes historiques ci-dessous conservent les pistes et
+blocages rencontrés avant cette architecture.
 
 ## Contraintes et preuves
 

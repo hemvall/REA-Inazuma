@@ -24,6 +24,8 @@ deux écrans et choisit les entrées DS. Le cœur attend pendant chaque décisio
 Chaque action est bornée ; une attente d'animation peut regrouper quatre segments
 de 120 frames. Quatre frames de relâchement séparent les appuis et les glissers
 pour que le jeu échantillonne le relâchement même pendant ses mises à jour à 30 Hz.
+Un segment peut s'arrêter avant sa limite lorsque le résultat final est détecté ;
+la frame reste alors figée jusqu'au retour au salon.
 
 « Nouvelle rencontre » restaure le checkpoint initial du worker : la ROM n'est
 ni reconstruite ni rechargée. Une nouvelle affiche et de nouveaux dialogues
