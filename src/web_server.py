@@ -1,6 +1,7 @@
 """Loopback-only web service. Run python src/web_server.py."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import time
 from pathlib import Path
 from arena_service import Arena
 
@@ -26,6 +27,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.valid_host():
             return self.reply(403, {'error': 'Invalid host'})
+        if self.path.startswith('/video?session='):
+            sid = self.path.split('=', 1)[1]
+            if sid != ARENA.session.session_id:
+                return self.reply(404, {'error': 'Unknown video session'})
+            self.send_response(200)
+            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            sequence = 0
+            try:
+                while sid == ARENA.session.session_id:
+                    current, jpeg = ARENA.session.video_frame()
+                    if jpeg and current != sequence:
+                        self.wfile.write(b'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: '+str(len(jpeg)).encode()+b'\r\n\r\n'+jpeg+b'\r\n')
+                        self.wfile.flush()
+                        sequence = current
+                    time.sleep(1/60)
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                pass
+            return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),

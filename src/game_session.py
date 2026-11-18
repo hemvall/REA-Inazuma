@@ -14,7 +14,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _worker(pipe, rom, core, directory, profile):
+def _worker(pipe, rom, core, directory, profile, video=None):
     from emulator_probe import Emulator, png
     from emulator_worker import Controller,validate_step,execute_step
     emulator = None
@@ -34,6 +34,24 @@ def _worker(pipe, rom, core, directory, profile):
         controller = Controller(emulator,lambda:bool(bridge and bridge.poll_frame()))
         checkpoints = {}
         baseline = None
+        live = False
+        next_tick = time.monotonic()
+        video_frame = -1
+        def publish_video():
+            nonlocal video_frame
+            if video is None or emulator.last_frame is None or video_frame == emulator.frames:
+                return
+            from video_stream import encode_jpeg
+            encoded = encode_jpeg(emulator.last_frame)
+            with video.get_lock():
+                # Four bytes length, eight bytes sequence, then the latest JPEG.
+                import struct
+                sequence = struct.unpack_from('<Q', video.get_obj(), 4)[0] + 1
+                if len(encoded) + 12 > len(video):
+                    raise ValueError('Video frame exceeds shared buffer')
+                struct.pack_into('<IQ', video.get_obj(), 0, len(encoded), sequence)
+                video.get_obj()[12:12+len(encoded)] = encoded
+            video_frame = emulator.frames
         def snapshot():
             size = emulator.lib.retro_serialize_size()
             if not 0 < size <= 128*1024*1024:
@@ -69,6 +87,16 @@ def _worker(pipe, rom, core, directory, profile):
             baseline = snapshot()
         pipe.send({'ready': True})
         while True:
+            if live and not pipe.poll(max(0, next_tick-time.monotonic())):
+                execute_step(emulator, 1, [], None, lambda:bool(bridge and bridge.poll_frame()))
+                if emulator.frames % 2 == 0:
+                    publish_video()
+                if bridge and bridge.completed:
+                    live = False
+                    publish_video()
+                # Drop timing debt on slow machines; never queue old frames.
+                next_tick = max(next_tick+1/60, time.monotonic()-1/60)
+                continue
             request = pipe.recv()
             try:
                 op = request['op']
@@ -78,7 +106,12 @@ def _worker(pipe, rom, core, directory, profile):
                 if bridge and not bridge.fixture and bridge.state()['native_counter']==4 and op in ('step','touch_path'):
                     if op=='touch_path' or request.get('keys') or request.get('touch') is not None:
                         raise ValueError('Préparez une rencontre avant de quitter le salon.')
-                if op == 'step':
+                if op == 'playback':
+                    if type(request.get('running')) is not bool:
+                        raise ValueError('Expected boolean running')
+                    live = request['running'] and not bool(bridge and bridge.completed)
+                    next_tick = time.monotonic()
+                elif op == 'step':
                     if type(request['revision']) is not int or request['revision'] != controller.revision:
                         raise ValueError('Stale revision')
                     frames = request.get('frames', 1)
@@ -124,15 +157,23 @@ def _worker(pipe, rom, core, directory, profile):
                 elif op != 'observe':
                     raise ValueError('Unknown operation')
                 result = {'revision': controller.revision, 'frame': emulator.frames}
+                publish_video()
                 if bridge:
                     result['match'] = bridge.state()
                 if emulator.last_frame:
-                    target = Path(directory) / 'frame.png'
-                    png(target, *emulator.last_frame)
-                    result['image'] = base64.b64encode(target.read_bytes()).decode('ascii')
+                    image_bytes = None
+                    if request.get('include_image', True):
+                        target = Path(directory) / 'frame.png'
+                        png(target, *emulator.last_frame)
+                        image_bytes = target.read_bytes()
+                        result['image'] = base64.b64encode(image_bytes).decode('ascii')
+                    # Keep the native result proof even when the player needs
+                    # only compact text. It is not sent to the model.
                     if bridge and bridge.completed:
                         proof=Path(directory)/('result-'+bridge.fixture['id']+'.png')
-                        if not proof.exists():proof.write_bytes(target.read_bytes())
+                        if not proof.exists():
+                            if image_bytes is not None:proof.write_bytes(image_bytes)
+                            else:png(proof,*emulator.last_frame)
                 with (Path(directory)/'replay.jsonl').open('a',encoding='utf-8') as log:
                     log.write(json.dumps({'request':request,'result':{k:v for k,v in result.items() if k!='image'}},ensure_ascii=False)+'\n')
                 pipe.send(result)
@@ -158,6 +199,17 @@ class GameSession:
         self.identity = None
         self.owner = 'human'
         self.profile = None
+        self.video = None
+
+    def video_frame(self):
+        """Read the latest JPEG without waiting for emulator command IPC."""
+        video = self.video
+        if video is None:
+            return 0, b''
+        import struct
+        with video.get_lock():
+            length, sequence = struct.unpack_from('<IQ', video.get_obj())
+            return sequence, bytes(video.get_obj()[12:12+length])
 
     def open(self, profile='scenario', cancel=None):
         with self.lock:
@@ -184,8 +236,9 @@ class GameSession:
             directory = ROOT / 'build/sessions' / self.session_id
             parent, child = mp.get_context('spawn').Pipe()
             self.pipe = parent
+            self.video = mp.get_context('spawn').Array('B', 512*1024)
             self.process = mp.get_context('spawn').Process(
-                target=_worker, args=(child, str(rom), str(core), str(directory),profile), daemon=True)
+                target=_worker, args=(child, str(rom), str(core), str(directory),profile,self.video), daemon=True)
             self.process.start()
             child.close()
             try:
@@ -244,3 +297,4 @@ class GameSession:
             if self.pipe:
                 self.pipe.close()
             self.process = self.pipe = self.session_id = None
+            self.video = None

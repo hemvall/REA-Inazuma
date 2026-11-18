@@ -8,6 +8,8 @@ import uuid
 from game_session import GameSession, ROOT
 from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, BUTTONS
 from arena_bridge import catalogue
+from fast_policy import fast_decision
+from player_state import text_ready
 
 
 class Arena:
@@ -32,6 +34,7 @@ class Arena:
         built = (ROOT/'build/arena/profile.json').is_file()
         return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':self.agent.available(),
                 'external_agent_control':True,'teams':[3,10], 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
+                'player_mode':'hybrid','player_inputs':['rules','text','vision_fallback'],
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
     def select_agent(self, backend):
@@ -125,6 +128,8 @@ class Arena:
         return {'job':self.launch(organise,'L’organisateur prépare votre affiche et les dialogues…')}
 
     def status(self):
+        if self.session.session_id and self.session.owner == 'human' and not (self.thread and self.thread.is_alive()):
+            self.checked('observe', session_id=self.session.session_id, include_image=False)
         with self.lock:
             return {'job':dict(self.job),'session_id':self.session.session_id,
                     'owner':self.session.owner,'fixture':self.fixture,'observation':self.latest,
@@ -137,11 +142,13 @@ class Arena:
         if self.session.profile!='arena' or not self.fixture:
             raise ValueError('Préparez d’abord une rencontre dans l’arène.')
         def player():
+            self.checked('playback', session_id=session_id, running=False)
             self.session.set_control(session_id,'agent')
             self.history=[]
+            self.update(rule_actions=0,text_calls=0,vision_calls=0,decision_ms=0)
             for index in range(max_decisions):
                 if self.cancel.is_set():return
-                observation = self.checked('observe',session_id=session_id)
+                observation = self.checked('observe',session_id=session_id,include_image=False)
                 match = observation.get('match',{})
                 if match.get('phase')=='result':
                     self.update(message='Match terminé. Le résultat final est affiché dans le jeu.' if match.get('result_source')=='native_final_screen' else
@@ -150,51 +157,88 @@ class Arena:
                     return
                 if match.get('native_counter')==4:
                     observation = self.checked('start_match',session_id=session_id,
-                        revision=observation['revision'],actor='agent')
+                        revision=observation['revision'],actor='agent',include_image=False)
                 if observation.get('match',{}).get('phase')=='dialogue':
                     observation=self.checked('step',session_id=session_id,revision=observation['revision'],
-                        actor='agent',frames=3,keys=['A'])
+                        actor='agent',frames=3,keys=['A'],include_image=False)
                     self.checked('step',session_id=session_id,revision=observation['revision'],
-                        actor='agent',frames=120,keys=[])
-                    self.update(message='L’agent avance le dialogue natif des capitaines…')
+                        actor='agent',frames=120,keys=[],include_image=False)
+                    self.update(message='L’agent avance le dialogue natif des capitaines…',
+                                decision_mode='rules',rule_actions=self.job['rule_actions']+1)
                     continue
-                image = ROOT/'build/agents'/f'{session_id}-current.png'
-                image.write_bytes(base64.b64decode(observation['image']))
-                choosing = f'L’agent choisit son action ({index+1}/{max_decisions})'
-                self.update(message=choosing+'…',decision_started_at=time.time())
-                feedback_done = threading.Event()
-                def feedback():
-                    started = time.monotonic()
-                    while not feedback_done.wait(1):
-                        self.update(message=choosing+f' · {int(time.monotonic()-started)} s (jeu en pause)…')
-                feedback_thread = threading.Thread(target=feedback,daemon=True)
-                feedback_thread.start()
-                try:
-                    decision = self.agent.play(image,observation.get('match',{}),self.history,self.cancel)
-                finally:
-                    feedback_done.set()
-                    feedback_thread.join()
+                decision,observation = self.choose_action(observation,session_id,index,max_decisions)
                 validate_decision(decision)
                 if self.cancel.is_set():return
                 self.history.append(decision)
                 if decision['intent'] != 'act':
                     self.update(message=('Résultat visuel signalé : ' if decision['intent']=='finished' else 'Reprise demandée : ')+decision['reason'])
                     return
-                arguments = {'session_id':session_id,'revision':observation['revision'],'actor':'agent'}
+                arguments = {'session_id':session_id,'revision':observation['revision'],'actor':'agent','include_image':False}
                 if decision['path']:
                     self.checked('touch_path',**arguments,points=decision['path'])
                 else:
                     touch = decision['touch']
-                    repetitions = 4 if not touch and not decision['keys'] and decision['frames']==120 else 1
+                    repetitions = 4 if (self.job.get('decision_mode')=='vision' and not touch
+                                        and not decision['keys'] and decision['frames']==120) else 1
                     for _ in range(repetitions):
                         if self.cancel.is_set():return
                         result = self.checked('step',**arguments,frames=decision['frames'],keys=decision['keys'],
                                               touch=[touch['x'],touch['y']] if touch else None)
                         arguments['revision']=result['revision']
                         if result.get('match',{}).get('phase')=='result':break
+                # Let the native menu transition settle locally. Calling a model
+                # on the intervening fade wastes a decision and can repeat a click.
+                # 120 frames is the bounded interval verified on saved native states.
+                if (self.job.get('decision_mode') in ('rules','text')
+                        and (decision['touch'] is not None or decision['keys'] or decision['path'])
+                        and self.latest.get('match',{}).get('phase')!='result'):
+                    self.checked('step',session_id=session_id,revision=self.latest['revision'],actor='agent',
+                                 frames=120,keys=[],include_image=False)
                 self.update(message=decision['reason'])
             self.update(message='Budget de décisions atteint. Le jeu est en pause ; reprenez ou relancez l’agent.')
-        return {'job':self.launch(player,'Démarrage de l’agent joueur visuel…')}
+        return {'job':self.launch(player,'Démarrage de l’agent hybride : règles, texte, vision en secours…')}
+
+    def choose_action(self, observation, session_id, index, maximum):
+        """Prefer local rules, then legal text choices; request pixels only as fallback."""
+        started = time.monotonic()
+        state = observation.get('match',{})
+        decision = fast_decision(state,self.history)
+        mode = 'rules' if decision is not None else ('text' if text_ready(state) else 'vision')
+        self.update(decision_mode=mode,decision_started_at=time.time())
+        if decision is None:
+            image = None
+            if mode == 'vision':
+                visual = self.checked('observe',session_id=session_id,include_image=True)
+                # No frames may advance between the compact and visual observations.
+                if any(visual.get(key) != observation.get(key) for key in ('revision','frame')):
+                    raise ValueError('Observation modifiée pendant la décision ; reprenez l’agent.')
+                observation = visual
+                state = observation.get('match',{})
+                image = ROOT/'build/agents'/f'{session_id}-current.png'
+                image.write_bytes(base64.b64decode(observation['image']))
+            choosing = f'L’agent choisit son action ({index+1}/{maximum}, '+('texte' if mode=='text' else 'vision en secours')+')'
+            self.update(message=choosing+'…')
+            feedback_done = threading.Event()
+            def feedback():
+                while not feedback_done.wait(1):
+                    self.update(message=choosing+f' · {int(time.monotonic()-started)} s (jeu en pause)…')
+            feedback_thread = threading.Thread(target=feedback,daemon=True)
+            feedback_thread.start()
+            try:
+                decision = self.agent.play(image,state,self.history,self.cancel)
+            finally:
+                feedback_done.set()
+                feedback_thread.join()
+        validate_decision(decision)
+        elapsed = round((time.monotonic()-started)*1000,2)
+        counter = {'rules':'rule_actions','text':'text_calls','vision':'vision_calls'}[mode]
+        self.update(decision_ms=elapsed,**{counter:self.job.get(counter,0)+1})
+        folder = ROOT/'build/agents'
+        folder.mkdir(parents=True,exist_ok=True)
+        with (folder/f'{session_id}-decisions.jsonl').open('a',encoding='utf-8') as log:
+            log.write(json.dumps({'mode':mode,'milliseconds':elapsed,'frame':observation.get('frame'),
+                                  'screen':state.get('screen',{}).get('name'),'action':decision},ensure_ascii=False)+'\n')
+        return decision,observation
 
     def stop(self):
         self.cancel.set()
@@ -222,7 +266,7 @@ class Arena:
         if operation=='set_control':
             if arguments.get('owner')=='human' and self.thread and self.thread.is_alive():self.cancel.set()
             return self.session.set_control(**arguments)
-        if operation in ('observe','step','touch_path','checkpoint_save','checkpoint_load','start_match','reset_match'):
+        if operation in ('observe','step','touch_path','checkpoint_save','checkpoint_load','start_match','reset_match','playback'):
             result=self.checked(operation,**arguments)
             if operation=='reset_match':self.fixture=None
             return result

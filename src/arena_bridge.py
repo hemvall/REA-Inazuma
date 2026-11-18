@@ -13,7 +13,8 @@ from functools import lru_cache
 from pathlib import Path
 from nds import read_rom, sha
 from scene_team import inspect_party_memory
-from frame_state import screen_phase
+from frame_state import screen_phase, screen_observation
+from tactical_state import extract_tactical_state
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -91,6 +92,8 @@ class ArenaBridge:
         elif phase=='playing' and screen_phase(self.emulator.last_frame)=='halftime':phase='halftime'
         players = inspect_party_memory(memory) if phase in ('playing','halftime','result') else []
         return {'phase': phase, 'native_counter': counter,
+                'screen':screen_observation(self.emulator.last_frame),
+                'tactical':extract_tactical_state(memory,phase,players),
                 'home_units': [p['unit'] for p in players if not p['team_field'] & 0x8000],
                 'away_units': [p['unit'] for p in players if p['team_field'] & 0x8000],
                 'roster_source':'BEBF native player database at 0x020E0300',

@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 from urllib.parse import urlsplit
+from player_state import compact_state, compact_history, text_ready, text_actions
 
 BUTTONS = ['A','B','X','Y','L','R','START','SELECT','UP','DOWN','LEFT','RIGHT']
 ACTION_SCHEMA = {
@@ -139,11 +140,33 @@ class LocalAgent:
             '\nDemande : '+message, ORGANISER_SCHEMA,cancel=cancel)
 
     def play(self, image, state, history, cancel):
+        if image is None:
+            if not text_ready(state):
+                raise ValueError('État tactique incomplet : observation visuelle requise.')
+            actions = {action['name']: action for action in text_actions(state)}
+            schema = {'type':'object','additionalProperties':False,'properties':{
+                'action':{'type':'string','enum':list(actions)}, 'reason':{'type':'string'}},
+                'required':['action','reason']}
+            choice = self.generate(
+                'Joue pour le domicile dans Inazuma Eleven 2. Cet état est extrait de l’émulateur. '
+                'Aucune image. Choisis uniquement le nom d’une action disponible. '
+                'Ne déduis aucune position manquante. Choisis une seule action tactique. '
+                'reason : 12 mots maximum. Retourne uniquement le JSON demandé.\n'
+                'État : '+json.dumps(compact_state(state),ensure_ascii=False,separators=(',',':'))+
+                '\nActions : '+json.dumps(compact_history(history),ensure_ascii=False,separators=(',',':')),
+                schema,cancel=cancel)
+            if choice.get('action') not in actions or not isinstance(choice.get('reason'),str):
+                raise ValueError('Choix tactique hors des actions disponibles.')
+            action = actions[choice['action']]
+            return {'intent':'act','reason':choice['reason'],'frames':action['frames'],
+                    'keys':action.get('keys',[]),'touch':action.get('touch'),
+                    'path':action.get('path',[])}
         return self.generate(
             'Tu es un agent joueur d’Inazuma Eleven 2 sur Nintendo DS. Joue pour l’équipe domicile. '
             'N’utilise aucun outil et ne lis aucun fichier : observe uniquement l’image jointe et cet état. '
             'L’image empile l’écran supérieur 256x192 puis l’écran tactile inférieur 256x192. '
             'Les coordonnées touch/path concernent UNIQUEMENT l’écran inférieur : x0..255,y0..191. '
+            'Les positions tactiques sont des coordonnées terrain, jamais des coordonnées tactiles. '
             'Lis les boutons réellement visibles. Avance les dialogues avec A ou un clic bas droite. '
             'Dans la formation, B quitte les détails et Suite est vers (230,175). '
             'Avant le départ, Début est vers (70,175). Continuer au même endroit reprend une pause. '
@@ -156,8 +179,8 @@ class LocalAgent:
             'Pour attendre une animation, frames120 avec keys vide,touch null,path vide. '
             'Ne termine que sur un écran explicite de résultat final ; un score intermédiaire ne suffit pas. '
             'Si bloqué, explique ce que montre l’écran. reason : 12 mots maximum. Retourne exclusivement le JSON demandé.\n'
-            'État : '+json.dumps(state,ensure_ascii=False)+
-            '\nActions précédentes : '+json.dumps(history[-8:],ensure_ascii=False),
+            'État : '+json.dumps(compact_state(state),ensure_ascii=False,separators=(',',':'))+
+            '\nActions précédentes : '+json.dumps(compact_history(history),ensure_ascii=False,separators=(',',':')),
             ACTION_SCHEMA,image=image,cancel=cancel)
 
 

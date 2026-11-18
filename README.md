@@ -5,17 +5,19 @@
 Lancer **`Lancer InazumIA.cmd`**, puis demander « Fais s'affronter Occulte et Zeus ».
 Le chat prépare les équipes et six répliques entre leurs capitaines. Le dialogue
 est affiché dans le jeu ; la rencontre peut être jouée manuellement ou confiée
-à l'agent visuel. Le bouton de reprise arrête l'agent et laisse le jeu en pause.
+à l'agent hybride. Le bouton de reprise arrête l'agent et laisse le jeu en pause.
 
 Le catalogue validé de cette livraison contient **Occulte et Zeus**, dans les
-deux sens. Le joueur visuel est expérimental ; sa délégation peut être arrêtée
+deux sens. Le joueur hybride est expérimental ; sa délégation peut être arrêtée
 à tout moment et ne garantit pas une victoire.
 
 La ROM d'arène est construite une seule fois depuis votre original. Les affiches
 suivantes se préparent en RAM, dans la même session. « Nouvelle rencontre »
 restaure le checkpoint initial de cette session sans recharger la ROM.
 
-Les agents utilisent le CLI Codex installé et votre connexion ChatGPT existante.
+Les agents utilisent LM Studio en local ou le CLI Codex selon le moteur choisi.
+Le joueur lit les positions et la possession en mémoire, gère les menus connus
+par règles, puis utilise le texte pour les choix reconnus et l'image en secours.
 La préparation manuelle reste disponible sans agent. Le serveur et les scripts
 de construction utilisent Python 3.11+ ; l'adaptateur MCP a son environnement
 séparé. Voir [DELIVERY.md](DELIVERY.md) et [WEB_AND_MCP.md](WEB_AND_MCP.md).

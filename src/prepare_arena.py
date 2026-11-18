@@ -42,6 +42,8 @@ def build():
     config['arena'] = True
     config['opening'] = [{'speaker': 'Mark' if i % 2 == 0 else 'Byron',
                           'text': f'IZARENA-LINE-{i:02d} ' + '.' * 140} for i in range(6)]
+    # Native pitch illustration, displayed behind the fixture captain portraits.
+    config['backgrounds'] = ['c2t0806']
     config['scene_breaks_before_line'] = []
     config['victory'] = [{'speaker': 'Mark', 'text': 'Victoire ! La rencontre est terminee.'}]
     config['defeat'] = [{'speaker': 'Mark', 'text': 'Defaite. Une nouvelle rencontre nous attend.'}]

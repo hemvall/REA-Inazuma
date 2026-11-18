@@ -82,7 +82,8 @@ def prepare(rom, config):
         # Remove the stock riverside roster created by preserved map callbacks.
         for unit in (2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 1097):
             event.emit(0x3059, unit, 0)
-        for character in config['characters']:
+        # Story actors belong to the standalone scene; arena speakers use portraits.
+        for character in ([] if config.get('arena') else config['characters']):
             event.emit(0x3058, character['unit'], 0)
             event.emit(0x305A, character['unit'], 0, *(fixed(v) for v in character['position']))
             event.emit(0x305C, character['unit'], 0, fixed(90 if character['unit'] != 1 else 270))

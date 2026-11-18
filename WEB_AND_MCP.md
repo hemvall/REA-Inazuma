@@ -29,8 +29,32 @@ La lecture humaine envoie deux frames DS par requête, avec une cible de
 une machine lente ne cumule pas de commandes. Le suivi du statut reprend en
 pause ; pendant la lecture, les réponses des commandes actualisent l'écran.
 
-« L'agent joue pour moi » appelle un agent visuel avec ce même moteur. Il observe les
-deux écrans et choisit les entrées DS. Le cœur attend pendant chaque décision.
+« L'agent joue pour moi » utilise un contrôleur hybride avec ce même moteur :
+
+- Les transitions simples reconnues (formation, Début, stylet, retour au match,
+  mi-temps) utilisent des règles locales sans appel au modèle.
+- Les duels reconnus exposent les noms et coordonnées de leurs choix. Le modèle
+  reçoit uniquement le texte et choisit un nom ; le contrôleur fournit les
+  coordonnées natives autorisées. Un choix inventé est rejeté.
+- Un écran inconnu demande une capture des deux écrans au modèle visuel.
+
+La lecture mémoire fournit les positions terrain des joueurs, le ballon, son
+porteur, le score et le chrono natif (ticks/30). Le chrono ne sert jamais à
+déduire une fin de match ; son changement de période n'est pas encore validé.
+Les signatures de code ARM9, les pointeurs et les champs actifs sont
+contrôlés ; une observation non validée conserve des champs inconnus. Les menus
+sont reconnus par deux signatures de régions de pixels locales : leur provenance
+est distincte de celle des mesures en mémoire. Aucune image n'est envoyée au
+modèle pour une règle ou un choix texte.
+
+Les coordonnées terrain ne sont pas des coordonnées tactiles. La projection
+caméra et le joueur contrôlé ne sont pas encore validés : la conduite libre du
+ballon conserve donc le secours visuel. Un roster seul ne suffit jamais à activer
+le mode texte. Trois clics identiques sans progression rendent aussi la décision
+au modèle visuel. Les règles laissent 120 frames natives sans touche pour que le
+menu se stabilise avant une nouvelle observation.
+
+Le cœur attend pendant chaque décision du modèle.
 « Reprendre la main » annule la décision en cours et rend le contrôle humain.
 Chaque action est bornée ; une attente d'animation peut regrouper quatre segments
 de 120 frames. Quatre frames de relâchement séparent les appuis et les glissers
@@ -89,6 +113,17 @@ les images et les réponses structurées. Un échec, un délai dépassé ou un b
 Les prompts, sorties et journaux restent dans `build/agents/`. Les sessions
 gardent leurs commandes dans `build/sessions/<id>/replay.jsonl`, leurs images
 et le journal natif `native.log`. Ces fichiers restent hors Git et du ZIP source.
+Le statut indique `decision_mode` (`rules`, `text`, `vision`), `decision_ms`,
+`rule_actions`, `text_calls` et `vision_calls`. Les décisions et leur durée sont
+consignées dans `build/agents/<session>-decisions.jsonl`. La preuve PNG du résultat
+final reste enregistrée même quand les observations intermédiaires sont en texte.
+
+Vérifications isolées, sans utiliser la session du salon :
+
+```powershell
+python -m unittest discover -s tests -p test_*.py
+python tests/smoke_hybrid_session.py
+```
 
 ## Installer et configurer MCP
 

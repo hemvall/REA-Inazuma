@@ -1,5 +1,12 @@
 const $ = id => document.getElementById(id);
 let session=null,revision=0,running=false,busy=false,owner='human',jobRunning=false,fixture=null,lastJob='',lastImage='',polling=false;
+let videoSession=null;
+function attachVideo(){
+  if(!session||videoSession===session)return;
+  videoSession=session;
+  $('frame').src=$('topFrame').src='/video?session='+encodeURIComponent(session);
+  $('frame').hidden=false;$('empty').hidden=true;setScreenVisible(true);
+}
 const teams={3:{name:'Occulte',captain:'Talisman'},10:{name:'Zeus',captain:'Aphrodite'}};
 async function api(op,data={}) {
   const response=await fetch('/api/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
@@ -22,7 +29,7 @@ function setScreenVisible(visible){
   $('stadiumStage').classList.toggle('is-live',visible);
   $('screenMode').textContent=visible?'ÉCRANS DS · EN DIRECT':'ARÈNE EN ATTENTE';
   $('dsShell').hidden=!visible;
-  if(!visible){$('frame').hidden=true;$('empty').hidden=false;lastImage='';}
+  if(!visible){$('frame').hidden=true;$('empty').hidden=false;lastImage='';videoSession=null;$('frame').removeAttribute('src');$('topFrame').removeAttribute('src');}
 }
 $('swapTeams').onclick=()=>{const previous=$('home').value;$('home').value=$('away').value;$('away').value=previous;updateTeamPreview();};
 for(const side of ['home','away'])$(side).onchange=()=>{
@@ -34,7 +41,7 @@ updateTeamPreview();
 function show(result){
   if(!result)return;
   if(Number.isInteger(result.revision))revision=result.revision;
-  if(result.image&&result.image!==lastImage){lastImage=result.image;$('frame').src=$('topFrame').src='data:image/png;base64,'+result.image;$('frame').hidden=false;$('empty').hidden=true;setScreenVisible(true);}
+  attachVideo();
   const phase=result.match?.phase;
   const names={idle:'Au salon',starting:'Démarrage',dialogue:'Dialogue des capitaines',playing:'Rencontre en cours',result:'Résultat',loading:'Chargement'};
   $('status').textContent=owner==='agent'?'Contrôle agent':(names[phase]||'En pause')+(running?'':' · pause');
@@ -72,7 +79,7 @@ function renderFixture(value){
   $('dialogues').replaceChildren();value.lines.forEach((line,index)=>{const li=document.createElement('li');li.textContent=teams[index%2?value.away:value.home].captain+' : '+line;$('dialogues').append(li);});
 }
 async function poll(){
-  if(polling||busy||running)return;polling=true;
+  if(polling||busy)return;polling=true;
   try{
     const state=await api('status');session=state.session_id;owner=state.owner;jobRunning=state.job.state==='running';
     if(!session){setScreenVisible(false);$('status').textContent=jobRunning?'PRÉPARATION…':'EN ATTENTE';}
@@ -103,14 +110,13 @@ $('agentBackend').onchange=async()=>{
   catch(error){showBackend(selectedBackend);$('error').textContent=error.message;}
   finally{controls();}
 };
-// Display two DS frames per request, paced at 60 DS frames per second.
-// Await each response so slow machines never accumulate queued commands.
-async function playback(){
-  const started=performance.now();
-  if(running&&!busy&&!polling)await step();
-  setTimeout(playback,Math.max(0,1000/30-(performance.now()-started)));
+// The worker runs the DS clock. HTTP commands only change playback or input;
+// the persistent MJPEG connection delivers the latest frames independently.
+async function playback(value){
+  const result=await mutate('playback',{running:value,include_image:false});
+  if(result){running=value;$('play').textContent=running?'Pause':'Continuer';}
+  return result;
 }
-playback();
 $('chat').onsubmit=async event=>{
   event.preventDefault();running=false;const text=$('prompt').value.trim();if(!text)return;
   message(text,'question');$('prompt').value='';$('error').textContent='';
@@ -119,24 +125,24 @@ $('chat').onsubmit=async event=>{
 $('manual').onsubmit=async event=>{
   event.preventDefault();running=false;const home=Number($('home').value),away=Number($('away').value);
   if(home===away){$('error').textContent='Choisissez deux équipes différentes.';return;}
-  const lines=[`Bienvenue. ${teams[home].name} est pret pour ce match.`,`Face a ${teams[away].name}, chaque passe va compter.`,
-    'Notre capitaine compte sur toute son equipe.','Alors montrez-nous votre meilleur football.',
-    'Le ballon et le terrain vont nous departager.','En place. Que le meilleur gagne !'];
+  const lines=[`${teams[home].name} est pret. Et vous ?`,`${teams[away].name} releve le defi !`,
+    'On donnera tout, ensemble.','Alors montrez-nous votre football !',
+    'Que le meilleur gagne !','En place. Le match commence !'];
   try{await api('prepare_match',{home,away,lines});jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
 };
-$('start').onclick=async()=>{if(await mutate('start_match')){running=true;$('play').textContent='Pause';}};
-$('play').onclick=()=>{running=!running;$('play').textContent=running?'Pause':'Continuer';};
+$('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
+$('play').onclick=()=>playback(!running);
 $('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session});jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
 $('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent');await poll();}catch(error){$('error').textContent=error.message;}};
 $('external').onclick=async()=>{running=false;try{await api('set_control',{session_id:session,owner:'agent'});await poll();}catch(error){$('error').textContent=error.message;}};
-$('reset').onclick=async()=>{running=false;$('play').textContent='Continuer';await mutate('reset_match');renderFixture(null);await poll();};
+$('reset').onclick=async()=>{await playback(false);await mutate('reset_match');renderFixture(null);await poll();};
 $('close').onclick=async()=>{running=false;const result=await mutate('session_close');if(result){session=null;renderFixture(null);setScreenVisible(false);$('status').textContent='Session fermée';}await poll();};
 $('keys').onclick=event=>{if(event.target.dataset.key)step([event.target.dataset.key],null,6);};
 document.addEventListener('keydown',event=>{if(['INPUT','SELECT','BUTTON','TEXTAREA'].includes(event.target.tagName))return;
   const key={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',a:'A',b:'B',x:'X',y:'Y',Enter:'START'}[event.key];if(key&&session){event.preventDefault();step([key],null,6);}});
 let path=[],drawingWasRunning=false;
 function point(event){const r=$('frame').getBoundingClientRect();const x=Math.floor((event.clientX-r.left)*256/r.width),y=Math.floor((event.clientY-r.top)*384/r.height)-192;return x>=0&&x<256&&y>=0&&y<192?{x,y,frames:2}:null;}
-$('frame').onpointerdown=event=>{if(owner!=='human'||jobRunning||busy)return;const p=point(event);if(!p)return;event.preventDefault();drawingWasRunning=running;running=false;path=[p];$('frame').setPointerCapture(event.pointerId);};
+$('frame').onpointerdown=event=>{if(owner!=='human'||jobRunning||busy)return;const p=point(event);if(!p)return;event.preventDefault();drawingWasRunning=running;path=[p];$('frame').setPointerCapture(event.pointerId);if(running)playback(false);};
 $('frame').onpointermove=event=>{if(!path.length)return;const p=point(event);if(p&&path.length<50&&(p.x!==path.at(-1).x||p.y!==path.at(-1).y))path.push(p);};
-$('frame').onpointerup=async()=>{if(!path.length)return;const points=path;path=[];const result=points.length===1?await step([],[points[0].x,points[0].y],6):await mutate('touch_path',{points});running=!!result&&drawingWasRunning;};
-$('frame').onpointercancel=()=>{path=[];running=drawingWasRunning;};
+$('frame').onpointerup=async()=>{if(!path.length)return;const points=path;path=[];while(busy)await new Promise(resolve=>setTimeout(resolve,5));const result=points.length===1?await step([],[points[0].x,points[0].y],6):await mutate('touch_path',{points});if(result&&drawingWasRunning)await playback(true);};
+$('frame').onpointercancel=()=>{path=[];if(drawingWasRunning)playback(true);};
