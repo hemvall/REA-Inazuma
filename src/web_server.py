@@ -56,6 +56,10 @@ class Handler(BaseHTTPRequestHandler):
                  '/assets/team-royal.png': ('assets/team-royal.png', 'image/png'),
                  '/assets/team-occult.png': ('assets/team-occult.png', 'image/png'),
                  '/assets/team-zeus.png': ('assets/team-zeus.png', 'image/png'),
+                 '/assets/captain-mark.png': ('assets/captain-mark.png', 'image/png'),
+                 '/assets/captain-king.png': ('assets/captain-king.png', 'image/png'),
+                 '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),
+                 '/assets/captain-aphrodite.png': ('assets/captain-aphrodite.png', 'image/png'),
                  '/assets/PressStart2P-Regular.ttf': ('assets/PressStart2P-Regular.ttf', 'font/ttf')}
         if self.path not in files:
             return self.reply(404, {'error': 'Not found'})

@@ -20,7 +20,12 @@ let walkingTouch=null;
 function releaseInputs(){keyboardDirections.clear();pendingKeys.clear();pointerDirections.clear();walkingTouch=null;for(const b of $('keys').querySelectorAll('[data-key]'))b.removeAttribute('data-held');}
 window.addEventListener('blur',releaseInputs);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
-const teams={1:{name:'Raimon',captain:'Mark',code:'RAI',emblem:'raimon'},2:{name:'Royal Academy',captain:'Joseph King',code:'ROY',emblem:'royal'},3:{name:'Occulte',captain:'Talisman',code:'OCC',emblem:'occult'},10:{name:'Zeus',captain:'Aphrodite',code:'ZEU',emblem:'zeus'}};
+const teams={
+  1:{name:'Raimon',captain:'Mark',portrait:'mark',code:'RAI',emblem:'raimon'},
+  2:{name:'Royal Academy',captain:'Joseph King',portrait:'king',code:'ROY',emblem:'royal'},
+  3:{name:'Occulte',captain:'Talisman',portrait:'talisman',code:'OCC',emblem:'occult'},
+  10:{name:'Zeus',captain:'Aphrodite',portrait:'aphrodite',code:'ZEU',emblem:'zeus'},
+};
 async function api(op,data={}) {
   const response=await fetch('/api/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   const result=await response.json();
@@ -32,6 +37,7 @@ function updateTeamPreview(){
   for(const side of ['home','away']){
     const id=Number($(side).value),team=teams[id];
     $(side+'Captain').textContent='Capitaine · '+team.captain;
+    $(side+'Portrait').src='/assets/captain-'+team.portrait+'.png';
     $(side+'Code').textContent=team.code;
     $(side+'Emblem').src='/assets/team-'+team.emblem+'.png';
     $(side).closest('.team-tile').dataset.team=String(id);

@@ -7,6 +7,8 @@
   Source: https://github.com/google/fonts/tree/main/ofl/pressstart2p
 - `team-*.png`: official Raimon, Royal Academy, Occult and Zeus emblems from
   LEVEL-5's [Inazugle emblem catalog](https://zukan.inazuma.jp/en/item/emblem/).
+- `captain-*.png`: official player portraits from
+  [LEVEL-5's Inazugle character catalog](https://zukan.inazuma.jp/en/chara_param/).
 - The ball, controller and lightning icons are inline SVG graphics in
   `web/index.html`, drawn on integer-coordinate grids.
 
