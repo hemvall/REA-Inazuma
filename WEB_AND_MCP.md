@@ -75,11 +75,7 @@ non comme une ROM autonome dans un autre frontend.
 
 ## Agents et connexion
 
-Le sélecteur « Moteur des agents » propose **IA locale · LM Studio** et
-**Codex CLI · compte connecté**. Le choix est enregistré dans
-`build/agents/settings.json` et ne peut pas changer pendant une opération.
-L'IA locale est sélectionnée lors du premier lancement. La variable
-`INAZUMIA_AGENT_BACKEND` (`local` ou `codex`) peut imposer le moteur au démarrage.
+Le salon web utilise **LM Studio** pour le chat et le pilote IA.
 
 ### IA locale
 

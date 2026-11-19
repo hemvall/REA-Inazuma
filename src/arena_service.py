@@ -13,7 +13,7 @@ from player_state import text_ready
 
 
 class Arena:
-    def __init__(self, *, stream_video=True):
+    def __init__(self, *, stream_video=True, local_only=False):
         self.session = GameSession(stream_video=stream_video)
         self.lock = threading.RLock()
         self.cancel = threading.Event()
@@ -22,6 +22,10 @@ class Arena:
         self.latest = None
         self.fixture = None
         self.history = []
+        self.local_only = local_only
+        if local_only:
+            self.agent = LocalAgent(ROOT/'build/agents')
+            return
         settings = ROOT/'build/agents/settings.json'
         try:
             backend = json.loads(settings.read_text(encoding='utf-8')).get('backend', 'local')
@@ -38,6 +42,8 @@ class Arena:
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
     def select_agent(self, backend):
+        if self.local_only:
+            raise ValueError('Le salon utilise LM Studio.')
         if backend not in ('local', 'codex'):
             raise ValueError('Moteur attendu : local ou codex.')
         with self.lock:

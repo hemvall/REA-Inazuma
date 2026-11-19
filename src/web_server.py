@@ -6,7 +6,7 @@ from pathlib import Path
 from arena_service import Arena
 from local_address import HOST, PORT, URL
 
-ARENA = Arena()
+ARENA = Arena(local_only=True)
 WEB = Path(__file__).resolve().parents[1] / 'web'
 
 
@@ -52,6 +52,14 @@ class Handler(BaseHTTPRequestHandler):
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
                  '/assets/stadium-pixel.png': ('assets/stadium-pixel.png', 'image/png'),
+                 '/assets/team-raimon.png': ('assets/team-raimon.png', 'image/png'),
+                 '/assets/team-royal.png': ('assets/team-royal.png', 'image/png'),
+                 '/assets/team-occult.png': ('assets/team-occult.png', 'image/png'),
+                 '/assets/team-zeus.png': ('assets/team-zeus.png', 'image/png'),
+                 '/assets/captain-mark.png': ('assets/captain-mark.png', 'image/png'),
+                 '/assets/captain-king.png': ('assets/captain-king.png', 'image/png'),
+                 '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),
+                 '/assets/captain-aphrodite.png': ('assets/captain-aphrodite.png', 'image/png'),
                  '/assets/PressStart2P-Regular.ttf': ('assets/PressStart2P-Regular.ttf', 'font/ttf')}
         if self.path not in files:
             return self.reply(404, {'error': 'Not found'})

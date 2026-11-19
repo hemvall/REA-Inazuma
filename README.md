@@ -1,30 +1,57 @@
-# Inazuma Eleven 2: Le Defi Mystere
+# InazumIA
 
-## InazumIA — salon de rencontres dynamiques
+**Compose une affiche, fais parler les capitaines et joue le match dans le moteur Nintendo DS.**
 
-Lancer **`Lancer InazumIA.cmd`**, puis demander « Fais s'affronter Occulte et Zeus ».
-Le chat prépare les équipes et six répliques entre leurs capitaines. Le dialogue
-est affiché dans le jeu ; la rencontre peut être jouée manuellement ou confiée
-à l'agent hybride. Le bouton de reprise arrête l'agent et laisse le jeu en pause.
+InazumIA est un projet de fans autour d’*Inazuma Eleven 2 : Tempête de Glace*. Son salon web affiche les deux écrans de la DS et permet de préparer un match, de le jouer au clavier ou au tactile, puis de revenir au salon pour enchaîner.
 
-Le catalogue validé de cette livraison contient **Occulte et Zeus**, dans les
-deux sens. Le joueur hybride est expérimental ; sa délégation peut être arrêtée
-à tout moment et ne garantit pas une victoire.
+[Prise en main](#prise-en-main) · [Architecture](#architecture) · [Documentation](#documentation)
 
-La ROM d'arène est construite une seule fois depuis votre original. Les affiches
-suivantes se préparent en RAM, dans la même session. « Nouvelle rencontre »
-restaure le checkpoint initial de cette session sans recharger la ROM.
+## Du vestiaire au terrain
 
-Les agents utilisent LM Studio en local ou le CLI Codex selon le moteur choisi.
-Le joueur lit les positions et la possession en mémoire, gère les menus connus
-par règles, puis utilise le texte pour les choix reconnus et l'image en secours.
-La préparation manuelle reste disponible sans agent. Le serveur et les scripts
-de construction utilisent Python 3.11+ ; l'adaptateur MCP a son environnement
-séparé. Voir [DELIVERY.md](DELIVERY.md) et [WEB_AND_MCP.md](WEB_AND_MCP.md).
+> Fais s’affronter Occulte et Zeus.
 
-Le texte ci-dessous documente également le scénario historique « Défi Mystère »,
-conservé comme profil séparé. Ses anciennes captures ne prouvent pas le parcours
-de l'arène ; les vérifications de livraison sont consignées séparément.
+- **Prépare la rencontre.** Choisis les équipes ou donne une consigne au coach. L’organisateur peut écrire six répliques de capitaines qui s’affichent dans le jeu avant le coup d’envoi. La préparation manuelle utilise un dialogue prédéfini.
+- **Joue ou délègue.** Prends les commandes au clavier ou au tactile. Essaie le pilote déterministe ou le pilote IA, puis reprends la main à tout moment. Les pilotes sont expérimentaux et peuvent s’arrêter avant la fin du match.
+- **Enchaîne les affiches.** Le bouton **Nouvelle rencontre** restaure le checkpoint initial. Les équipes et le dialogue suivants sont préparés en mémoire dans la même session.
+- **Passe voir Hillman.** Le local du club propose Occulte–Zeus et Royal Academy–Raimon dans les deux sens, avec les effectifs du jeu. [Matchs amicaux du club](CLUB_FRIENDLIES.md)
+
+## Prise en main
+
+Il te faut **Windows**, **Python 3.11+**, ta ROM française de *Tempête de Glace* (**BEBF, révision 0**) et le cœur **melonDS Libretro** validé par le projet. Les empreintes SHA-256 des deux fichiers figurent dans les [prérequis de livraison](DELIVERY.md#prérequis).
+
+```powershell
+git clone https://github.com/hemvall/REA-Inazuma.git
+cd REA-Inazuma
+```
+
+1. Place ta ROM dans `rom/original.nds` et le cœur validé dans `local/tools/melonds-core/melonds_libretro.dll`.
+2. Ouvre **Lancer InazumIA.cmd**. Le lanceur prépare l’arène et ouvre le salon sur `http://127.0.0.1:18765`.
+3. Sélectionne **Occulte** et **Zeus**, clique sur **Préparer le match**, puis sur **Lancer le dialogue**.
+
+Le parcours manuel fonctionne sans modèle. Le coach et le pilote IA utilisent le moteur configuré dans le salon. Le client MCP est facultatif. [Configurer LM Studio, Codex CLI ou MCP](WEB_AND_MCP.md)
+
+## Architecture
+
+| Composant | Rôle |
+| --- | --- |
+| [Salon web](web/) | Sélection des équipes, affichage des deux écrans et commandes DS. |
+| [Session et émulation](src/game_session.py) | Worker isolé, entrées DS, captures et checkpoints. |
+| [Service d’arène](src/arena_service.py) | Préparation des rencontres en mémoire, dialogue des capitaines et délégation du jeu. |
+| [Serveur MCP](src/mcp_server.py) | Accès à la même session depuis un client compatible. |
+
+Le pilote s’appuie sur l’état du match lu en mémoire et sur la reconnaissance des menus. Le worker traduit les actions reconnues en entrées DS. Le lanceur construit l’arène à partir de la ROM originale lors de la préparation initiale.
+
+## Documentation
+
+- [Salon web et MCP](WEB_AND_MCP.md) — commandes, configuration des modèles et protocole.
+- [Livraison](DELIVERY.md) — versions attendues, empreintes et construction.
+- [Vérifications](DELIVERY_VERIFICATION.md) — essais réalisés et limites observées.
+- [Défi Mystère](RUN_SCENARIO.md) — scénario historique jouable jusqu’au match. Le retour automatique après le match reste bloqué. [Vérification du scénario](RUNTIME_VERIFICATION.md)
+
+Les ROM, sauvegardes, ressources extraites et binaires d’émulation restent locaux. InazumIA est un projet non officiel.
+
+<details>
+<summary>Notes techniques du profil historique Défi Mystère</summary>
 
 A local modification of the user-supplied French Tempete de Glace Nintendo DS
 ROM. New Game now starts in the real, sunny Raimon **Club de foot** map,
@@ -179,3 +206,5 @@ REA 6.9.0 was separately installed for Codex with the user's approval. Its MCP
 handshake exposed 255 tools; the current chat needs a client reload to discover
 them. No optional native-analysis engine was installed. REA is not a dependency
 of these build scripts.
+
+</details>
