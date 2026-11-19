@@ -101,7 +101,8 @@ def _worker(pipe, rom, core, directory, profile, video=None):
             for command in commands:
                 emulator.command(command)
                 if (bridge.state()['phase'] == 'club' if profile == 'club' else bridge.state()['native_counter'] == 4):
-                    emulator.command({'frames':600})
+                    if profile == 'club':
+                        emulator.command({'frames':600})
                     break
             if (bridge.state()['phase'] != 'club' if profile == 'club' else bridge.state()['native_counter'] != 4):
                 raise RuntimeError('Arena boot failed: waiting dialogue not reached')
