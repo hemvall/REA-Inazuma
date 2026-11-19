@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from game_session import GameSession, ROOT
-from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, BUTTONS
+from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, InvalidAgentResponse, BUTTONS
 from arena_bridge import catalogue
 from fast_policy import fast_decision
 from player_state import text_ready
@@ -34,7 +34,7 @@ class Arena:
         built = (ROOT/'build/arena/profile.json').is_file()
         return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':built,
                 'external_agent_control':True,'teams':[1,2,3,10], 'club':True, 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
-                'player_mode':'deterministic','player_inputs':['rules'],
+                'player_mode':'deterministic','player_modes':['deterministic','ai'],'player_inputs':['rules','text'],
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
     def select_agent(self, backend):
@@ -135,7 +135,9 @@ class Arena:
                     'owner':self.session.owner,'fixture':self.fixture,'observation':self.latest,
                     'agent_actions':len(self.history)}
 
-    def delegate(self, session_id, max_decisions=400):
+    def delegate(self, session_id, max_decisions=400, mode='deterministic'):
+        if mode not in ('deterministic', 'ai'):
+            raise ValueError('Mode attendu : deterministic ou ai.')
         if type(max_decisions) is not int or not 1<=max_decisions<=500:
             raise ValueError('Budget attendu : 1 à 500 décisions')
         if session_id != self.session.session_id: raise ValueError('Session inconnue')
@@ -146,17 +148,21 @@ class Arena:
                 if self.cancel.is_set():
                     return
                 self.session.set_control(session_id, 'agent')
-            self.checked('playback', session_id=session_id, actor='agent', running=False, include_image=False)
+                self.checked('playback', session_id=session_id, actor='agent', running=False,
+                             include_image=False)
+                arguments = {'session_id': session_id, 'actor': 'agent', 'include_image': False}
+                observation = self.checked('observe_match', **arguments)['match_observation']
             self.history = []
-            self.update(rule_actions=0, text_calls=0, vision_calls=0, decision_mode='rules',
-                        rejected_commands=0, max_action_gap_seconds=None)
-            arguments = {'session_id': session_id, 'actor': 'agent', 'include_image': False}
+            self.update(pilot_mode=mode, rule_actions=0, text_calls=0, vision_calls=0,
+                        decision_mode='rules', fallback_count=0, animation_seconds=0,
+                        rejected_commands=0, max_action_gap_seconds=None,
+                        max_input_gap_seconds=None)
             folder = ROOT / 'build/agents'
             folder.mkdir(parents=True, exist_ok=True)
-            observation = self.checked('observe_match', **arguments)['match_observation']
             stalled_frames = 0
             rejected = 0
             last_action = None
+            advance_since_action = 0
             repeated = 0
             cooldown = 0
             goal_animation_until = 0
@@ -168,8 +174,9 @@ class Arena:
 
                 def finish(reason, **fields):
                     metrics = {key: self.job[key] for key in ('rule_actions', 'text_calls', 'vision_calls',
-                                                              'rejected_commands', 'max_action_gap_seconds')}
-                    record('summary', reason=reason, **metrics, **fields)
+                               'fallback_count', 'animation_seconds', 'rejected_commands',
+                               'max_action_gap_seconds', 'max_input_gap_seconds')}
+                    record('summary', reason=reason, pilot_mode=mode, **metrics, **fields)
 
                 while len(self.history) < max_decisions and not self.cancel.is_set():
                     record('observation', **observation)
@@ -205,12 +212,42 @@ class Arena:
 
                     revision = observation['revision']
                     started = time.monotonic()
+                    decision_mode = 'rules'
+                    fallback = None
                     try:
-                        if action_id:
-                            result = self.checked('apply_match_action', **arguments, revision=revision,
-                                                  frame=frame, action_id=action_id)
-                        else:
-                            result = self.checked('advance_match', **arguments, revision=revision, frames=60)
+                        if action_id and mode == 'ai' and len(actions) > 1:
+                            self.update(text_calls=self.job['text_calls'] + 1,
+                                        message='L’agent choisit son action…')
+                            try:
+                                choice = self.agent.decide_match_action(observation, self.cancel)
+                                if (not isinstance(choice, dict) or set(choice) != {'action_id'}
+                                        or choice['action_id'] not in [action['id'] for action in actions]):
+                                    raise ValueError('Choix hors des actions disponibles.')
+                            except TimeoutError:
+                                fallback = 'timeout'
+                            except (ValueError, InvalidAgentResponse):
+                                fallback = 'invalid_response'
+                            except (OSError, RuntimeError):
+                                fallback = 'model_unavailable'
+                            else:
+                                action_id = choice['action_id']
+                                decision_mode = 'text'
+                        decision_ms = round((time.monotonic() - started) * 1000, 2)
+                        with self.lock:
+                            if self.cancel.is_set() or self.session.owner != 'agent':
+                                raise AgentCancelled()
+                            if action_id:
+                                self.update(decision_mode=decision_mode, decision_ms=decision_ms,
+                                            fallback_count=self.job['fallback_count'] + int(fallback is not None))
+                                record('decision', pilot_mode=mode, mode=decision_mode, action_id=action_id,
+                                       milliseconds=decision_ms, fallback=fallback, frame=frame, revision=revision)
+                                result = self.checked('apply_match_action', **arguments, revision=revision,
+                                                      frame=frame, action_id=action_id)
+                            else:
+                                result = self.checked('advance_match', **arguments, revision=revision, frames=60)
+                    except AgentCancelled:
+                        finish('cancelled', phase=phase, frame=frame)
+                        return
                     except ValueError as error:
                         if self.cancel.is_set():
                             finish('cancelled', phase=phase, frame=frame)
@@ -222,7 +259,11 @@ class Arena:
                             finish('rejected', phase=phase, frame=frame)
                             self.update(state='blocked', message=f'Commande refusée en phase {phase}, frame {frame}.')
                             return
-                        observation = self.checked('observe_match', **arguments)['match_observation']
+                        with self.lock:
+                            if self.cancel.is_set() or self.session.owner != 'agent':
+                                finish('cancelled', phase=phase, frame=frame)
+                                return
+                            observation = self.checked('observe_match', **arguments)['match_observation']
                         continue
 
                     current = result['match_observation']
@@ -235,19 +276,31 @@ class Arena:
                         progressed = True
                     stalled_frames = 0 if progressed else stalled_frames + current['frame'] - frame
                     if action_id:
-                        gap = None if last_action is None else started - last_action
-                        last_action = started
+                        accepted_at = time.monotonic()
+                        gap = None if last_action is None else accepted_at - last_action
+                        # The emulator is running, rather than waiting for a choice, during advances.
+                        input_gap = None if gap is None else max(0, gap - advance_since_action)
+                        last_action = accepted_at
+                        advance_since_action = 0
                         self.history.append(action_id)
                         repeated = 0 if progressed else repeated + 1
                         if gap is not None:
-                            self.update(max_action_gap_seconds=max(self.job['max_action_gap_seconds'] or 0, gap))
-                        self.update(rule_actions=len(self.history), message=action_id)
-                        record('accepted', action_id=action_id, frame=frame, gap_seconds=gap)
+                            self.update(max_action_gap_seconds=max(self.job['max_action_gap_seconds'] or 0, gap),
+                                        max_input_gap_seconds=max(self.job['max_input_gap_seconds'] or 0, input_gap))
+                        self.update(rule_actions=self.job['rule_actions'] + int(decision_mode == 'rules'),
+                                    message=action_id)
+                        record('accepted', action_id=action_id, frame=frame, gap_seconds=gap,
+                               input_gap_seconds=input_gap)
                         cooldown = (240 if action_id == 'formation.open' else 120) if not progressed else 0
                     else:
                         advanced = current['frame'] - frame
                         cooldown = 0 if progressed else max(0, cooldown - advanced)
-                        record('advance', frame=frame, frames=advanced, seconds=time.monotonic() - started)
+                        seconds = time.monotonic() - started
+                        advance_since_action += seconds
+                        if waiting_for_transition:
+                            self.update(animation_seconds=self.job['animation_seconds'] + seconds)
+                        record('advance', frame=frame, frames=advanced, seconds=seconds,
+                               forced_animation=waiting_for_transition)
                         if progressed:
                             repeated = 0
                     observation = current

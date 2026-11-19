@@ -53,3 +53,16 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 .ds-brand{position:absolute;bottom:1.2%;left:0;width:100%;text-align:center;color:#8c989e;font:6px/1.5 var(--pixel);letter-spacing:.4px}
 .ds-led{position:absolute;right:6%;top:48.4%;width:7px;height:4px;background:#76db72;box-shadow:0 0 0 1px #548a67}
 @media(max-width:620px){.stadium-stage.is-live{padding-inline:10px}.ds-shell{width:340px}.ds-brand{font-size:5px}.ds-buttons{font-size:5px}}
+#pilotMode {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: #243c61;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+#pilotMode:disabled { opacity: .42; }

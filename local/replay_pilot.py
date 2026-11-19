@@ -10,12 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from arena_service import Arena
 
 
-def play(home, away, timeout, folder):
+def play(home, away, timeout, folder, mode='deterministic'):
     arena = Arena(stream_video=False)
     try:
         arena.prepare(home, away, ['Le match commence.'] * 6)
         sid = arena.session.session_id
-        arena.delegate(sid, max_decisions=500)
+        arena.delegate(sid, max_decisions=500, mode=mode)
         arena.thread.join(timeout)
         timed_out = arena.thread.is_alive()
         if timed_out:
@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--rounds', type=int, default=2, help='Number of runs per fixture')
     parser.add_argument('--timeout', type=int, default=240, help='Seconds per match')
     parser.add_argument('--home', type=int, choices=(3, 10), help='Run only the selected home team')
+    parser.add_argument('--mode', choices=('deterministic', 'ai'), default='deterministic')
     args = parser.parse_args()
     if args.rounds < 1 or args.timeout < 1:
         parser.error('rounds and timeout must be positive')
@@ -58,7 +59,7 @@ def main():
     for _ in range(args.rounds):
         for home, away in fixtures:
             try:
-                print(json.dumps(play(home, away, args.timeout, folder)), flush=True)
+                print(json.dumps(play(home, away, args.timeout, folder, args.mode)), flush=True)
             except (ValueError, RuntimeError, OSError) as error:
                 print(json.dumps({'home': home, 'away': away, 'error': str(error)}), flush=True)
 

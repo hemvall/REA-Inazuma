@@ -1,4 +1,11 @@
 const $ = id => document.getElementById(id);
+const pilotMode = document.createElement('select');
+pilotMode.id = 'pilotMode';
+pilotMode.disabled = true;
+pilotMode.setAttribute('aria-label', 'Mode du pilote');
+pilotMode.add(new Option('Pilote déterministe', 'deterministic'));
+pilotMode.add(new Option('Pilote IA', 'ai'));
+$('delegate').parentElement.before(pilotMode);
 let session=null,revision=0,running=false,busy=false,owner='human',jobRunning=false,fixture=null,lastJob='',lastImage='',polling=false;
 let videoSession=null;
 function attachVideo(){
@@ -62,6 +69,7 @@ function controls(){
   if(!manual||window.currentPhase==='result')releaseInputs();
   $('start').disabled=!manual||!fixture||!['idle'].includes(window.currentPhase);
   $('delegate').disabled=!manual||!fixture||window.currentPhase==='result';
+  pilotMode.disabled=$('delegate').disabled;
   $('play').disabled=!manual||window.currentPhase==='result';
   if(window.currentPhase==='result'){running=false;$('play').textContent='Continuer';}
   $('reset').disabled=!manual;
@@ -108,8 +116,8 @@ setInterval(poll,650);poll();
 function showBackend(backend){
   $('agentBackend').value=backend;
   $('agentNote').textContent=backend==='local'
-    ?'LM Studio et qwen/qwen3.5-9b préparent les rencontres par chat. Le pilote du match fonctionne sans modèle.'
-    :'Codex CLI prépare les rencontres par chat. Le pilote du match fonctionne sans modèle.';
+    ?'LM Studio et qwen/qwen3.5-9b servent au chat et aux choix du pilote IA.'
+    :'Codex CLI sert au chat et aux choix du pilote IA.';
 }
 let selectedBackend='local';
 api('capabilities').then(value=>{selectedBackend=value.agent_backend;showBackend(selectedBackend);}).catch(error=>{$('error').textContent=error.message;});
@@ -156,7 +164,7 @@ $('manual').onsubmit=async event=>{
 };
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
 $('play').onclick=()=>playback(!running);
-$('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session});jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
+$('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session,mode:pilotMode.value});jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
 $('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent',session?{session_id:session}:{});await poll();}catch(error){$('error').textContent=error.message;}};
 $('external').onclick=async()=>{running=false;try{await api('set_control',{session_id:session,owner:'agent'});await poll();}catch(error){$('error').textContent=error.message;}};
 $('reset').onclick=async()=>{await playback(false);await mutate('reset_match');renderFixture(null);await poll();};

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import time
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from arena_service import Arena
@@ -16,6 +17,68 @@ def reject(operation, expected):
         assert expected in str(error), error
     else:
         raise AssertionError(f'Expected rejection: {expected}')
+
+
+def duel_checkpoint():
+    arena = Arena(stream_video=False)
+    try:
+        arena.prepare(3, 10, ['Le match commence.'] * 6)
+        sid = arena.session.session_id
+        args = {'session_id': sid}
+        checked = arena.checked
+
+        def stop_at_duel(operation, **arguments):
+            result = checked(operation, **arguments)
+            state = result.get('match_observation')
+            if state and state['screen'] == 'attack_duel' and len(state['legal_actions']) == 2:
+                arena.cancel.set()
+            return result
+
+        with patch.object(arena, 'checked', side_effect=stop_at_duel):
+            arena.delegate(sid, max_decisions=500)
+            arena.thread.join(180)
+            assert not arena.thread.is_alive(), 'Duel checkpoint timeout'
+        assert arena.job['text_calls'] == arena.job['vision_calls'] == 0
+        state = arena.call('observe_match', args)
+        assert state['screen'] == 'attack_duel', state
+        checkpoint = arena.call('checkpoint_save', args)
+        first_id, second_id = (action['id'] for action in state['legal_actions'])
+
+        def apply(action_id):
+            return arena.call('apply_match_action', {**args, 'revision': state['revision'],
+                                                     'frame': state['frame'], 'action_id': action_id})
+
+        def restore(result):
+            arena.call('checkpoint_load', {**args, 'revision': result['revision'],
+                                          'checkpoint_id': checkpoint['checkpoint_id']})
+            return arena.call('observe_match', args)
+
+        def advance(result):
+            return arena.call('advance_match', {**args, 'revision': result['revision'], 'frames': 120})
+
+        first = advance(apply(first_id))
+        state = restore(first)
+        second = advance(apply(second_id))
+        state = restore(second)
+        with patch.object(arena.agent, 'generate', return_value={'action_id': second_id}) as model:
+            arena.delegate(sid, max_decisions=1, mode='ai')
+            arena.thread.join(15)
+            assert not arena.thread.is_alive(), 'AI decision timeout'
+            model.assert_called_once()
+        actual = advance(arena.call('observe_match', args))
+        assert arena.history == [second_id], arena.history
+        assert arena.job['text_calls'] == 1 and arena.job['vision_calls'] == 0
+        effect = lambda observation: {key: value for key, value in observation.items()
+                                      if key != 'revision'}
+        assert effect(actual) == effect(second), (actual, second)
+        assert effect(actual) != effect(first), (actual, first)
+        print(json.dumps({'checkpoint': state['screen'], 'action_id': second_id,
+                          'first': effect(first), 'second': effect(actual)}), flush=True)
+    finally:
+        arena.stop()
+        if arena.thread:
+            arena.thread.join(15)
+        arena.session.close()
 
 
 def main():
@@ -96,4 +159,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1:] == ['--duel-checkpoint']:
+        duel_checkpoint()
+    else:
+        main()

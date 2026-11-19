@@ -43,6 +43,10 @@ class AgentCancelled(Exception):
     pass
 
 
+class InvalidAgentResponse(RuntimeError):
+    pass
+
+
 class LocalAgent:
     backend = 'local'
     def __init__(self, directory):
@@ -87,7 +91,7 @@ class LocalAgent:
             encoded = base64.b64encode(Path(image).read_bytes()).decode('ascii')
             content.append({'type':'image_url','image_url':{'url':'data:image/png;base64,'+encoded}})
         payload = {'model':self.model, 'messages':[{'role':'user','content':content}],
-                   'temperature':0.2, 'max_tokens':1500, 'stream':False,
+                   'temperature':0.2, 'max_tokens':256 if timeout <= 9 else 1500, 'stream':False,
                    'reasoning_effort':'none',
                    'response_format':{'type':'json_schema','json_schema':{
                        'name':'agent_response','strict':True,'schema':schema}}}
@@ -115,17 +119,35 @@ class LocalAgent:
                 raise outcome['error']
             response = outcome['response']
             (run/'agent.log').write_text(json.dumps(response,ensure_ascii=False),encoding='utf-8')
-            if response['choices'][0].get('finish_reason') != 'stop':
-                raise ValueError('Réponse interrompue ou budget de tokens atteint')
-            result = json.loads(response['choices'][0]['message']['content'])
-            if not isinstance(result,dict):
-                raise ValueError('Objet JSON attendu')
+            try:
+                choice = response['choices'][0]
+                if choice.get('finish_reason') != 'stop':
+                    raise ValueError('Réponse interrompue ou budget de tokens atteint')
+                result = json.loads(choice['message']['content'])
+                if not isinstance(result, dict):
+                    raise ValueError('Objet JSON attendu')
+            except (ValueError, KeyError, IndexError, TypeError, AttributeError) as error:
+                raise InvalidAgentResponse(str(error)) from error
             output_path.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
             return result
+        except (TimeoutError, InvalidAgentResponse):
+            raise
         except Exception as error:
             (run/'error.txt').write_text(str(error),encoding='utf-8')
             raise RuntimeError('Échec de l’IA locale. Démarrez le serveur LM Studio avec le modèle '+self.model+
                                '. Détail : '+str(error)) from error
+
+    def decide_match_action(self, observation, cancel):
+        action_ids = [action['id'] for action in observation['legal_actions']]
+        schema = {
+            'type': 'object', 'additionalProperties': False, 'required': ['action_id'],
+            'properties': {'action_id': {'type': 'string', 'enum': action_ids}},
+        }
+        return self.generate(
+            'Joue pour l’équipe à domicile. Choisis une seule action parmi legal_actions. '
+            'Utilise uniquement cet état, sans outil ni image. Les valeurs inconnues restent inconnues.\n'
+            + json.dumps(observation, ensure_ascii=False, separators=(',', ':')),
+            schema, cancel=cancel, timeout=8)
 
     def organise(self, message, teams, cancel=None):
         return self.generate(
@@ -154,7 +176,7 @@ class LocalAgent:
                 'reason : 12 mots maximum. Retourne uniquement le JSON demandé.\n'
                 'État : '+json.dumps(compact_state(state),ensure_ascii=False,separators=(',',':'))+
                 '\nActions : '+json.dumps(compact_history(history),ensure_ascii=False,separators=(',',':')),
-                schema,cancel=cancel)
+                schema,cancel=cancel,timeout=9)
             if choice.get('action') not in actions or not isinstance(choice.get('reason'),str):
                 raise ValueError('Choix tactique hors des actions disponibles.')
             action = actions[choice['action']]
@@ -181,7 +203,7 @@ class LocalAgent:
             'Si bloqué, explique ce que montre l’écran. reason : 12 mots maximum. Retourne exclusivement le JSON demandé.\n'
             'État : '+json.dumps(compact_state(state),ensure_ascii=False,separators=(',',':'))+
             '\nActions précédentes : '+json.dumps(compact_history(history),ensure_ascii=False,separators=(',',':')),
-            ACTION_SCHEMA,image=image,cancel=cancel)
+            ACTION_SCHEMA,image=image,cancel=cancel,timeout=9)
 
 
 class CodexAgent(LocalAgent):
