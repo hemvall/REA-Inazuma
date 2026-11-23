@@ -78,6 +78,8 @@ const formatter = new Intl.NumberFormat('fr-FR');
 let activeSlot = null;
 let sellingId = null;
 let analysisController;
+let proposedRecruitment = null;
+const declinedOptions = new Set();
 
 function ownedPlayers(state) {
   return [...state.recruits, ...scoutIds.filter(id => !state.soldScouts.includes(id))];
@@ -191,23 +193,37 @@ function playerRow(player, info, action) {
 function renderShop() {
   if (!catalogue.open) return;
   const filter = $('rarity').value;
-  $('shop-list').replaceChildren(...recruits.filter(player => !filter || player.rarity === filter).map(player => {
+  const proposal = proposedRecruitment;
+  $('rarity').closest('label').hidden = Boolean(proposal);
+  $('catalogue-title').textContent = proposal ? 'Confirmer le recrutement avec Célia' : 'Joueurs disponibles';
+  $('shop-list').replaceChildren(...recruits.filter(player => proposal ? player.id === proposal.playerId
+    : !filter || player.rarity === filter).map(player => {
     const owned = state.recruits.includes(player.id);
     const afford = state.credits >= player.price;
-    const button = node('button', 'purchase', owned ? 'Recruté' : afford ? 'Acheter' : 'Budget insuffisant');
+    const button = node('button', 'purchase', owned ? 'Recruté' : !afford ? 'Budget insuffisant'
+      : proposal ? 'Acheter et titulariser' : 'Acheter');
     button.type = 'button';
     button.disabled = owned || !afford;
     button.setAttribute('aria-label', `${button.textContent} — ${playerName(player)}`);
     button.onclick = async () => {
       const focused = document.activeElement === button;
       const saved = await update(copy => {
+        if (proposal) checkCoachTarget(copy, proposal);
         if (copy.recruits.includes(player.id)) throw new Error('Ce joueur appartient déjà au club.');
         if (copy.credits < player.price) throw new Error('Crédits insuffisants.');
         copy.credits -= player.price;
         copy.recruits.push(player.id);
+        if (proposal) {
+          copy.lineup[proposal.index] = player.id;
+          return `Célia confirme le recrutement. ${playerName(player)} est titulaire.`;
+        }
         return `Célia confirme le recrutement de ${playerName(player)}. Tu peux retrouver le joueur dans ton inventaire.`;
       });
-      if (saved && focused) ($('shop-list').querySelector('button:enabled') ?? $('rarity')).focus();
+      if (saved && proposal) {
+        catalogue.close();
+        feedback(`Célia confirme le recrutement. ${playerName(player)} est titulaire.`);
+        $('club-coach-title').focus();
+      } else if (saved && focused) ($('shop-list').querySelector('button:enabled') ?? $('rarity')).focus();
     };
     return playerRow(player, `${player.position} · ${formatter.format(player.price)} crédits`, button);
   }));
@@ -255,11 +271,13 @@ function coachOptions() {
     const role = slots[index];
     const rank = player => rarityRank.indexOf(player.rarity);
     const priority = !incumbent ? 30 : incumbent.position !== role ? 20 : 0;
-    const eligible = player => player.position === role && (priority || rank(player) > rank(incumbent));
+    const key = player => JSON.stringify([index, id, player.id]);
+    const eligible = player => player.position === role && !declinedOptions.has(key(player))
+      && (priority || rank(player) > rank(incumbent));
     const target = `${slotName(index)} (${incumbent ? playerName(incumbent) : 'libre'})`;
     const reserve = reserves.filter(eligible).sort((a, b) => rank(b) - rank(a))[0];
     if (reserve) {
-      options.push({index, priority: priority + 10 + rank(reserve),
+      options.push({index, incumbentId: id, playerId: reserve.id, key: key(reserve), priority: priority + 10 + rank(reserve),
         title: `Titulariser ${playerName(reserve)} au ${target}`,
         reason: priority ? `Ce changement couvre le poste ${role} avec l’effectif actuel.`
           : `Ce changement améliore la rareté au poste ${role}, sans dépenser de crédits.`});
@@ -268,12 +286,67 @@ function coachOptions() {
       && player.price <= state.credits && (!reserve || rank(player) > rank(reserve)))
       .sort((a, b) => a.price - b.price)[0];
     if (recruit) {
-      options.push({index, priority: priority + rank(recruit),
+      options.push({index, incumbentId: id, playerId: recruit.id, key: key(recruit), purchase: true, priority: priority + rank(recruit),
         title: `Recruter ${playerName(recruit)} via Célia pour le ${target} · ${formatter.format(recruit.price)} crédits`,
         reason: `Cette recrue ${recruit.rarity} joue au poste ${role} et entre dans ton budget.`});
     }
   }
   return options.sort((a, b) => b.priority - a.priority).slice(0, 12);
+}
+
+function checkCoachTarget(copy, option) {
+  if (copy.lineup[option.index] !== option.incumbentId) {
+    throw new Error('La composition a changé. Actualise les conseils de Lina.');
+  }
+}
+
+async function acceptCoachOption(option) {
+  if (option.purchase) {
+    proposedRecruitment = option;
+    openCatalogue();
+    return;
+  }
+  const player = players.get(option.playerId);
+  const saved = await update(copy => {
+    checkCoachTarget(copy, option);
+    const previous = copy.lineup.indexOf(player.id);
+    if (!ownedPlayers(copy).includes(player.id) || (previous >= 0 && previous < 11)) {
+      throw new Error('Ce joueur n’est plus disponible sur le banc ou en réserve.');
+    }
+    if (previous >= 0) copy.lineup[previous] = option.incumbentId;
+    copy.lineup[option.index] = player.id;
+    return `${playerName(player)} est titulaire sur les conseils de Lina.`;
+  });
+  if (saved) $('club-coach-title').focus();
+}
+
+function renderCoachOptions(options) {
+  const list = $('club-recommendations');
+  const rows = [];
+  const seen = new Set();
+  for (const option of options) {
+    const role = slots[option.index];
+    if (seen.has(role) || declinedOptions.has(option.key)) continue;
+    seen.add(role);
+    const row = node('li');
+    const actions = node('div', 'coach-actions');
+    const accept = node('button', 'button-primary', option.purchase ? 'Valider avec Célia' : 'Valider');
+    const decline = node('button', '', 'Refuser');
+    accept.type = decline.type = 'button';
+    accept.setAttribute('aria-label', `${accept.textContent} · ${option.title}`);
+    decline.setAttribute('aria-label', `Refuser · ${option.title}`);
+    accept.onclick = () => acceptCoachOption(option);
+    decline.onclick = () => {
+      declinedOptions.add(option.key);
+      analyseTeam();
+      $('club-coach-title').focus();
+    };
+    actions.append(accept, decline);
+    row.append(node('strong', '', option.title), node('p', '', option.reason), actions);
+    rows.push(row);
+    if (rows.length === 3) break;
+  }
+  list.replaceChildren(...rows);
 }
 
 function resetCoachAnalysis() {
@@ -284,7 +357,8 @@ function resetCoachAnalysis() {
 }
 
 async function analyseTeam() {
-  if (!state) return;
+  if (!state || !club.open || $('lineup').hidden) return;
+  analysisController?.abort();
   const options = coachOptions();
   const status = $('club-coach-status');
   const list = $('club-recommendations');
@@ -293,6 +367,7 @@ async function analyseTeam() {
     status.textContent = 'Aucun changement adapté aux postes et au budget actuels.';
     return;
   }
+  renderCoachOptions(options);
   const controller = new AbortController();
   analysisController = controller;
   $('analyse-club').disabled = true;
@@ -308,22 +383,14 @@ async function analyseTeam() {
     const result = await response.json();
     recommendations = result.recommendations.map(index => options[index]);
     if (!recommendations.length || recommendations.some(option => !option)) throw new Error('Analyse incomplète');
+    if (controller.signal.aborted) return;
     status.textContent = 'Priorités de Lina';
   } catch {
     if (controller.signal.aborted) return;
     recommendations = options;
     status.textContent = 'IA locale indisponible. Suggestions basées sur les postes, les raretés et ton budget.';
   }
-  const seen = new Set();
-  for (const option of recommendations) {
-    const role = slots[option.index];
-    if (seen.has(role)) continue;
-    seen.add(role);
-    const row = node('li');
-    row.append(node('strong', '', option.title), node('p', '', option.reason));
-    list.append(row);
-    if (seen.size === 3) break;
-  }
+  if (!catalogue.open && !list.contains(document.activeElement)) renderCoachOptions([...recommendations, ...options]);
   $('analyse-club').disabled = false;
 }
 
@@ -347,6 +414,7 @@ function render() {
   }));
   renderShop();
   if (picker.open) renderPicker();
+  if (!catalogue.open) analyseTeam();
 }
 
 let state;
@@ -364,12 +432,21 @@ for (const button of document.querySelectorAll('[data-view]')) {
       $(item.dataset.view).hidden = !active;
       item.setAttribute('aria-pressed', active);
     }
+    if (button.dataset.view === 'lineup') analyseTeam();
   };
 }
 const openClub = $('open-club');
 $('analyse-club').onclick = analyseTeam;
-openClub.onclick = () => club.showModal();
-club.addEventListener('close', () => openClub.focus());
+$('show-lina').onclick = () => $('club-coach-title').focus();
+function showClub() {
+  club.showModal();
+  analyseTeam();
+}
+openClub.onclick = showClub;
+club.addEventListener('close', () => {
+  resetCoachAnalysis();
+  openClub.focus();
+});
 $('sale-confirm').onclick = async () => {
   const id = sellingId;
   const saved = await update(copy => {
@@ -387,14 +464,22 @@ $('sale-confirm').onclick = async () => {
     $('inventory-title').focus();
   }
 };
-$('open-recruitment').onclick = () => {
+function openCatalogue() {
   $('catalogue-feedback').hidden = true;
   catalogue.showModal();
   if (state) renderShop();
-};
+}
+$('open-recruitment').onclick = openCatalogue;
+catalogue.addEventListener('close', () => {
+  if (proposedRecruitment) {
+    proposedRecruitment = null;
+    analyseTeam();
+    $('club-coach-title').focus();
+  }
+});
 if (location.hash === '#inazuma-fc') {
   history.replaceState(history.state, '', location.pathname + location.search);
-  club.showModal();
+  showClub();
 }
 $('rarity').onchange = () => { if (state) renderShop(); };
 picker.addEventListener('close', () => {

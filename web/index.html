@@ -124,13 +124,15 @@
       <button type="button" data-view="lineup" aria-pressed="true">Composition</button>
       <button type="button" data-view="shop" aria-pressed="false">Célia</button>
       <button type="button" data-view="inventory" aria-pressed="false">Inventaire</button>
-      <button type="button" data-view="club-coach" aria-pressed="false">Lina</button>
     </nav>
     <p id="feedback" class="feedback" role="status" hidden></p>
     <section id="lineup" aria-labelledby="lineup-title">
       <div class="section-heading">
         <div><h2 id="lineup-title">Onze titulaire</h2><p>Sélectionne un poste pour changer de joueur.</p></div>
-        <span class="formation">4–4–2</span>
+        <div class="lineup-tools">
+          <span class="formation">4–4–2</span>
+          <button type="button" id="show-lina">Voir les conseils de Lina</button>
+        </div>
       </div>
       <div class="squad">
         <div class="pitch">
@@ -142,6 +144,20 @@
           <div id="bench"></div>
         </aside>
       </div>
+      <section id="club-coach" aria-labelledby="club-coach-title">
+        <div class="recruiter pixel-panel">
+          <div class="panel-heading"><h2 id="club-coach-title" tabindex="-1">Conseils tactiques</h2></div>
+          <div class="panel-body">
+            <div class="coach-intro">
+              <img class="coach-avatar staff-portrait" src="https://dxi4wb638ujep.cloudfront.net/1/k/g/-/g-obvenkgrc.png" alt="" width="43" height="43" referrerpolicy="no-referrer">
+              <h3>Lina Schiller</h3>
+            </div>
+            <p class="coach-status" id="club-coach-status" role="status"></p>
+            <ol class="coach-recommendations" id="club-recommendations"></ol>
+            <button type="button" id="analyse-club">Actualiser les conseils</button>
+          </div>
+        </div>
+      </section>
     </section>
     <section id="shop" aria-labelledby="shop-title" hidden>
       <div class="recruiter pixel-panel">
@@ -174,21 +190,6 @@
       <div class="section-heading"><div><h2 id="inventory-title" tabindex="-1">Inventaire</h2><p>Revends des joueurs pour récupérer des crédits.</p></div><span id="inventory-count" class="formation"></span></div>
       <p id="inventory-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
       <ul class="player-list" id="inventory-list"></ul>
-    </section>
-    <section id="club-coach" aria-labelledby="club-coach-title" hidden>
-      <div class="recruiter pixel-panel">
-        <div class="panel-heading"><h2 id="club-coach-title">Conseils tactiques</h2></div>
-        <div class="panel-body">
-          <div class="coach-intro">
-            <img class="coach-avatar staff-portrait" src="https://dxi4wb638ujep.cloudfront.net/1/k/g/-/g-obvenkgrc.png" alt="" width="43" height="43" referrerpolicy="no-referrer">
-            <h3>Lina Schiller</h3>
-          </div>
-          <div class="coach-dialogue"><p>Montre-moi ton équipe. Je te dirai quels postes renforcer et quels changements faire avec ton effectif ou ton budget.</p></div>
-          <button type="button" class="button-primary" id="analyse-club">Analyser mon équipe</button>
-          <p class="coach-status" id="club-coach-status" role="status"></p>
-          <ol class="coach-recommendations" id="club-recommendations"></ol>
-        </div>
-      </div>
     </section>
     <p class="storage-note">Le club est sauvegardé dans ce navigateur.</p>
   </dialog>

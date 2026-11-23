@@ -8,6 +8,9 @@
   .coach-recommendations { padding-left: 23px; margin-bottom: 0; }
   .coach-recommendations li { padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
   .coach-recommendations li::marker { color: var(--yellow); }
+  .coach-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  #analyse-club { margin-top: 12px; }
+  .lineup-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
   .catalogue-filter label { margin: 0; }
   .catalogue-filter select { width: auto; }
 
