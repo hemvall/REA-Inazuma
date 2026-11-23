@@ -139,7 +139,7 @@ function controls(){
   if(!manual)$('arenaOptions').open=false;
   if(finished){running=false;$('play').textContent='Continuer';}
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
-  $('send').disabled=$('manualPrepare').disabled=jobRunning||clubRoute||profile==='club';
+  $('send').disabled=$('manualPrepare').disabled=$('club-prepare').disabled=jobRunning||clubRoute||profile==='club';
   for(const button of $('recruitmentPanel').querySelectorAll('button')){
     if(button.closest('.celia-club-actions'))continue;
     button.disabled=busy||jobRunning||!recruitmentAvailable();

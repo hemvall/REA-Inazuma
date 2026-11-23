@@ -84,26 +84,28 @@
 </fieldset><div class="match-status"><span class="status-pointer" aria-hidden="true">▶</span><p id="job" role="status" aria-live="polite">Choisis tes équipes pour entrer sur le terrain.</p></div><p id="error" role="alert"></p></div></section>
 <div class="club-ui club-workspace" id="club-workspace" hidden>
   <section id="club-window" class="pixel-panel" aria-labelledby="club-title">
-    <div class="club-close"><button type="button" id="close-club">Retour au match</button></div>
     <header class="club-heading">
       <div class="crest" aria-hidden="true"><span>IFC</span><i></i></div>
-      <div>
-        <h2 id="club-title" tabindex="-1">Inazuma FC</h2>
-        <p>Recrute tes joueurs et compose ton onze.</p>
-      </div>
+      <h2 id="club-title" tabindex="-1">Inazuma FC</h2>
       <div class="wallet"><span>Crédits du club</span><strong id="balance">–</strong></div>
     </header>
+    <div class="club-toolbar">
     <nav class="club-nav" aria-label="Gestion du club">
       <button type="button" data-view="lineup" aria-pressed="true">Composition</button>
       <button type="button" data-view="inventory" aria-pressed="false">Inventaire</button>
     </nav>
+      <div class="club-match-actions">
+        <button type="button" id="close-club">Retour au salon</button>
+        <button type="submit" id="club-prepare" form="manual" class="button-primary">Préparer le match</button>
+      </div>
+    </div>
     <p id="feedback" class="feedback" role="status" hidden></p>
     <section id="lineup" aria-labelledby="lineup-title">
       <div class="section-heading">
-        <div><h2 id="lineup-title">Onze titulaire</h2><p>Sélectionne un poste pour changer de joueur.</p></div>
+        <h2 id="lineup-title">Onze titulaire</h2>
         <div class="lineup-tools">
           <span class="formation">4–4–2</span>
-          <button type="button" id="show-lina">Voir les conseils de Lina</button>
+          <button type="button" id="show-lina">Conseils de Lina</button>
         </div>
       </div>
       <div class="squad">
@@ -161,8 +163,10 @@
   <div class="panel-body">
     <div class="recruitment-heading">
       <img class="coach-avatar staff-portrait" src="/assets/celia.png" alt="Celia Hills">
-      <h2 id="recruitmentTitle">Recrutement spécial !</h2>
+      <h2 id="recruitmentTitle">Célia Hills</h2>
     </div>
+    <details id="special-recruitment" open>
+    <summary>Recrutement spécial</summary>
     <p id="recruitmentCapacity"></p>
     <div id="recruitmentHistory" role="log" aria-live="polite"></div>
     <form id="recruitmentChat">
@@ -177,9 +181,10 @@
     </div>
     <button type="button" class="button-outline" id="recruitmentCancel" hidden>Annuler le brouillon</button>
     <p id="recruitmentError" role="alert"></p>
+    </details>
     <div class="celia-club-actions">
       <button type="button" class="button-primary prepare-button" id="open-club" aria-expanded="false" aria-controls="club-workspace">Ouvrir Inazuma FC</button>
-      <button type="button" class="button-outline" id="open-recruitment" aria-haspopup="dialog" aria-controls="recruitment-catalogue" hidden>Recruter pour Inazuma FC</button>
+      <button type="button" class="button-outline" id="open-recruitment" aria-haspopup="dialog" aria-controls="recruitment-catalogue" hidden>Voir la boutique</button>
     </div>
   </div>
 </section>

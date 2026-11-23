@@ -13,7 +13,7 @@
   .catalogue-filter label { margin: 0; }
   .catalogue-filter select { width: auto; }
 
-  .club-heading { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .club-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .club-heading h2 { font-size: clamp(25px, 4vw, 36px); letter-spacing: -.04em; }
   .club-heading p, .section-heading p, .storage-note { color: var(--muted); font-size: 14px; margin-top: 3px; }
   .crest {
@@ -52,7 +52,8 @@
   }
   .wallet span, .formation, .bench h3 { font-size: 13px; color: var(--muted); }
   .wallet strong { font-size: 23px; color: var(--yellow); }
-  .club-nav { display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .club-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .club-nav, .club-match-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .club-nav button[aria-pressed=true], .purchase:not(:disabled), .choose:not(:disabled) {
     color: #171a22;
     border-color: var(--yellow);
@@ -208,7 +209,6 @@
     padding: clamp(12px, 2vw, 24px);
   }
   #recruitment-catalogue { width: min(680px, calc(100% - 24px)); padding: 0; }
-  .club-close { display: flex; justify-content: flex-end; margin-bottom: 12px; }
   .popup-heading { justify-content: space-between; height: auto; min-height: 54px; padding-block: 4px 8px; }
   .club-portrait {
     display: block;
@@ -230,17 +230,30 @@
 }
 .club-workspace { min-width: 0; width: 100%; }
 .celia-club-actions { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
-@media (min-width: 1200px) {
+.game-layout:has(.club-workspace:not([hidden])) .celia-club-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.celia-club-actions button { white-space: normal; justify-content: center; }
+#special-recruitment { margin-top: 6px; }
+#special-recruitment summary { font-size: 12px; }
+@media (min-width: 801px) {
   .game-layout:has(.club-workspace:not([hidden])) {
-    grid-template-columns: minmax(190px, .85fr) minmax(0, 2fr) minmax(235px, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
   }
-  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-column: 3; }
+  .game-layout:has(.club-workspace:not([hidden])) .club-workspace { grid-area: 1 / 1; }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-area: 1 / 2 / span 2; }
+  .game-layout:has(.club-workspace:not([hidden])) #matchSetup { grid-area: 2 / 1; }
 }
 @container (max-width: 560px) {
   .club-ui .squad { grid-template-columns: minmax(0, 1fr); }
   .club-ui #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .club-ui .bench .slot { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
 }
-@media (max-width: 620px) {
+@media (max-width: 800px) {
+  .game-layout:has(.club-workspace:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { order: 0; }
   .club-workspace { order: 1; }
+  .game-layout:has(.club-workspace:not([hidden])) #matchSetup { display: grid; order: 2; }
 }

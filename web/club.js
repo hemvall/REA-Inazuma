@@ -281,21 +281,23 @@ function coachOptions() {
     const key = player => JSON.stringify([index, id, player.id]);
     const eligible = player => player.position === role && !declinedOptions.has(key(player))
       && (priority || rank(player) > rank(incumbent));
-    const target = `${slotName(index)} (${incumbent ? playerName(incumbent) : 'libre'})`;
+    const position = role === 'AT' ? 'ATT' : role;
+    const target = incumbent ? playerName(incumbent) : null;
     const reserve = reserves.filter(eligible).sort((a, b) => rank(b) - rank(a))[0];
     if (reserve) {
       options.push({index, incumbentId: id, playerId: reserve.id, key: key(reserve), priority: priority + 10 + rank(reserve),
-        title: `Titulariser ${playerName(reserve)} au ${target}`,
-        reason: priority ? `Ce changement couvre le poste ${role} avec l’effectif actuel.`
-          : `Ce changement améliore la rareté au poste ${role}, sans dépenser de crédits.`});
+        title: target ? `Remplacer ${target} par ${playerName(reserve)}` : `Titulariser ${playerName(reserve)}`,
+        reason: `${position} · ${target ? 'Sans achat' : 'Place libre'}`,
+        context: priority ? (target ? 'Titulaire hors poste.' : 'Place libre.') : 'Amélioration de rareté.'});
     }
     const recruit = recruits.filter(player => eligible(player) && !state.recruits.includes(player.id)
       && player.price <= state.credits && (!reserve || rank(player) > rank(reserve)))
       .sort((a, b) => a.price - b.price)[0];
     if (recruit) {
       options.push({index, incumbentId: id, playerId: recruit.id, key: key(recruit), purchase: true, priority: priority + rank(recruit),
-        title: `Recruter ${playerName(recruit)} via Célia pour le ${target} · ${formatter.format(recruit.price)} crédits`,
-        reason: `Cette recrue ${recruit.rarity} joue au poste ${role} et entre dans ton budget.`});
+        title: `Acheter ${playerName(recruit)} pour jouer en ${position}`,
+        reason: `${formatter.format(recruit.price)} crédits · ${target ? `Remplace ${target}` : 'Place libre'}`,
+        context: priority ? (target ? 'Titulaire hors poste.' : 'Place libre.') : 'Amélioration de rareté.'});
     }
   }
   return options.sort((a, b) => b.priority - a.priority).slice(0, 12);
@@ -337,7 +339,7 @@ function renderCoachOptions(options) {
     seen.add(role);
     const row = node('li');
     const actions = node('div', 'coach-actions');
-    const accept = node('button', 'button-primary', option.purchase ? 'Valider avec Célia' : 'Valider');
+    const accept = node('button', 'button-primary', option.purchase ? 'Voir chez Célia' : 'Valider');
     const decline = node('button', '', 'Refuser');
     accept.type = decline.type = 'button';
     accept.setAttribute('aria-label', `${accept.textContent} · ${option.title}`);
@@ -351,7 +353,7 @@ function renderCoachOptions(options) {
     actions.append(accept, decline);
     row.append(node('strong', '', option.title), node('p', '', option.reason), actions);
     rows.push(row);
-    if (rows.length === 3) break;
+    if (rows.length === 2) break;
   }
   list.replaceChildren(...rows);
 }
@@ -384,18 +386,18 @@ async function analyseTeam() {
     const response = await fetch('/api/analyse_club', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, signal: controller.signal,
       body: JSON.stringify({credits: state.credits, formation: FORMATION,
-        candidates: options.map(option => `${option.title}. ${option.reason}`)}),
+        candidates: options.map(option => `${option.title}. ${option.reason}. ${option.context}`)}),
     });
     if (!response.ok) throw new Error('Analyse locale indisponible');
     const result = await response.json();
     recommendations = result.recommendations.map(index => options[index]);
     if (!recommendations.length || recommendations.some(option => !option)) throw new Error('Analyse incomplète');
     if (controller.signal.aborted) return;
-    status.textContent = 'Priorités de Lina';
+    status.textContent = '';
   } catch {
     if (controller.signal.aborted) return;
     recommendations = options;
-    status.textContent = 'IA locale indisponible. Suggestions basées sur les postes, les raretés et ton budget.';
+    status.textContent = 'Conseils hors ligne';
   }
   if (!catalogue.open && !list.contains(document.activeElement)) renderCoachOptions([...recommendations, ...options]);
   $('analyse-club').disabled = false;
@@ -453,9 +455,13 @@ function showClub() {
   $('matchArena').hidden = true;
   $('club-coach').hidden = false;
   $('open-recruitment').hidden = false;
+  $('special-recruitment').open = false;
   openClub.setAttribute('aria-expanded', 'true');
+  openClub.textContent = 'Voir la composition';
   document.dispatchEvent(new Event('inazuma-club-view'));
-  $('club-title').focus();
+  const narrow = matchMedia('(max-width: 800px)').matches;
+  $(narrow ? 'club-coach-title' : 'club-title').focus({preventScroll: true});
+  $(narrow ? 'recruitmentColumn' : 'club-workspace').scrollIntoView({block: 'start'});
   analyseTeam();
 }
 export function closeInazumaClub(restoreFocus = false) {
@@ -465,7 +471,9 @@ export function closeInazumaClub(restoreFocus = false) {
   $('matchArena').hidden = false;
   $('club-coach').hidden = true;
   $('open-recruitment').hidden = true;
+  $('special-recruitment').open = true;
   openClub.setAttribute('aria-expanded', 'false');
+  openClub.textContent = 'Ouvrir Inazuma FC';
   resetCoachAnalysis();
   if (restoreFocus) openClub.focus();
 }
