@@ -6,6 +6,8 @@ import threading
 from pathlib import Path
 from arena_service import Arena
 from chester import generate_reaction
+from club_coach import analyse_club
+from souls_recruitment import PLAYERS as SOULS_PLAYERS, portrait_png, source_players
 from local_address import HOST, PORT, URL
 
 ARENA = Arena(local_only=True, recruit_in_club=True)
@@ -74,6 +76,21 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.valid_host():
             return self.reply(403, {'error': 'Invalid host'})
+        if self.path == '/souls2-catalogue':
+            try:
+                source_players()
+                return self.reply(200, {'available': True})
+            except (OSError, ValueError):
+                return self.reply(200, {'available': False})
+        if self.path.startswith('/assets/souls2/'):
+            filename = self.path.removeprefix('/assets/souls2/')
+            unit = next((unit for unit in SOULS_PLAYERS if filename == f'{unit}.png'), None)
+            if unit is not None:
+                try:
+                    return self.reply(200, portrait_png(unit), 'image/png')
+                except (OSError, ValueError):
+                    pass
+            return self.reply(404, {'error': 'Portrait Souls 2 indisponible.'})
         if self.path.startswith('/video?session='):
             sid = self.path.split('=', 1)[1]
             if sid != ARENA.session.session_id:
@@ -95,6 +112,9 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                 '/inazuma-fc': ('club.html', 'text/html; charset=utf-8'),
+                 '/club.css': ('club.css', 'text/css; charset=utf-8'),
+                 '/club.js': ('club.js', 'text/javascript; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/chester.js': ('chester.js', 'text/javascript; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
@@ -108,6 +128,7 @@ class Handler(BaseHTTPRequestHandler):
                  '/assets/team-zeus.png': ('assets/team-zeus.png', 'image/png'),
                  '/assets/team-genesis.png': ('assets/team-genesis.png', 'image/png'),
                  '/assets/team-dark-emperors.png': ('assets/team-dark-emperors.png', 'image/png'),
+                 '/assets/team-inazuma-fc.png': ('assets/team-inazuma-fc.png', 'image/png'),
                  '/assets/captain-mark.png': ('assets/captain-mark.png', 'image/png'),
                  '/assets/captain-king.png': ('assets/captain-king.png', 'image/png'),
                  '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),
@@ -134,7 +155,12 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(arguments, dict):
                 raise ValueError('Expected object')
             operation = self.path[5:]
-            result = chester_reaction(**arguments) if operation == 'chester_reaction' else ARENA.call(operation, arguments)
+            if operation == 'chester_reaction':
+                result = chester_reaction(**arguments)
+            elif operation == 'analyse_club':
+                result = analyse_club(**arguments)
+            else:
+                result = ARENA.call(operation, arguments)
             self.reply(200, result)
         except (ValueError, TypeError) as error:
             self.reply(400, {'error': str(error)})

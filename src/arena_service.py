@@ -13,6 +13,7 @@ from player_state import text_ready
 from recruitment import propose
 from recruitment_rom import FIRST_RECRUIT_ID
 from recruitment_store import RecruitmentStore
+from inazuma_fc import TEAM_ID, prepare_squad
 
 
 class Arena:
@@ -103,15 +104,21 @@ class Arena:
                           if native_fixture else None)
         return result
 
-    def prepare(self, home, away, lines):
+    def prepare(self, home, away, lines, club_lineup=None):
         if (type(home) is not int or type(away) is not int or home == away
-                or home not in NATIVE_MATCH_BY_TEAM or away not in NATIVE_MATCH_BY_TEAM):
+                or home not in (*NATIVE_MATCH_BY_TEAM, TEAM_ID) or away not in NATIVE_MATCH_BY_TEAM):
             raise ValueError('Choisissez deux équipes distinctes du catalogue.')
         if not isinstance(lines,list) or len(lines)!=6 or any(not isinstance(line,str) or not 1<=len(line)<=100 for line in lines):
             raise ValueError('Six répliques de 1 à 100 caractères sont requises.')
         if self.cancel.is_set(): raise AgentCancelled()
         self.update(message='Ouverture de l’arène et préparation des équipes…')
-        recruited = self.recruited_players() or None
+        recruited = self.recruited_players()
+        home_squad = None
+        if home == TEAM_ID:
+            opponent = next(team for team in catalogue() if team['id'] == away)
+            home_squad, drafts = prepare_squad(club_lineup, ROOT/'rom/original.nds', len(recruited), set(opponent['roster']))
+            recruited = [*recruited, *drafts]
+        recruited = recruited or None
         if (self.session.session_id and self.session.profile == 'arena'
                 and self.session.arena_recruitment != recruited):
             existing = self.checked('observe', session_id=self.session.session_id, include_image=False)
@@ -125,8 +132,7 @@ class Arena:
         if observation['match']['native_counter'] != 4:
             raise ValueError('Réinitialisez la rencontre avant d’en préparer une autre.')
         observation = self.checked('prepare_match',session_id=sid,revision=observation['revision'],
-                                   home=home,away=away,lines=lines,actor=self.session.owner)
-        self.fixture = {'home':home,'away':away,'lines':lines,'status':'ready'}
+                                   home=home,away=away,lines=lines,home_squad=home_squad,actor=self.session.owner)
         self.update(message='Rencontre prête. Lancez le dialogue puis jouez, ou confiez le match à l’agent.')
         return observation
 
@@ -503,7 +509,7 @@ class Arena:
         if operation=='delegate_player':return self.delegate(**arguments)
         if operation=='prepare_match':
             home,away,lines=arguments['home'],arguments['away'],arguments['lines']
-            return {'job':self.launch(lambda:self.prepare(home,away,lines),'Préparation dynamique…')}
+            return {'job':self.launch(lambda:self.prepare(home,away,lines,arguments.get('club_lineup')),'Préparation dynamique…')}
         if operation=='session_open':
             recruited = self.recruited_players() if arguments.get('profile') == 'arena' else None
             return self.session.open(**arguments, arena_recruitment=recruited or None)

@@ -1,6 +1,8 @@
 import {createChester} from './chester.js';
+import {closeInazumaClub,inazumaMatchSquad} from './club.js';
 
 const $ = id => document.getElementById(id);
+const INAZUMA_FC=1000;
 const isClubRoute = value => value === 'club_web' || value === 'club_native';
 const pilotMode = $('pilotMode');
 const arena = $('matchArena');
@@ -41,6 +43,7 @@ let walkingTouch=null;
 let stylusPointer=null,path=[];
 function releaseInputs(){keyboardDirections.clear();pendingKeys.clear();pointerDirections.clear();clearStylus();for(const b of $('keys').querySelectorAll('[data-key]'))b.removeAttribute('data-held');}
 window.addEventListener('blur',releaseInputs);
+document.addEventListener('inazuma-club-view',releaseInputs);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
 const teams={
   1:{name:'Raimon',captain:'Mark',portrait:'mark',code:'RAI',emblem:'raimon'},
@@ -49,6 +52,7 @@ const teams={
   10:{name:'Zeus',captain:'Aphrodite',portrait:'aphrodite',code:'ZEU',emblem:'zeus'},
   33:{name:'Genesis',captain:'Xene',portrait:'xene',code:'GEN',emblem:'genesis'},
   41:{name:'Empereurs noirs',captain:'Nathan Swift',portrait:'nathan-dark',code:'EMP',emblem:'dark-emperors'},
+  [INAZUMA_FC]:{name:'Inazuma FC',code:'IFC',emblem:'inazuma-fc'},
 };
 const chester = createChester({
   api, mode: $('chesterMode'), enabled: $('chesterEnabled'), captions: $('chesterCaptions'),
@@ -65,12 +69,19 @@ function message(text,kind='answer'){const p=document.createElement('p');p.class
 function updateTeamPreview(){
   for(const side of ['home','away']){
     const id=Number($(side).value),team=teams[id];
-    $(side+'Captain').textContent='Capitaine · '+team.captain;
-    $(side+'Portrait').src='/assets/captain-'+team.portrait+'.png';
+    let captain=team.captain,portrait=team.portrait && '/assets/captain-'+team.portrait+'.png';
+    if(id===INAZUMA_FC){
+      try { ({captain,portrait}=inazumaMatchSquad()); }
+      catch { captain=''; portrait=null; }
+    }
+    $(side+'Captain').textContent=captain?'Capitaine · '+captain:'Composition à compléter';
+    $(side+'Portrait').hidden=!portrait;
+    if(portrait)$(side+'Portrait').src=portrait;
     $(side+'Code').textContent=team.code;
     $(side+'Emblem').src='/assets/team-'+team.emblem+'.png';
     $(side).closest('.team-tile').dataset.team=String(id);
   }
+  $('swapTeams').disabled=jobRunning||isClubRoute(profile)||profile==='club'||Number($('home').value)===INAZUMA_FC;
 }
 function setScreenVisible(visible){
   $('gameScreen').classList.toggle('is-live',visible);
@@ -78,13 +89,14 @@ function setScreenVisible(visible){
   $('dsShell').hidden=!visible;
   if(!visible){$('frame').hidden=true;$('empty').hidden=false;lastImage='';videoSession=null;$('frame').removeAttribute('src');$('topFrame').removeAttribute('src');}
 }
-$('swapTeams').onclick=()=>{const previous=$('home').value;$('home').value=$('away').value;$('away').value=previous;updateTeamPreview();};
+$('swapTeams').onclick=()=>{if(Number($('home').value)===INAZUMA_FC)return;const previous=$('home').value;$('home').value=$('away').value;$('away').value=previous;updateTeamPreview();};
 for(const side of ['home','away'])$(side).onchange=()=>{
   const other=side==='home'?'away':'home';
   if($(side).value===$(other).value)$(other).value=$(side).value==='3'?'10':'3';
   updateTeamPreview();
 };
 updateTeamPreview();
+document.addEventListener('inazuma-lineup-change',updateTeamPreview);
 function show(result){
   chester.observe(session, result?.commentary);
   if(!result)return;
@@ -106,9 +118,11 @@ function controls(){
   $('manual').hidden=clubRoute;
   $('matchSetup').hidden=clubRoute;
   $('recruitmentColumn').hidden=clubRoute;
+  if(clubRoute)closeInazumaClub();
   arena.querySelector('.chester-dialogue').hidden=routeBoard;
   arena.querySelector('.chester-controls').hidden=routeBoard;
-  for(const id of ['home','away','swapTeams'])$(id).disabled=jobRunning||clubRoute||profile==='club';
+  for(const id of ['home','away'])$(id).disabled=jobRunning||clubRoute||profile==='club';
+  $('swapTeams').disabled=$('home').disabled||Number($('home').value)===INAZUMA_FC;
   $('enterClub').disabled=jobRunning||!!session;
   $('reset').textContent=clubRoute?'Retour à la route':profile==='club'?'Retour au local':'Nouvelle rencontre';
   $('reset').hidden=routeBoard;
@@ -127,6 +141,7 @@ function controls(){
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
   $('send').disabled=$('manualPrepare').disabled=jobRunning||clubRoute||profile==='club';
   for(const button of $('recruitmentPanel').querySelectorAll('button')){
+    if(button.closest('.celia-club-actions'))continue;
     button.disabled=busy||jobRunning||!recruitmentAvailable();
   }
   for(const b of $('keys').querySelectorAll('button'))b.disabled=!manual;
@@ -203,8 +218,9 @@ function renderFixture(value){
   fixture=value;$('fixture').hidden=!value;if(!value)return;
   $('home').value=String(value.home);$('away').value=String(value.away);updateTeamPreview();
   $('fixtureTitle').textContent=teams[value.home].name+' contre '+teams[value.away].name;
-  $('captains').textContent=teams[value.home].captain+' · '+teams[value.away].captain;
-  $('dialogues').replaceChildren();value.lines.forEach((line,index)=>{const li=document.createElement('li');li.textContent=teams[index%2?value.away:value.home].captain+' : '+line;$('dialogues').append(li);});
+  const captains=[value.home_captain||teams[value.home].captain,teams[value.away].captain];
+  $('captains').textContent=captains.join(' · ');
+  $('dialogues').replaceChildren();value.lines.forEach((line,index)=>{const li=document.createElement('li');li.textContent=captains[index%2]+' : '+line;$('dialogues').append(li);});
 }
 async function poll(){
   if(polling||busy)return;polling=true;
@@ -243,13 +259,13 @@ async function pumpInputs(){
 pumpInputs();
 $('enterClub').onclick=async()=>{
   $('error').textContent='';
-  try{await api('open_club_route');jobRunning=true;controls();await poll();}
+  try{await api('open_club_route');closeInazumaClub();jobRunning=true;controls();await poll();}
   catch(error){$('error').textContent=error.message;}
 };
 $('chat').onsubmit=async event=>{
   event.preventDefault();running=false;const text=$('prompt').value.trim();if(!text)return;
   message(text,'question');$('prompt').value='';$('error').textContent='';
-  try{await api('chat',{message:text});jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
+  try{await api('chat',{message:text});closeInazumaClub();jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
 };
 $('manual').onsubmit=async event=>{
   event.preventDefault();running=false;const home=Number($('home').value),away=Number($('away').value);
@@ -257,7 +273,16 @@ $('manual').onsubmit=async event=>{
   const lines=[`${teams[home].name} est pret. Et vous ?`,`${teams[away].name} releve le defi !`,
     'On donnera tout, ensemble.','Alors montrez-nous votre football !',
     'Que le meilleur gagne !','En place. Le match commence !'];
-  try{await api('prepare_match',{home,away,lines});jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
+  try{
+    const payload={home,away,lines};
+    if(home===INAZUMA_FC){
+      const {lineup}=inazumaMatchSquad();
+      if(lineup.slice(0,11).includes(null))throw new Error('Complète les onze postes titulaires d’Inazuma FC avant le match.');
+      payload.club_lineup=lineup;
+    }
+    $('error').textContent='';
+    await api('prepare_match',payload);closeInazumaClub();jobRunning=true;controls();await poll();
+  }catch(error){$('error').textContent=error.message;}
 };
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
 $('play').onclick=()=>playback(!running);
@@ -273,6 +298,7 @@ $('close').onclick=async()=>{running=false;const result=await mutate('session_cl
 const directionKeys={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',z:'UP',q:'LEFT',s:'DOWN',d:'RIGHT'};
 const actionKeys={a:'A',b:'B',x:'X',y:'Y',Enter:'START'};
 document.addEventListener('keydown',event=>{
+  if(!$('club-workspace').hidden)return;
   if(['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName)||event.ctrlKey||event.metaKey||event.altKey)return;
   if(event.key==='Enter'&&event.target.tagName==='BUTTON')return;
   const key=directionKeys[event.key]||actionKeys[event.key];

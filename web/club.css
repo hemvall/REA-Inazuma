@@ -1,0 +1,311 @@
+.club-ui {
+  h2, h3, p { margin: 0; }
+  .coach-status:not(:empty) { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .coach-recommendations:empty { display: none; }
+  .coach-recommendations { padding: 0; margin: 12px 0 0; list-style: none; }
+  .coach-recommendations li { padding: 10px 0 2px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .coach-recommendations li strong { display: block; font-size: 13px; line-height: 1.45; }
+  .coach-recommendations li p { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+  .coach-recommendations li .coach-context { margin: 0 0 6px; }
+  .coach-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }
+  #analyse-club { margin-top: 10px; }
+  .coach-role { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .lineup-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
+  .catalogue-filter label { margin: 0; }
+  .catalogue-filter select { width: auto; }
+
+  .club-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .club-heading h2 { font-size: clamp(23px, 3vw, 30px); letter-spacing: -.04em; }
+  .section-heading p { color: var(--muted); font-size: 14px; margin-top: 3px; }
+  .crest {
+    position: relative;
+    flex: 0 0 48px;
+    height: 55px;
+    display: grid;
+    justify-items: center;
+    padding-top: 8px;
+    clip-path: polygon(0 0,100% 0,94% 70%,50% 100%,6% 70%);
+    background: var(--yellow);
+    color: var(--yellow);
+  }
+  .crest::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    clip-path: polygon(0 0,100% 0,94% 69%,50% 100%,6% 69%);
+    background: #202d48;
+  }
+  .crest span, .crest i { z-index: 1; }
+  .crest span { font-size: 12px; letter-spacing: .12em; font-weight: 850; }
+  .crest i {
+    width: 19px;
+    height: 24px;
+    align-self: start;
+    background: currentColor;
+    clip-path: polygon(40% 0,100% 0,60% 37%,94% 37%,16% 100%,34% 55%,0 55%);
+  }
+  .wallet {
+    display: grid;
+    gap: 2px;
+    margin-left: auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .wallet span, .formation, .bench h3 { font-size: 13px; color: var(--muted); }
+  .wallet strong { font-size: 23px; color: var(--yellow); }
+  .club-nav { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .club-nav button[aria-pressed=true], .purchase:not(:disabled), .choose:not(:disabled) {
+    color: #171a22;
+    border-color: var(--yellow);
+    background: var(--yellow);
+    font-weight: 650;
+  }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 8px; }
+  .section-heading h2, .dialog-heading h2 { font-size: 20px; font-weight: 650; }
+  .section-heading label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .section-heading.catalogue-filter { justify-content: flex-end; margin-top: 0; }
+  .formation { border: 1px solid var(--line); padding: 5px 10px; white-space: nowrap; }
+  .squad { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 12px; }
+  .pitch {
+    display: grid;
+    grid-template-areas: 'field';
+    position: relative;
+    min-height: 414px;
+    border: 1px solid #537b76;
+    padding: 12px;
+    background: repeating-linear-gradient(#1c4543 0 12.5%, #23524d 12.5% 25%);
+    isolation: isolate;
+  }
+  .pitch-lines, .pitch-players { grid-area: field; }
+  .pitch-lines { border: 1px solid #a9cbb477; border-radius: 4px; position: relative; }
+  .pitch-lines i { position: absolute; display: block; }
+  .pitch-lines i:first-child { inset: 50% 0 auto; border-top: 1px solid #a9cbb477; }
+  .pitch-lines i:first-child::after {
+    content: '';
+    position: absolute;
+    width: 84px;
+    aspect-ratio: 1;
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, -50%);
+    border: 1px solid #a9cbb477;
+    border-radius: 50%;
+  }
+  .pitch-lines i:nth-child(n+2) { width: 42%; height: 15%; left: 29%; border: 1px solid #a9cbb477; }
+  .pitch-lines i:nth-child(2) { top: -1px; }
+  .pitch-lines i:nth-child(3) { bottom: -1px; }
+  .pitch-players {
+    z-index: 1;
+    align-items: center;
+    justify-items: center;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    padding: 6px;
+    column-gap: 6px;
+  }
+  .pitch-players .slot { grid-column: span 2; }
+  .pitch-players .slot:nth-child(1) { grid-area: 1 / 2 / auto / span 2; }
+  .pitch-players .slot:nth-child(2) { grid-area: 1 / 6 / auto / span 2; }
+  .pitch-players .slot:nth-child(n+3):nth-child(-n+6) { grid-row: 2; }
+  .pitch-players .slot:nth-child(n+7):nth-child(-n+10) { grid-row: 3; }
+  .pitch-players .slot:nth-child(11) { grid-area: 4 / 4 / auto / span 2; }
+  .slot {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    width: min(100%, 132px);
+    min-width: 0;
+    --card-accent: var(--tier, var(--role-color, #8faebf));
+    background: #10223b;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 74%, #17294b);
+    border-top: 3px solid var(--card-accent);
+    box-shadow: 0 3px 0 #0a172c;
+  }
+  .slot:hover:not(:disabled) { background: #203754; border-color: var(--card-accent); }
+  .slot[data-role=AT] { --role-color: #ffa490; }
+  .slot[data-role=MIL] { --role-color: #8bd6ba; }
+  .slot[data-role=DEF] { --role-color: #91bfff; }
+  .slot[data-role=GB] { --role-color: #f2cc71; }
+  .slot:not([data-rarity]) { border: 1px dashed #8aa2b7; }
+  .slot-visual {
+    position: relative;
+    display: grid;
+    place-items: end center;
+    min-height: 54px;
+    background: linear-gradient(155deg, color-mix(in srgb, var(--card-accent) 38%, #14243f), #14243f 78%);
+  }
+  .slot:not([data-rarity]) .slot-visual { background: #172d44; }
+  .slot-role {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    padding: 2px 4px;
+    background: #0b1931;
+    color: var(--card-accent);
+    font-size: 9px;
+    line-height: 1.1;
+    font-weight: 850;
+  }
+  .slot-name {
+    display: grid;
+    place-items: center;
+    min-height: 26px;
+    padding: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .slot .empty-slot { display: grid; place-items: center; font-size: 21px; color: var(--muted); }
+  .bench { border: 1px solid var(--line); background: var(--panel); padding: 12px; }
+  .bench h3 { margin-bottom: 10px; }
+  #bench { display: grid; gap: 6px; }
+  .bench .slot { grid-template: 1fr / 56px minmax(0, 1fr); width: 100%; min-height: 52px; }
+  .bench .slot-name { place-items: center start; padding-inline: 6px; text-align: left; }
+  .bench .slot-visual { min-height: 48px; }
+  .player-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .player-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    align-items: center;
+    gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    min-height: 58px;
+  }
+  .player-row:has(button) { grid-template-columns: minmax(0, 1fr) 88px 150px; }
+  .player-identity { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .player-row .club-portrait { background: color-mix(in srgb, var(--tier, #8faebf) 22%, var(--deep)); border-bottom: 2px solid var(--tier, #8faebf); }
+  .player-details { display: grid; gap: 3px; }
+  .player-identity strong { font-size: 14px; overflow-wrap: anywhere; }
+  .player-identity span { color: var(--muted); font-size: 13px; }
+  .rarity { color: var(--muted); font-size: 12px; font-weight: 650; }
+  [data-rarity=Bronze] { --tier: #e6ae8a; }
+  [data-rarity=Argent] { --tier: #d1e2ef; }
+  [data-rarity=Or] { --tier: #ffdc75; }
+  [data-rarity=Légendaire] { --tier: #dec5ff; }
+  .rarity[data-rarity] { color: var(--tier, var(--muted)); }
+  .feedback { margin-top: 12px; color: #bfe9cb; font-size: 14px; }
+  .feedback.error, #picker-error, #sale-error { color: #ffb8b0; }
+  .sale-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  #sale-error { margin-top: 10px; }
+  #picker-error { margin-bottom: 10px; font-size: 14px; }
+  .club-popup {
+    width: min(560px, calc(100% - 24px));
+    max-height: min(88dvh, 850px);
+    padding: 16px;
+    color: var(--ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    opacity: 0;
+    transform: translateY(8px) scale(.99);
+    transition: opacity 180ms ease, transform 180ms ease, display 180ms allow-discrete, overlay 180ms allow-discrete;
+  }
+  .club-popup[open] { opacity: 1; transform: none; }
+  .club-popup::before { top: 0; left: 0; }
+  .club-popup::after { bottom: 0; right: 0; }
+  .club-popup::backdrop {
+    background: #060a1300;
+    transition: background-color 180ms ease, display 180ms allow-discrete, overlay 180ms allow-discrete;
+  }
+  .club-popup[open]::backdrop { background: #060a13b8; }
+  @starting-style {
+    .club-popup[open] { opacity: 0; transform: translateY(8px) scale(.99); }
+    .club-popup[open]::backdrop { background: #060a1300; }
+  }
+  @media (min-width: 1000px) {
+    /* The salon applies 125% zoom at this breakpoint. */
+    .club-popup { max-height: min(72dvh, 850px); }
+  }
+  .dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  @media (max-width: 600px) {
+    .club-heading { gap: 9px; }
+    .club-heading p, .section-heading p { font-size: 12px; }
+    .club-nav button { flex: 1; font-size: 13px; padding-inline: 6px; }
+    .crest { flex-basis: 48px; height: 58px; }
+    .crest i { width: 18px; height: 23px; }
+    .squad { grid-template-columns: minmax(0, 1fr); }
+    .pitch { min-height: 385px; padding: 6px; }
+    .pitch-players { column-gap: 3px; }
+    #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .bench .slot { grid-template: auto 1fr / minmax(0, 1fr); }
+    .bench .slot-name { place-items: center; text-align: center; padding-inline: 2px; }
+    .slot { min-height: 48px; }
+    .slot-name { font-size: 11px; }
+    .player-row { gap: 7px; padding: 7px; }
+    .player-row:has(button) { grid-template-columns: minmax(0, 1fr) 68px 94px; }
+    .purchase, .choose, .resell { font-size: 12px; padding-inline: 8px; }
+  }
+
+
+  #club-window {
+    container-type: inline-size;
+    padding: clamp(12px, 2vw, 24px);
+  }
+  #recruitment-catalogue { width: min(680px, calc(100% - 24px)); padding: 0; }
+  .popup-heading { justify-content: space-between; height: auto; min-height: 54px; padding-block: 4px 8px; }
+  .club-portrait {
+    display: block;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .pitch .club-portrait { width: 54px; height: 54px; }
+  .bench .club-portrait { width: 40px; height: 40px; }
+  #catalogue-feedback { margin: 0 0 12px; }
+  @media (max-width: 600px) {
+    .club-portrait { width: 34px; height: 34px; }
+    .pitch .club-portrait, .bench .club-portrait { width: 40px; height: 40px; }
+    .slot-visual { min-height: 44px; }
+    .slot-role { font-size: 8px; padding-inline: 2px; }
+    .player-row:has(button) { grid-template-columns: minmax(0, 1fr) 62px 82px; }
+    .player-identity { gap: 5px; }
+    .player-identity strong { font-size: 12px; }
+  }
+}
+.club-workspace { min-width: 0; width: 100%; }
+.masthead:has(#close-club:not([hidden])) { justify-content: space-between; }
+#close-club { flex: none; white-space: nowrap; }
+#close-club span { color: var(--yellow); margin-right: 3px; }
+body:has(.club-workspace:not([hidden])) #manual,
+.game-layout:has(.club-workspace:not([hidden])) #matchSetup,
+.game-layout:has(.club-workspace:not([hidden])) #special-recruitment { display: none; }
+.game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { gap: 12px; }
+.game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn .panel-body { padding: 14px; }
+.celia-club-actions { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.game-layout:has(.club-workspace:not([hidden])) .celia-club-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.celia-club-actions button { white-space: normal; justify-content: center; }
+#special-recruitment { margin-top: 6px; }
+#special-recruitment summary { font-size: 12px; }
+@media (min-width: 801px) {
+  .game-layout:has(.club-workspace:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  }
+  .game-layout:has(.club-workspace:not([hidden])) .club-workspace { grid-area: 1 / 1; }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-area: 1 / 2; }
+  .game-layout:has(.club-workspace:not([hidden])) .celia-club-actions { grid-template-columns: 1fr; }
+  #open-club[aria-expanded=true], #show-lina { display: none; }
+}
+@container (max-width: 560px) {
+  .club-ui .squad { grid-template-columns: minmax(0, 1fr); }
+  .club-ui #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .club-ui .bench .slot { grid-template: auto 1fr / minmax(0, 1fr); }
+  .club-ui .bench .slot-name { place-items: center; text-align: center; padding-inline: 2px; }
+}
+@media (max-width: 800px) {
+  .game-layout:has(.club-workspace:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { order: 0; }
+  .club-workspace { order: 1; }
+  .masthead:has(#close-club:not([hidden])) { min-height: 64px; gap: 8px; }
+  .masthead:has(#close-club:not([hidden])) .brand-word small { display: none; }
+}

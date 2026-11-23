@@ -1,0 +1,607 @@
+const STORAGE = 'inazuma-fc:v1';
+const STARTING_CREDITS = 3800;
+const SCOUT_RESALE_CREDITS = 50;
+const FORMATION = '4–4–2';
+const rarityRank = ['Scout', 'Bronze', 'Argent', 'Or', 'Légendaire'];
+const slots = ['AT', 'AT', 'MIL', 'MIL', 'MIL', 'MIL', 'DEF', 'DEF', 'DEF', 'DEF', 'GB',
+  'Banc', 'Banc', 'Banc', 'Banc', 'Banc'];
+const scouts = [
+  ["Monty Hillary", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/o/c/ocbppldxgwu.png"],
+  ["Penfold Pulper", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/g/q/gqakvkk4b60.png"],
+  ["Trey Spotter", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/h/j/hjhhthewqj8.png"],
+  ["Ryder Waverly", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/p/o/por5utbna8k.png"],
+  ["Ted Larkin", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/k/k/kk-nogtcxce.png"],
+  ["Odo Cologne", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/1/j/1jszwc-uppc.png"],
+  ["Onslow Ball", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/v/h/vhim9o0fvcu.png"],
+  ["Horace Coop", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/8/h/8hdet11byjm.png"],
+  ["Ness Lockley", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/c/o/co-x-oathp8.png"],
+  ["Olef Tennant", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/t/a/tapqtxmpqau.png"],
+  ["Len Scapp", 'GB', "https://dxi4wb638ujep.cloudfront.net/1/k/z/q/zqwiiallnl8.png"],
+  ["Leaf Scarlett", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/n/v/nvslakthf6k.png"],
+  ["Spike Thorne", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/x/t/xtiwrgzkzps.png"],
+  ["Rob Ottley", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/9/3/93fqekogpje.png"],
+  ["Thomas Cott", 'GB', "https://dxi4wb638ujep.cloudfront.net/1/k/3/c/3crf4bscsjc.png"],
+  ["Lincoln Hawking", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/m/f/mf5rg5_w0ae.png"],
+].map(([name, position, image], index) => ({
+  id: `scout-${index + 1}`, name, position, image, rarity: 'Scout', price: 0,
+}));
+const recruits = [
+  {id: 'willy', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/y/uy2tfhpjks0.png', name: 'Willy Glasses', position: 'AT', rarity: 'Bronze', price: 180},
+  {id: 'steve', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/3/f3asqpwqusk.png', name: 'Steve Grim', position: 'MIL', rarity: 'Bronze', price: 220},
+  {id: 'tod', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/_/y/_yjndsfyhyu.png', name: 'Tod Ironside', position: 'DEF', rarity: 'Bronze', price: 170},
+  {id: 'max', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/r/d/rd_khczyztm.png', name: 'Maxwell Carson', position: 'MIL', rarity: 'Bronze', price: 190},
+  {id: 'darren', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/y/oy1sibyz7wc.png', name: 'Darren LaChance', position: 'GB', rarity: 'Bronze', price: 200},
+  {id: 'jim', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/w/owsgutjimb8.png', name: 'Jim Wraith', position: 'DEF', rarity: 'Bronze', price: 210},
+  {id: 'tim', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/f/ufxz9wwq5hm.png', name: 'Tim Saunders', position: 'MIL', rarity: 'Bronze', price: 180},
+  {id: 'sam-kincaid', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/a/1/a1orm9vieek.png', name: 'Sam Kincaid', position: 'MIL', rarity: 'Bronze', price: 210},
+  {id: 'peter-drent', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/5/d5w9zd0i6nc.png', name: 'Peter Drent', position: 'DEF', rarity: 'Bronze', price: 230},
+  {id: 'nathan-jones', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/a/vaeuza7dvs8.png', name: 'Nathan Jones', position: 'GB', rarity: 'Bronze', price: 240},
+  {id: 'chuck-dollman', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/x/m/xmeolswmzne.png', name: 'Chuck Dollman', position: 'AT', rarity: 'Bronze', price: 250},
+  {id: 'erik', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/e/4/e4qtt3lwf_m.png', name: 'Erik Eagle', position: 'MIL', rarity: 'Argent', price: 390},
+  {id: 'kevin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/0/d/0dvmw8cb_ye.png', name: 'Kevin Dragonfly', position: 'AT', rarity: 'Argent', price: 430},
+  {id: 'jack', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/r/mrvaa0xojh8.png', name: 'Jack Wallside', position: 'DEF', rarity: 'Argent', price: 420},
+  {id: 'celia', image: '/assets/celia.png', name: 'Celia Hills', position: 'MIL', rarity: 'Argent', price: 460},
+  {id: 'bobby', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/-/x/-xzmaq-eqf8.png', name: 'Bobby Shearer', position: 'DEF', rarity: 'Argent', price: 390},
+  {id: 'daniel-hatch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/d/ldrmvkqotue.png', name: 'Daniel Hatch', position: 'AT', rarity: 'Argent', price: 410},
+  {id: 'rob-crombie', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/k/mkvjitw20us.png', name: 'Rob Crombie', position: 'GB', rarity: 'Argent', price: 420},
+  {id: 'bruce-monkey', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/j/ijd315vl-h0.png', name: 'Bruce Monkey', position: 'MIL', rarity: 'Argent', price: 440},
+  {id: 'neil-turner', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/n/inwfp5x5ak8.png', name: 'Neil Turner', position: 'AT', rarity: 'Argent', price: 450},
+  {id: 'mark', image: '/assets/captain-mark.png', name: 'Mark Evans', position: 'GB', rarity: 'Or', price: 800},
+  {id: 'axel', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/1/f1kh7d67sbs.png', name: 'Axel Blaze', position: 'AT', rarity: 'Or', price: 850},
+  {id: 'joseph-king', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/9/w/9wtikebapts.png', name: 'Joseph King', position: 'GB', rarity: 'Or', price: 720},
+  {id: 'david-samford', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/d/udbgi0_9hlm.png', name: 'David Samford', position: 'AT', rarity: 'Or', price: 740},
+  {id: 'hurley', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/0/i0spbukph8c.png', name: 'Hurley Kane', position: 'DEF', rarity: 'Or', price: 760},
+  {id: 'caleb', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/s/x/sxyalpxpni8.png', name: 'Caleb Stonewall', position: 'MIL', rarity: 'Or', price: 810},
+  {id: 'shawn', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/p/opancch54ie.png', name: 'Shawn Froste', position: 'DEF', rarity: 'Or', price: 880},
+  {id: 'nathan', image: '/assets/captain-nathan-dark.png', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
+  {id: 'xene', image: '/assets/captain-xene.png', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
+  {id: 'jude', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/1/l1wbplzhm4k.png', name: 'Jude Sharp', position: 'MIL', rarity: 'Légendaire', price: 1300},
+  {id: 'byron', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/y/dykb3jbxeis.png', name: 'Byron Love', position: 'MIL', rarity: 'Légendaire', price: 1400},
+  {id: 'torch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/d/mdglyf7jc3c.png', name: 'Torch', position: 'AT', rarity: 'Légendaire', price: 1450},
+  {id: 'gazelle', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/r/ir7gceyqjb8.png', name: 'Gazelle', position: 'AT', rarity: 'Légendaire', price: 1475},
+  ...[
+    [216, 'Jean Pierre Lapin', 'GB', 'Argent', 500],
+    [232, 'Samguk Han', 'GB', 'Or', 750],
+    [353, 'Gabriel Garcia', 'DEF', 'Or', 790],
+    [440, 'Ryoma Nishiki', 'MIL', 'Or', 820],
+    [714, 'Arion Sherwind', 'MIL', 'Or', 900],
+    [633, 'Victor Blade', 'AT', 'Légendaire', 1400],
+    [187, 'Tezcat', 'AT', 'Légendaire', 1500],
+    [194, 'Bailong', 'AT', 'Légendaire', 1550],
+    [2186, 'Arion Sherwind', 'MIL', 'Légendaire', 1650, 'Mixi Max'],
+  ].map(([unit, name, position, rarity, price, detail]) => ({
+    id: `souls-${unit}`, image: `/assets/souls2/${unit}.png`, name, position, rarity, price, detail, souls: true,
+  })),
+];
+const scoutIds = scouts.map(player => player.id);
+const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
+// Original prices used to refund retired entries when loading old saves.
+const retiredPrices = new Map([
+  ['hekyll', 260], ['archer', 480], ['austin', 790], ['aiden-child', 900],
+  ['aiden-adult', 1650], ['xavier-foster', 1550], ['xavier-schiller', 1750],
+]);
+const $ = id => document.getElementById(id);
+const picker = $('picker');
+const club = $('club-workspace');
+const catalogue = $('recruitment-catalogue');
+const sale = $('club-sale');
+const formatter = new Intl.NumberFormat('fr-FR');
+let activeSlot = null;
+let sellingId = null;
+let analysisController;
+let proposedRecruitment = null;
+let soulsAvailable = false;
+const declinedOptions = new Set();
+
+function ownedPlayers(state) {
+  return [...state.recruits, ...scoutIds.filter(id => !state.soldScouts.includes(id))];
+}
+
+function resalePrice(player) {
+  return player.price ? Math.floor(player.price / 2) : SCOUT_RESALE_CREDITS;
+}
+
+function load() {
+  const value = JSON.parse(localStorage.getItem(STORAGE) ?? 'null');
+  if (value === null) return {recruits: [], soldScouts: [], credits: STARTING_CREDITS, lineup: [...scoutIds]};
+  if (!Array.isArray(value.recruits) || !Array.isArray(value.lineup)
+      || value.recruits.some(id => !retiredPrices.has(id) && !players.get(id)?.price)
+      || new Set(value.recruits).size !== value.recruits.length) throw new Error('Sauvegarde du club illisible.');
+  value.soldScouts ??= [];
+  const originalPrice = id => retiredPrices.get(id) ?? players.get(id).price;
+  value.credits ??= STARTING_CREDITS - value.recruits.reduce((total, id) => total + originalPrice(id), 0);
+  const assigned = value.lineup.filter(id => id !== null);
+  if (!Array.isArray(value.soldScouts) || value.soldScouts.some(id => !scoutIds.includes(id))
+      || new Set(value.soldScouts).size !== value.soldScouts.length
+      || !Number.isSafeInteger(value.credits) || value.credits < 0
+      || value.lineup.length !== slots.length || new Set(assigned).size !== assigned.length
+      || assigned.some(id => !ownedPlayers(value).includes(id))) throw new Error('Sauvegarde du club illisible.');
+  const retired = value.recruits.filter(id => retiredPrices.has(id));
+  value.credits += retired.reduce((total, id) => total + retiredPrices.get(id), 0);
+  value.recruits = value.recruits.filter(id => !retiredPrices.has(id));
+  value.lineup = value.lineup.map(id => retiredPrices.has(id) ? null : id);
+  return value;
+}
+
+export function inazumaMatchSquad() {
+  const {lineup} = load();
+  const captain = players.get(lineup[10]);
+  return {lineup, captain: captain ? playerName(captain) : '', portrait: captain?.image};
+}
+
+function feedback(text, error = false) {
+  const message = error && picker.open ? $('picker-error')
+    : error && sale.open ? $('sale-error')
+    : catalogue.open ? $('catalogue-feedback') : $('feedback');
+  message.textContent = text;
+  message.hidden = false;
+  message.classList.toggle('error', error);
+}
+
+function update(operation) {
+  const apply = () => {
+    try {
+      const copy = load();
+      const message = operation(copy);
+      localStorage.setItem(STORAGE, JSON.stringify(copy));
+      state = copy;
+      render();
+      feedback(message);
+      return true;
+    } catch (error) {
+      feedback(error.message || 'La sauvegarde a échoué.', true);
+      return false;
+    }
+  };
+  return navigator.locks ? navigator.locks.request(STORAGE, apply) : Promise.resolve(apply());
+}
+
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text) element.textContent = text;
+  return element;
+}
+
+function playerName(player) {
+  return player.detail ? `${player.name} · ${player.detail}` : player.name;
+}
+
+function portrait(player) {
+  const image = node('img', 'club-portrait');
+  image.src = player.image;
+  image.alt = '';
+  image.decoding = 'async';
+  image.referrerPolicy = 'no-referrer';
+  return image;
+}
+
+function slotName(index) {
+  return index < 11 ? `Poste ${slots[index]} ${index + 1}` : `Banc ${index - 10}`;
+}
+
+function squadSlot(id, index) {
+  const player = players.get(id);
+  const button = node('button', 'slot');
+  button.type = 'button';
+  button.dataset.slot = index;
+  const starter = index < 11;
+  const role = starter ? slots[index] : player?.position;
+  const roleLabel = role === 'AT' ? 'ATT' : role;
+  const label = player ? playerName(player) : 'Place libre';
+  const accessibleLabel = [slotName(index), label, !starter && roleLabel, player?.rarity].filter(Boolean).join(' · ');
+  button.setAttribute('aria-label', `${accessibleLabel}. Choisir un joueur`);
+  button.title = player ? `${label} · ${player.rarity}` : label;
+  button.dataset.role = role ?? '';
+  if (player) button.dataset.rarity = player.rarity;
+  const visual = node('span', 'slot-visual');
+  visual.append(player ? portrait(player) : node('span', 'club-portrait empty-slot', '+'));
+  if (roleLabel) visual.append(node('span', 'slot-role', roleLabel));
+  button.append(visual, node('span', 'slot-name', player?.name ?? label));
+  button.onclick = () => {
+    activeSlot = index;
+    $('picker-error').hidden = true;
+    $('picker-title').textContent = slotName(index);
+    renderPicker();
+    picker.showModal();
+  };
+  return button;
+}
+
+function playerRow(player, info, action) {
+  const row = node('li', 'player-row');
+  row.dataset.rarity = player.rarity;
+  const identity = node('div', 'player-identity');
+  const details = node('div', 'player-details');
+  details.append(node('strong', '', playerName(player)), node('span', '', info));
+  identity.append(portrait(player), details);
+  const rarity = node('span', 'rarity', player.rarity);
+  rarity.dataset.rarity = player.rarity;
+  row.append(identity, rarity);
+  if (action) row.append(action);
+  return row;
+}
+
+function renderShop() {
+  if (!catalogue.open) return;
+  const filter = $('rarity').value;
+  const proposal = proposedRecruitment;
+  $('rarity').closest('label').hidden = Boolean(proposal);
+  $('catalogue-title').textContent = proposal ? 'Confirmer le recrutement avec Célia' : 'Joueurs disponibles';
+  $('shop-list').replaceChildren(...recruits.filter(player => (!player.souls || soulsAvailable) && (proposal
+    ? player.id === proposal.playerId : !filter || (filter === 'souls2' ? player.souls : player.rarity === filter))).map(player => {
+    const owned = state.recruits.includes(player.id);
+    const afford = state.credits >= player.price;
+    const button = node('button', 'purchase', owned ? 'Recruté' : !afford ? 'Budget insuffisant'
+      : proposal ? 'Acheter et titulariser' : 'Acheter');
+    button.type = 'button';
+    button.disabled = owned || !afford;
+    button.setAttribute('aria-label', `${button.textContent} — ${playerName(player)}`);
+    button.onclick = async () => {
+      const focused = document.activeElement === button;
+      const saved = await update(copy => {
+        if (proposal) checkCoachTarget(copy, proposal);
+        if (copy.recruits.includes(player.id)) throw new Error('Ce joueur appartient déjà au club.');
+        if (copy.credits < player.price) throw new Error('Crédits insuffisants.');
+        copy.credits -= player.price;
+        copy.recruits.push(player.id);
+        if (proposal) {
+          copy.lineup[proposal.index] = player.id;
+          return `Célia confirme le recrutement. ${playerName(player)} est titulaire.`;
+        }
+        return `Célia confirme le recrutement de ${playerName(player)}. Tu peux retrouver le joueur dans ton inventaire.`;
+      });
+      if (saved && proposal) {
+        catalogue.close();
+        feedback(`Célia confirme le recrutement. ${playerName(player)} est titulaire.`);
+        $('club-coach-title').focus();
+      } else if (saved && focused) ($('shop-list').querySelector('button:enabled') ?? $('rarity')).focus();
+    };
+    return playerRow(player, `${player.position} · ${formatter.format(player.price)} crédits`, button);
+  }));
+}
+
+function renderPicker() {
+  const selecting = activeSlot;
+  const owned = ownedPlayers(state);
+  $('picker-empty').hidden = owned.length > 0;
+  $('picker-list').replaceChildren(...owned.map(id => {
+    const player = players.get(id);
+    const position = state.lineup.indexOf(id);
+    const button = node('button', 'choose', position === selecting ? 'Actuel' : 'Choisir');
+    button.type = 'button';
+    button.disabled = position === selecting;
+    button.setAttribute('aria-label', `${button.textContent} — ${playerName(player)}`);
+    button.onclick = async () => {
+      const saved = await update(copy => {
+        if (!ownedPlayers(copy).includes(id)) throw new Error('Ce joueur ne fait plus partie du club.');
+        const source = copy.lineup.indexOf(id);
+        if (source >= 0) copy.lineup[source] = copy.lineup[selecting];
+        copy.lineup[selecting] = id;
+        return `${player.name} occupe le poste sélectionné.`;
+      });
+      if (saved) picker.close();
+    };
+    return playerRow(player, position >= 0 ? slotName(position) : 'En réserve', button);
+  }));
+}
+
+function confirmSale(player) {
+  sellingId = player.id;
+  $('sale-error').hidden = true;
+  const credits = formatter.format(resalePrice(player));
+  $('sale-details').textContent = `Revendre ${playerName(player)} pour ${credits} crédits ? Le joueur quittera ton effectif.`;
+  sale.showModal();
+}
+
+function coachOptions() {
+  const starters = state.lineup.slice(0, 11);
+  const reserves = ownedPlayers(state).filter(id => !starters.includes(id)).map(id => players.get(id));
+  const lines = {AT: 'Ton attaque', MIL: 'Ton milieu', DEF: 'Ta défense'};
+  const priorityByRole = {GB: 4, DEF: 3, MIL: 2, AT: 1};
+  const rank = player => rarityRank.indexOf(player.rarity);
+  const options = [];
+  for (const [index, id] of starters.entries()) {
+    const incumbent = players.get(id);
+    const role = slots[index];
+    const misplaced = incumbent && incumbent.position !== role;
+    if (incumbent?.price && !misplaced) continue;
+    const position = role === 'AT' ? 'ATT' : role;
+    const target = incumbent ? playerName(incumbent) : null;
+    const key = player => JSON.stringify([index, id, player.id]);
+    const eligible = player => player.position === role && !declinedOptions.has(key(player))
+      && (!incumbent || (misplaced ? rank(player) >= rank(incumbent) : rank(player) > rank(incumbent)));
+    const line = starters.filter((_, at) => slots[at] === role);
+    const scoutsInLine = line.filter(playerId => players.get(playerId)?.rarity === 'Scout').length;
+    const context = !incumbent ? (role === 'GB' ? 'Ton but est sans gardien.' : `${lines[role]} a un poste libre.`)
+      : misplaced ? `${target} joue hors poste en ${position}.`
+        : role === 'GB' ? 'Ton gardien titulaire est encore un scout.'
+          : `${lines[role]} compte ${scoutsInLine} scout${scoutsInLine > 1 ? 's' : ''} sur ${line.length} titulaires.`;
+    const offer = (player, level, title, reason, extra = {}) => options.push({
+      index, incumbentId: id, playerId: player.id, key: key(player), level, priority: priorityByRole[role],
+      title, reason, context, ...extra,
+    });
+    if (misplaced) {
+      const other = starters.findIndex((otherId, at) => {
+        const player = players.get(otherId);
+        return at > index && slots[at] !== role && player?.position === role
+          && slots[at] === incumbent.position && !declinedOptions.has(key(player));
+      });
+      if (other !== -1) {
+        const player = players.get(starters[other]);
+        offer(player, 4, `Permuter ${target} et ${playerName(player)}`,
+          'Deux joueurs retrouvent leur poste · Sans achat', {swapIndex: other});
+        continue;
+      }
+    }
+    const reserve = reserves.filter(eligible).sort((a, b) => rank(b) - rank(a))[0];
+    if (reserve) {
+      offer(reserve, !incumbent ? 5 : misplaced ? 4 : 2,
+        target ? `Remplacer ${target} par ${playerName(reserve)}` : `Titulariser ${playerName(reserve)}`,
+        `${position} · Sans achat`);
+      continue;
+    }
+    if (incumbent?.price || (incumbent && !misplaced && role !== 'GB' && scoutsInLine < 2)) continue;
+    const budget = !incumbent || misplaced ? state.credits : Math.floor(state.credits / 2);
+    const recruit = recruits.filter(player => (!player.souls || soulsAvailable) && eligible(player)
+      && !state.recruits.includes(player.id) && player.price <= budget)
+      .sort((a, b) => a.price - b.price)[0];
+    if (recruit) {
+      offer(recruit, !incumbent ? 5 : misplaced ? 3 : 1,
+        `Acheter ${playerName(recruit)} pour jouer en ${position}`,
+        `${formatter.format(recruit.price)} crédits · ${target ? `Remplace ${target}` : 'Place libre'}`,
+        {purchase: true});
+    }
+  }
+  return options.sort((a, b) => b.level - a.level
+    || Number(Boolean(a.purchase)) - Number(Boolean(b.purchase))
+    || b.priority - a.priority).slice(0, 12);
+}
+
+function checkCoachTarget(copy, option) {
+  if (copy.lineup[option.index] !== option.incumbentId) {
+    throw new Error('La composition a changé. Actualise les conseils de Lina.');
+  }
+}
+
+async function acceptCoachOption(option) {
+  if (option.purchase) {
+    proposedRecruitment = option;
+    openCatalogue();
+    return;
+  }
+  const player = players.get(option.playerId);
+  const saved = await update(copy => {
+    checkCoachTarget(copy, option);
+    const previous = copy.lineup.indexOf(player.id);
+    if (option.swapIndex !== undefined) {
+      if (previous !== option.swapIndex) throw new Error('La composition a changé. Actualise les conseils de Lina.');
+      copy.lineup[previous] = option.incumbentId;
+      copy.lineup[option.index] = player.id;
+      return 'Les deux joueurs ont retrouvé leur poste.';
+    }
+    if (!ownedPlayers(copy).includes(player.id) || (previous >= 0 && previous < 11)) {
+      throw new Error('Ce joueur n’est plus disponible sur le banc ou en réserve.');
+    }
+    if (previous >= 0) copy.lineup[previous] = option.incumbentId;
+    copy.lineup[option.index] = player.id;
+    return `${playerName(player)} est titulaire sur les conseils de Lina.`;
+  });
+  if (saved) $('club-coach-title').focus();
+}
+
+function renderCoachOptions(options) {
+  const list = $('club-recommendations');
+  const rows = [];
+  const seen = new Set();
+  for (const option of options) {
+    const role = slots[option.index];
+    if (seen.has(role) || declinedOptions.has(option.key)) continue;
+    seen.add(role);
+    const row = node('li');
+    const actions = node('div', 'coach-actions');
+    const accept = node('button', 'button-primary', option.purchase ? 'Voir chez Célia' : 'Valider');
+    const decline = node('button', '', 'Refuser');
+    accept.type = decline.type = 'button';
+    accept.setAttribute('aria-label', `${accept.textContent} · ${option.title}`);
+    decline.setAttribute('aria-label', `Refuser · ${option.title}`);
+    accept.onclick = () => acceptCoachOption(option);
+    decline.onclick = () => {
+      declinedOptions.add(option.key);
+      analyseTeam();
+      $('club-coach-title').focus();
+    };
+    actions.append(accept, decline);
+    row.append(node('p', 'coach-context', option.context), node('strong', '', option.title), node('p', '', option.reason), actions);
+    rows.push(row);
+    if (rows.length === 1) break;
+  }
+  list.replaceChildren(...rows);
+}
+
+function resetCoachAnalysis() {
+  analysisController?.abort();
+  $('analyse-club').disabled = false;
+  $('club-coach-status').textContent = '';
+  $('club-recommendations').replaceChildren();
+}
+
+async function analyseTeam() {
+  if (!state || club.hidden) return;
+  analysisController?.abort();
+  $('analyse-club').disabled = false;
+  const options = coachOptions();
+  const status = $('club-coach-status');
+  const list = $('club-recommendations');
+  list.replaceChildren();
+  if (!options.length) {
+    status.textContent = 'Je ne vois pas de changement qui justifie de toucher à ton onze avec cet effectif et ce budget.';
+    return;
+  }
+  renderCoachOptions(options);
+  const priorityOptions = options.filter(option => option.level === options[0].level
+    && option.purchase === options[0].purchase);
+  if (priorityOptions.length < 2) {
+    status.textContent = '';
+    return;
+  }
+  const controller = new AbortController();
+  analysisController = controller;
+  $('analyse-club').disabled = true;
+  status.textContent = 'Lina étudie ton effectif…';
+  let recommendations;
+  try {
+    const response = await fetch('/api/analyse_club', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, signal: controller.signal,
+      body: JSON.stringify({credits: state.credits, formation: FORMATION,
+        candidates: priorityOptions.map(option => `${option.context} ${option.title}. ${option.reason}`)}),
+    });
+    if (!response.ok) throw new Error('Analyse locale indisponible');
+    const result = await response.json();
+    recommendations = result.recommendations.map(index => priorityOptions[index]);
+    if (!recommendations.length || recommendations.some(option => !option)) throw new Error('Analyse incomplète');
+    if (controller.signal.aborted) return;
+    status.textContent = '';
+  } catch {
+    if (controller.signal.aborted) return;
+    recommendations = options;
+    status.textContent = 'Conseils hors ligne';
+  }
+  if (!catalogue.open && !list.contains(document.activeElement)) renderCoachOptions([...recommendations, ...options]);
+  $('analyse-club').disabled = false;
+}
+
+function render() {
+  resetCoachAnalysis();
+  $('balance').textContent = formatter.format(state.credits);
+  $('pitch').replaceChildren(...state.lineup.slice(0, 11).map(squadSlot));
+  $('bench').replaceChildren(...state.lineup.slice(11).map((id, index) => squadSlot(id, index + 11)));
+  const owned = ownedPlayers(state);
+  $('inventory-count').textContent = `${owned.length} joueurs`;
+  $('inventory-empty').hidden = owned.length > 0;
+  $('inventory-list').replaceChildren(...owned.map(id => {
+    const player = players.get(id);
+    const index = state.lineup.indexOf(id);
+    const price = formatter.format(resalePrice(player));
+    const button = node('button', 'resell', `Revendre · ${price} cr.`);
+    button.type = 'button';
+    button.setAttribute('aria-label', `Revendre ${playerName(player)} pour ${price} crédits`);
+    button.onclick = () => confirmSale(player);
+    return playerRow(player, index >= 0 ? slotName(index) : 'En réserve', button);
+  }));
+  renderShop();
+  if (picker.open) renderPicker();
+  if (!catalogue.open) analyseTeam();
+  document.dispatchEvent(new Event('inazuma-lineup-change'));
+}
+
+let state;
+try {
+  state = load();
+  render();
+} catch (error) {
+  feedback(error.message, true);
+}
+
+for (const button of document.querySelectorAll('[data-view]')) {
+  button.onclick = () => {
+    for (const item of document.querySelectorAll('[data-view]')) {
+      const active = item === button;
+      $(item.dataset.view).hidden = !active;
+      item.setAttribute('aria-pressed', active);
+    }
+  };
+}
+const openClub = $('open-club');
+$('analyse-club').onclick = analyseTeam;
+$('show-lina').onclick = () => {
+  $('club-coach-title').focus({preventScroll: true});
+  $('club-coach').scrollIntoView({block: 'start'});
+};
+function showClub() {
+  club.hidden = false;
+  $('close-club').hidden = false;
+  $('matchArena').hidden = true;
+  $('club-coach').hidden = false;
+  $('open-recruitment').hidden = false;
+  openClub.setAttribute('aria-expanded', 'true');
+  openClub.textContent = 'Voir la composition';
+  document.dispatchEvent(new Event('inazuma-club-view'));
+  const narrow = matchMedia('(max-width: 800px)').matches;
+  $(narrow ? 'club-coach-title' : 'club-title').focus({preventScroll: true});
+  $(narrow ? 'recruitmentColumn' : 'club-workspace').scrollIntoView({block: 'start'});
+  analyseTeam();
+}
+export function closeInazumaClub(restoreFocus = false) {
+  if (club.hidden) return;
+  for (const dialog of [picker, catalogue, sale]) if (dialog.open) dialog.close();
+  club.hidden = true;
+  $('close-club').hidden = true;
+  $('matchArena').hidden = false;
+  $('club-coach').hidden = true;
+  $('open-recruitment').hidden = true;
+  openClub.setAttribute('aria-expanded', 'false');
+  openClub.textContent = 'Ouvrir Inazuma FC';
+  resetCoachAnalysis();
+  if (restoreFocus) {
+    document.querySelector('.masthead .brand').focus({preventScroll: true});
+    window.scrollTo({top: 0, behavior: 'instant'});
+  }
+}
+openClub.onclick = () => club.hidden ? showClub() : $('club-title').focus();
+$('close-club').onclick = () => closeInazumaClub(true);
+$('sale-confirm').onclick = async () => {
+  const id = sellingId;
+  const saved = await update(copy => {
+    if (!ownedPlayers(copy).includes(id)) throw new Error('Ce joueur ne fait plus partie du club.');
+    const player = players.get(id);
+    const price = resalePrice(player);
+    if (player.price) copy.recruits = copy.recruits.filter(recruit => recruit !== id);
+    else copy.soldScouts.push(id);
+    copy.lineup = copy.lineup.map(assigned => assigned === id ? null : assigned);
+    copy.credits += price;
+    return `${playerName(player)} a été revendu. +${formatter.format(price)} crédits.`;
+  });
+  if (saved && sale.open && sellingId === id) {
+    sale.close();
+    $('inventory-title').focus();
+  }
+};
+function openCatalogue() {
+  $('catalogue-feedback').hidden = true;
+  catalogue.showModal();
+  if (state) renderShop();
+}
+$('open-recruitment').onclick = openCatalogue;
+catalogue.addEventListener('close', () => {
+  if (proposedRecruitment) {
+    proposedRecruitment = null;
+    analyseTeam();
+    if (!club.hidden) $('club-coach-title').focus();
+  }
+});
+if (location.hash === '#inazuma-fc') {
+  history.replaceState(history.state, '', location.pathname + location.search);
+  showClub();
+}
+$('rarity').onchange = () => { if (state) renderShop(); };
+fetch('/souls2-catalogue').then(response => response.json()).then(result => {
+  if (result.available === true) {
+    soulsAvailable = true;
+    $('souls2-filter').hidden = false;
+    if (state) renderShop();
+  }
+}).catch(() => {});
+picker.addEventListener('close', () => {
+  document.querySelector(`[data-slot="${activeSlot}"]`)?.focus();
+  activeSlot = null;
+});
+window.addEventListener('storage', event => {
+  if (event.key !== STORAGE && event.key !== null) return;
+  try {
+    state = load();
+    render();
+  } catch (error) {
+    feedback(error.message, true);
+  }
+});
