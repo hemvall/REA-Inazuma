@@ -362,7 +362,7 @@ function renderCoachOptions(options) {
     actions.append(accept, decline);
     row.append(node('strong', '', option.title), node('p', '', option.reason), actions);
     rows.push(row);
-    if (rows.length === 2) break;
+    if (rows.length === 1) break;
   }
   list.replaceChildren(...rows);
 }
@@ -461,10 +461,10 @@ $('show-lina').onclick = () => {
 };
 function showClub() {
   club.hidden = false;
+  $('close-club').hidden = false;
   $('matchArena').hidden = true;
   $('club-coach').hidden = false;
   $('open-recruitment').hidden = false;
-  $('special-recruitment').open = false;
   openClub.setAttribute('aria-expanded', 'true');
   openClub.textContent = 'Voir la composition';
   document.dispatchEvent(new Event('inazuma-club-view'));
@@ -477,14 +477,17 @@ export function closeInazumaClub(restoreFocus = false) {
   if (club.hidden) return;
   for (const dialog of [picker, catalogue, sale]) if (dialog.open) dialog.close();
   club.hidden = true;
+  $('close-club').hidden = true;
   $('matchArena').hidden = false;
   $('club-coach').hidden = true;
   $('open-recruitment').hidden = true;
-  $('special-recruitment').open = true;
   openClub.setAttribute('aria-expanded', 'false');
   openClub.textContent = 'Ouvrir Inazuma FC';
   resetCoachAnalysis();
-  if (restoreFocus) openClub.focus();
+  if (restoreFocus) {
+    document.querySelector('.masthead .brand').focus({preventScroll: true});
+    window.scrollTo({top: 0, behavior: 'instant'});
+  }
 }
 openClub.onclick = () => club.hidden ? showClub() : $('club-title').focus();
 $('close-club').onclick = () => closeInazumaClub(true);

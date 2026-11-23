@@ -3,23 +3,23 @@
   .coach-status:not(:empty) { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
   .coach-recommendations:empty { display: none; }
   .coach-recommendations { padding: 0; margin: 12px 0 0; list-style: none; }
-  .coach-recommendations li { padding: 12px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .coach-recommendations li { padding: 10px 0 2px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
   .coach-recommendations li strong { display: block; font-size: 13px; line-height: 1.45; }
   .coach-recommendations li p { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
   .coach-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }
-  #analyse-club { margin-top: 12px; }
+  #analyse-club { margin-top: 10px; }
   .coach-role { color: var(--muted); font-size: 12px; margin-top: 3px; }
   .lineup-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
   .catalogue-filter label { margin: 0; }
   .catalogue-filter select { width: auto; }
 
-  .club-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .club-heading h2 { font-size: clamp(25px, 4vw, 36px); letter-spacing: -.04em; }
-  .club-heading p, .section-heading p, .storage-note { color: var(--muted); font-size: 14px; margin-top: 3px; }
+  .club-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .club-heading h2 { font-size: clamp(23px, 3vw, 30px); letter-spacing: -.04em; }
+  .section-heading p { color: var(--muted); font-size: 14px; margin-top: 3px; }
   .crest {
     position: relative;
-    flex: 0 0 62px;
-    height: 72px;
+    flex: 0 0 48px;
+    height: 55px;
     display: grid;
     justify-items: center;
     padding-top: 8px;
@@ -37,8 +37,8 @@
   .crest span, .crest i { z-index: 1; }
   .crest span { font-size: 12px; letter-spacing: .12em; font-weight: 850; }
   .crest i {
-    width: 25px;
-    height: 33px;
+    width: 19px;
+    height: 24px;
     align-self: start;
     background: currentColor;
     clip-path: polygon(40% 0,100% 0,60% 37%,94% 37%,16% 100%,34% 55%,0 55%);
@@ -52,15 +52,14 @@
   }
   .wallet span, .formation, .bench h3 { font-size: 13px; color: var(--muted); }
   .wallet strong { font-size: 23px; color: var(--yellow); }
-  .club-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
-  .club-nav, .club-match-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .club-nav { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
   .club-nav button[aria-pressed=true], .purchase:not(:disabled), .choose:not(:disabled) {
     color: #171a22;
     border-color: var(--yellow);
     background: var(--yellow);
     font-weight: 650;
   }
-  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 8px; }
   .section-heading h2, .dialog-heading h2 { font-size: 20px; font-weight: 650; }
   .section-heading label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .section-heading.catalogue-filter { justify-content: flex-end; margin-top: 0; }
@@ -70,7 +69,7 @@
     display: grid;
     grid-template-areas: 'field';
     position: relative;
-    min-height: 455px;
+    min-height: 414px;
     border: 1px solid #537b76;
     padding: 12px;
     background: repeating-linear-gradient(#1c4543 0 12.5%, #23524d 12.5% 25%);
@@ -194,7 +193,6 @@
   .sale-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   #sale-error { margin-top: 10px; }
   #picker-error { margin-bottom: 10px; font-size: 14px; }
-  .storage-note { margin-top: 16px; font-size: 13px; }
   .club-popup {
     width: min(560px, calc(100% - 24px));
     max-height: min(88dvh, 850px);
@@ -271,6 +269,14 @@
   }
 }
 .club-workspace { min-width: 0; width: 100%; }
+.masthead:has(#close-club:not([hidden])) { justify-content: space-between; }
+#close-club { flex: none; white-space: nowrap; }
+#close-club span { color: var(--yellow); margin-right: 3px; }
+body:has(.club-workspace:not([hidden])) #manual,
+.game-layout:has(.club-workspace:not([hidden])) #matchSetup,
+.game-layout:has(.club-workspace:not([hidden])) #special-recruitment { display: none; }
+.game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { gap: 12px; }
+.game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn .panel-body { padding: 14px; }
 .celia-club-actions { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 .game-layout:has(.club-workspace:not([hidden])) .celia-club-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -285,8 +291,9 @@
     grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
   }
   .game-layout:has(.club-workspace:not([hidden])) .club-workspace { grid-area: 1 / 1; }
-  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-area: 1 / 2 / span 2; }
-  .game-layout:has(.club-workspace:not([hidden])) #matchSetup { grid-area: 2 / 1; }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-area: 1 / 2; }
+  .game-layout:has(.club-workspace:not([hidden])) .celia-club-actions { grid-template-columns: 1fr; }
+  #open-club[aria-expanded=true], #show-lina { display: none; }
 }
 @container (max-width: 560px) {
   .club-ui .squad { grid-template-columns: minmax(0, 1fr); }
@@ -298,5 +305,6 @@
   .game-layout:has(.club-workspace:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
   .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { order: 0; }
   .club-workspace { order: 1; }
-  .game-layout:has(.club-workspace:not([hidden])) #matchSetup { display: grid; order: 2; }
+  .masthead:has(#close-club:not([hidden])) { min-height: 64px; gap: 8px; }
+  .masthead:has(#close-club:not([hidden])) .brand-word small { display: none; }
 }
