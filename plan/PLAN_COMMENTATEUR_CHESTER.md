@@ -33,6 +33,11 @@ Faire parler Chester Horse Junior pendant les vrais matchs d’InazumIA. La prem
 
 ## Voix et génération
 
+L’[essai vocal de Chester](chester-essai-voix.mp3) illustre l’intention de jeu
+avec la voix de synthèse [Tom de Piper](https://huggingface.co/rhasspy/piper-voices/tree/main/fr/fr_FR/tom/medium).
+Le salon utilise une voix française disponible dans le navigateur et ajuste
+le débit et la hauteur selon l’action.
+
 - Définir une personnalité éditoriale : enthousiaste, précise, formulations originales et une phrase par intervention. Fournir à l’IA uniquement les faits confirmés et un court historique des interventions. Exemple : « Et ça rentre pour Raimon ! Deux à un, le match bascule ! »
 - Pour un but ou un résultat, faire prononcer le score et les noms d’équipe à partir du texte produit par le serveur. L’IA peut ajouter une réaction courte. Si sa réponse tarde, utiliser la formule prédéfinie.
 - Commencer par la synthèse vocale du navigateur, valider les voix françaises sur les navigateurs utilisés et vérifier la prononciation des équipes. Évaluer ensuite une voix dédiée si la disponibilité ou le rendu varie trop selon la machine. Si l’audio est indisponible, afficher les sous-titres.

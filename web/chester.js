@@ -1,3 +1,12 @@
+const VOICE_DELIVERY = {
+  goal: {rate: 1.20, pitch: 1.36},
+  shot: {rate: 1.17, pitch: 1.29},
+  attack_duel: {rate: 1.13, pitch: 1.24},
+  defence_duel: {rate: 1.13, pitch: 1.24},
+  halftime: {rate: 1.03, pitch: 1.15},
+  result: {rate: 1.01, pitch: 1.12},
+};
+
 export function createChester({api, enabled, captions, volume, line, hint, status}) {
   const voice = window.speechSynthesis;
   let session = null;
@@ -37,7 +46,11 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   }
 
   function frenchVoice() {
-    return voice?.getVoices().find(item => /^fr(?:[-_]|$)/i.test(item.lang));
+    const options = voice?.getVoices().filter(item => /^fr(?:[-_]|$)/i.test(item.lang)) ?? [];
+    const france = options.filter(item => /^fr[-_]FR$/i.test(item.lang));
+    return france.find(item => /\b(?:Henri|Paul|Thomas|Rémi|Remi|Alain)\b/i.test(item.name))
+      ?? france.find(item => item.localService)
+      ?? france[0] ?? options[0];
   }
 
   function updateStatus() {
@@ -81,7 +94,9 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = selectedVoice;
     utterance.lang = selectedVoice.lang;
-    utterance.rate = 1.08;
+    const delivery = VOICE_DELIVERY[event.kind] ?? {rate: 1.10, pitch: 1.20};
+    utterance.rate = delivery.rate;
+    utterance.pitch = delivery.pitch;
     utterance.volume = Number(volume.value);
     utterance.onend = done;
     utterance.onerror = () => {
