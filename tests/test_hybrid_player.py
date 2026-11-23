@@ -43,14 +43,13 @@ class HybridPlayerTests(unittest.TestCase):
     def test_text_request_has_no_image_and_only_a_named_legal_choice(self):
         with tempfile.TemporaryDirectory() as directory:
             agent = LocalAgent(directory)
-            agent._request = Mock(return_value={'choices':[{'finish_reason':'stop',
-                'message':{'content':'{"action":"Dribble","reason":"Passer le défenseur"}'}}]})
+            agent.provider.invoke = Mock(return_value='{"action":"Dribble","reason":"Passer le défenseur"}')
             result = agent.play(None,duel(),[],threading.Event())
             validate_decision(result)
             self.assertEqual(result['touch'],{'x':200,'y':175})
-            payload = agent._request.call_args.args[2]
-            self.assertEqual(len(payload['messages'][0]['content']),1)
-            self.assertEqual(payload['response_format']['json_schema']['schema']['properties']['action']['enum'],['Feinte','Dribble'])
+            request = agent.provider.invoke.call_args.args[0]
+            self.assertIsNone(request.image)
+            self.assertEqual(request.schema['properties']['action']['enum'], ['Feinte', 'Dribble'])
             with self.assertRaises(ValueError):
                 agent.play(None,{'phase':'playing'},[],threading.Event())
 

@@ -1,19 +1,7 @@
-"""Organiser and visual player using a loopback-only local model server.
-
-The emulator is not advanced while the model thinks. Model output is untrusted
-and is validated again by the worker before any DS input is executed.
-"""
+"""Prompts and game-specific validation for model-assisted match features."""
 import json
-import base64
-import http.client
-import os
-import shutil
-import subprocess
-from pathlib import Path
-import threading
-import time
-import uuid
-from urllib.parse import urlsplit
+
+from ai_generation import AgentCancelled, CodexModel, InvalidAgentResponse, LocalModel, StructuredGeneration
 from player_state import compact_state, compact_history, text_ready, text_actions
 
 BUTTONS = ['A','B','X','Y','L','R','START','SELECT','UP','DOWN','LEFT','RIGHT']
@@ -39,104 +27,7 @@ ORGANISER_SCHEMA = {'type':'object','additionalProperties':False,'properties':{
     'required':['home','away','message','lines']}
 
 
-class AgentCancelled(Exception):
-    pass
-
-
-class InvalidAgentResponse(RuntimeError):
-    pass
-
-
-class LocalAgent:
-    backend = 'local'
-    def __init__(self, directory):
-        self.directory = Path(directory)
-        self.directory.mkdir(parents=True, exist_ok=True)
-        self.endpoint = urlsplit(os.environ.get('INAZUMIA_LLM_URL', 'http://127.0.0.1:1234/v1'))
-        if self.endpoint.scheme != 'http' or self.endpoint.hostname not in ('127.0.0.1', 'localhost', '::1') or self.endpoint.username or self.endpoint.password or self.endpoint.query or self.endpoint.fragment:
-            raise ValueError('INAZUMIA_LLM_URL doit être une adresse HTTP locale sans authentification.')
-        self.model = os.environ.get('INAZUMIA_LLM_MODEL', 'qwen/qwen3.5-9b')
-
-    def _request(self, method, path, payload=None, timeout=180):
-        connection = http.client.HTTPConnection(self.endpoint.hostname, self.endpoint.port or 80, timeout=timeout)
-        try:
-            connection.request(method, self.endpoint.path.rstrip('/')+path,
-                               body=json.dumps(payload).encode('utf-8') if payload is not None else None,
-                               headers={'Content-Type':'application/json'})
-            response = connection.getresponse()
-            body = response.read().decode('utf-8')
-            if response.status != 200:
-                raise RuntimeError(f'IA locale : HTTP {response.status} : {body[:500]}')
-            return json.loads(body)
-        finally:
-            connection.close()
-
-    def available(self):
-        try:
-            models = self._request('GET', '/models', timeout=1)
-            return any(row.get('id') == self.model for row in models.get('data', []))
-        except (OSError, ValueError, RuntimeError, http.client.HTTPException):
-            return False
-
-    def generate(self, prompt, schema, *, image=None, cancel=None, timeout=180):
-        if cancel and cancel.is_set():
-            raise AgentCancelled('Agent arrêté ; contrôle rendu au joueur.')
-        run = self.directory/uuid.uuid4().hex
-        run.mkdir()
-        schema_path = run/'schema.json'
-        output_path = run/'response.json'
-        schema_path.write_text(json.dumps(schema),encoding='utf-8')
-        content = [{'type':'text','text':prompt}]
-        if image:
-            encoded = base64.b64encode(Path(image).read_bytes()).decode('ascii')
-            content.append({'type':'image_url','image_url':{'url':'data:image/png;base64,'+encoded}})
-        payload = {'model':self.model, 'messages':[{'role':'user','content':content}],
-                   'temperature':0.2, 'max_tokens':256 if timeout <= 9 else 1500, 'stream':False,
-                   'reasoning_effort':'none',
-                   'response_format':{'type':'json_schema','json_schema':{
-                       'name':'agent_response','strict':True,'schema':schema}}}
-        (run/'prompt.txt').write_text(prompt,encoding='utf-8')
-        completed = threading.Event()
-        outcome = {}
-        def request():
-            try:
-                outcome['response'] = self._request('POST', '/chat/completions', payload, timeout)
-            except Exception as error:
-                outcome['error'] = error
-            finally:
-                completed.set()
-        threading.Thread(target=request, daemon=True).start()
-        deadline = time.monotonic()+timeout
-        while not completed.wait(.1):
-            if cancel and cancel.is_set():
-                raise AgentCancelled('Agent arrêté ; contrôle rendu au joueur.')
-            if time.monotonic() > deadline:
-                raise TimeoutError('IA locale trop lente ; émulation laissée en pause.')
-        if cancel and cancel.is_set():
-            raise AgentCancelled('Agent arrêté ; contrôle rendu au joueur.')
-        try:
-            if 'error' in outcome:
-                raise outcome['error']
-            response = outcome['response']
-            (run/'agent.log').write_text(json.dumps(response,ensure_ascii=False),encoding='utf-8')
-            try:
-                choice = response['choices'][0]
-                if choice.get('finish_reason') != 'stop':
-                    raise ValueError('Réponse interrompue ou budget de tokens atteint')
-                result = json.loads(choice['message']['content'])
-                if not isinstance(result, dict):
-                    raise ValueError('Objet JSON attendu')
-            except (ValueError, KeyError, IndexError, TypeError, AttributeError) as error:
-                raise InvalidAgentResponse(str(error)) from error
-            output_path.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
-            return result
-        except (TimeoutError, InvalidAgentResponse):
-            raise
-        except Exception as error:
-            (run/'error.txt').write_text(str(error),encoding='utf-8')
-            raise RuntimeError('Échec de l’IA locale. Démarrez le serveur LM Studio avec le modèle '+self.model+
-                               '. Détail : '+str(error)) from error
-
+class MatchAgent(StructuredGeneration):
     def decide_match_action(self, observation, cancel):
         action_ids = [action['id'] for action in observation['legal_actions']]
         schema = {
@@ -208,58 +99,16 @@ class LocalAgent:
             '\nActions précédentes : '+json.dumps(compact_history(history),ensure_ascii=False,separators=(',',':')),
             ACTION_SCHEMA,image=image,cancel=cancel,timeout=9)
 
+class LocalAgent(MatchAgent):
+    backend = 'local'
 
-class CodexAgent(LocalAgent):
-    backend = 'codex'
-    model = 'Codex (configuration du CLI)'
     def __init__(self, directory):
-        self.directory = Path(directory)
-        self.directory.mkdir(parents=True, exist_ok=True)
-        self.executable = shutil.which('codex')
+        super().__init__(directory, LocalModel())
 
-    def generate(self, prompt, schema, *, image=None, cancel=None, timeout=90):
-        if not self.executable:
-            raise RuntimeError('Codex CLI absent. Installez Codex et connectez votre compte pour utiliser les agents.')
-        run = self.directory/uuid.uuid4().hex
-        run.mkdir()
-        schema_path = run/'schema.json'
-        output_path = run/'response.json'
-        schema_path.write_text(json.dumps(schema),encoding='utf-8')
-        arguments = [self.executable,'exec','--ephemeral','--ignore-user-config',
-                     '--skip-git-repo-check','--sandbox','read-only',
-                     '--cd',str(run.resolve()),'--output-schema',str(schema_path.resolve()),
-                     '--output-last-message',str(output_path.resolve()),'--color','never']
-        if image:
-            arguments.extend(['--image',str(Path(image).resolve())])
-        arguments.append('-')
-        (run/'prompt.txt').write_text(prompt,encoding='utf-8')
-        with (run/'agent.log').open('w',encoding='utf-8') as log:
-            process = subprocess.Popen(arguments,stdin=subprocess.PIPE,stdout=log,stderr=log,
-                text=True,encoding='utf-8',creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
-            try:
-                process.stdin.write(prompt)
-                process.stdin.close()
-                deadline = time.monotonic()+timeout
-                while process.poll() is None:
-                    if cancel and cancel.wait(.2):
-                        raise AgentCancelled('Agent arrêté ; contrôle rendu au joueur.')
-                    if not cancel:
-                        time.sleep(.2)
-                    if time.monotonic()>deadline:
-                        raise TimeoutError('Agent trop lent ; émulation laissée en pause.')
-                if process.returncode or not output_path.is_file():
-                    raise RuntimeError('Échec de l’agent Codex. Consultez le journal local : '+str(run/'agent.log'))
-                result = json.loads(output_path.read_text(encoding='utf-8'))
-                return result
-            finally:
-                if process.poll() is None:
-                    if hasattr(subprocess,'CREATE_NO_WINDOW'):
-                        subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],
-                            stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
-                            creationflags=subprocess.CREATE_NO_WINDOW,check=False)
-                    else:
-                        process.kill()
-                    process.wait(timeout=10)
 
-    def available(self):
-        return bool(self.executable)
+class CodexAgent(MatchAgent):
+    backend = 'codex'
+    default_timeout = 90
+
+    def __init__(self, directory):
+        super().__init__(directory, CodexModel())

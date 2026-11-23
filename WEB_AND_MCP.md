@@ -2,6 +2,13 @@
 
 ## Démarrage local
 
+Installer les dépendances du coach, du pilote IA et de Chester dans le Python
+utilisé par le lanceur (Python 3.11 ou supérieur) :
+
+```powershell
+python -m pip install -r requirements-ai.txt
+```
+
 Double-cliquer `Lancer InazumIA.cmd`. Le lanceur construit ou vérifie la ROM
 d'arène, démarre le serveur sur `127.0.0.1:18765` et ouvre le navigateur.
 La première ouverture initialise une nouvelle partie dans melonDS ; cette
@@ -72,6 +79,31 @@ depuis le checkpoint de cette même session. Ce retour est géré par le worker 
 le retour natif direct de cette arène a provoqué un crash pendant les essais et
 n'est pas utilisé. La ROM d'arène doit donc être jouée avec ce contrôleur, et
 non comme une ROM autonome dans un autre frontend.
+
+## Architecture IA
+
+```mermaid
+flowchart LR
+    Coach --> Chaine["Chaîne LangChain"]
+    Pilote["Pilote IA"] --> Chaine
+    Chester --> Chaine
+    Chaine --> Moteur{Moteur sélectionné}
+    Moteur --> Local["ChatOpenAI · LM Studio"]
+    Moteur --> CLI["Adaptateur Codex CLI"]
+    Local --> Validation["Validation JSON Schema"]
+    CLI --> Validation
+```
+
+Le coach et le pilote définissent leurs consignes et schémas dans
+`src/agent_runtime.py`. Chester définit sa réaction dans `src/chester.py`.
+Chaque appel passe par la même chaîne LangChain dans `src/ai_generation.py`.
+Elle invoque le moteur, décode le JSON, valide le schéma et vérifie l’annulation
+avant de rendre le résultat. Les journaux restent dans `build/agents`.
+
+Le salon appelle LM Studio en local via `ChatOpenAI`. Quand Codex est sélectionné
+dans le parcours MCP, un adaptateur LangChain invoque le CLI avec sa configuration
+existante. Le pilote déterministe applique les règles du jeu sans appeler de
+modèle. Le navigateur lit les commentaires via la synthèse vocale du système.
 
 ## Agents et connexion
 
