@@ -54,11 +54,11 @@ def occurrences(data, pattern):
 
 
 class ArenaBridge:
-    def __init__(self, emulator, profile='arena'):
+    def __init__(self, emulator, profile='arena', *, rom_sha256=None):
         self.emulator = emulator
         folder = ROOT/'build'/profile
         self.profile = json.loads((folder/'profile.json').read_text())
-        if sha(Path(emulator.rom_path.decode()).read_bytes()) != self.profile['rom_sha256']:
+        if sha(Path(emulator.rom_path.decode()).read_bytes()) != (rom_sha256 or self.profile['rom_sha256']):
             raise ValueError('Arena profile/ROM mismatch')
         self.ssd = (folder/'scene.ssd').read_bytes()
         self.sst = (folder/'scene.sst').read_bytes()
@@ -115,7 +115,7 @@ class ArenaBridge:
                 'result_source':'native_final_screen' if self.completed else ('native_callback' if phase=='result' else None),
                 'fixture': self.fixture}
 
-    def prepare(self, home, away, lines):
+    def prepare(self, home, away, lines, *, club_squad=None):
         if home == away or home not in self.teams or away not in self.teams:
             raise ValueError('Unsupported teams')
         if self.state()['phase'] != 'idle':
@@ -149,13 +149,20 @@ class ArenaBridge:
         owned = [p['unit'] for p in inspect_party_memory(memory) if not p['team_field'] & 0x8000]
         if len(owned) > len(slots['removals']): raise ValueError('Native owned roster exceeds removal slots')
         removals = owned + [0] * (len(slots['removals'])-len(owned))
+        roster = self.teams[home]['roster']
+        if club_squad is not None:
+            roster = [unit for unit, _ in club_squad]
+            roster += [0] * (len(slots['roster']) - len(roster))
         for base in script_bases:
             for field in ('removals', 'removal_guards'):
                 for slot, unit in zip(slots[field], removals):
                     writes.append((base+slot, struct.pack('<I', unit)))
-            for slot, unit in zip(slots['roster'], self.teams[home]['roster']):
+            for slot, unit in zip(slots['roster'], roster):
                 writes.append((base+slot, struct.pack('<I', unit)))
-            for slot, unit in zip(slots.get('roster_guards', []), self.teams[home]['roster']):
+            if club_squad is not None:
+                for slot, (_, level) in zip(slots['roster'], club_squad):
+                    writes.append((base+slot+4, struct.pack('<I', level)))
+            for slot, unit in zip(slots.get('roster_guards', []), roster):
                 writes.append((base+slot, struct.pack('<I', unit)))
             for i, slot in enumerate(slots['portraits']):
                 writes.append((base+slot, struct.pack('<I', self.teams[home if i%2==0 else away]['captain_id'])))
@@ -179,6 +186,8 @@ class ArenaBridge:
             if C.string_at(pointer+offset,len(value)) != value:
                 raise RuntimeError('Arena write verification failed')
         self.fixture = {'id':uuid.uuid4().hex,'home': home, 'away': away, 'lines': lines}
+        if club_squad is not None:
+            self.fixture['club_squad'] = True
         return {'prepared': True, 'script_buffers': len(script_bases), 'text_buffers': len(text_bases), **self.state()}
 
     def start(self):

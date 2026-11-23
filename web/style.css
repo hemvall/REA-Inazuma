@@ -287,6 +287,21 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 }
 
 .home-team .captain-portrait { margin-inline-start: auto; }
+.staff-portrait {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  flex: none;
+}
+.recruitment-heading { display: flex; align-items: center; gap: 12px; }
+.recruitment-heading h2 { margin: 0; font-size: 17px; }
+#recruitmentPanel p { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+#recruitmentCapacity { white-space: pre-line; }
+#recruitmentHistory { max-height: 180px; overflow: auto; }
+#recruitmentHistory:not(:empty) { margin-bottom: 12px; }
+#recruitmentHistory p { margin: 0 0 6px; }
+#recruitmentCancel { margin-top: 12px; }
+#recruitmentError:empty { display: none; }
 .away-team .captain-portrait { margin-inline-end: auto; }
 
 @media (max-width: 800px) {
@@ -547,4 +562,9 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 .arena:fullscreen .chester-box:has(.chester-line:empty),
 .arena:fullscreen .chester-box:has(.chester-line[hidden]) {
   display: none;
+}
+
+@media (max-width: 620px) {
+  .setup-column > .coach { order: 1; width: 100%; }
+  #recruitmentPanel .recruitment-heading h2 { overflow-wrap: anywhere; }
 }

@@ -5,6 +5,8 @@ FIXTURES = {
     3: (10, 3, 'Zeus contre Occulte'),
     4: (1, 2, 'Raimon contre Royal Academy'),
 }
+CLUB_FIXTURE = 5
+CLUB_TEAM_IDS = frozenset(team for home, away, _ in FIXTURES.values() for team in (home, away))
 
 
 def dialogue(home, away):

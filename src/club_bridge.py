@@ -1,15 +1,73 @@
 """Translate bounded native NPC selections into the existing arena bridge."""
 import ctypes as C
 import struct
-from arena_bridge import ArenaBridge
-from club_fixtures import FIXTURES, dialogue
+from arena_bridge import ArenaBridge, occurrences
+from club_fixtures import CLUB_FIXTURE, FIXTURES, dialogue
+from club_scene import RECRUIT_LEVEL, RECRUIT_SLOT, RECRUIT_UNIT
+from emulator_worker import execute_step
+from recruitment_rom import FIRST_RECRUIT_ID, encode_name, recruitment_squad
 from scene_team import inspect_party_memory
 
 
 class ClubBridge(ArenaBridge):
-    def __init__(self, emulator):
-        super().__init__(emulator, 'club')
+    def __init__(self, emulator, *, rom_sha256=None):
+        super().__init__(emulator, 'club', rom_sha256=rom_sha256)
         self.preparing = False
+        self.recruits = []
+
+    def register_recruit(self, level):
+        """Run the native add command in the Club event.
+
+        The caller must have loaded the isolated recruitment ROM and must
+        restore its prior checkpoint on failure, including failed interaction.
+        """
+        state = self.state()
+        if state['phase'] != 'club' or self.fixture:
+            raise ValueError('Reviens au local avant de recruter.')
+        if type(level) is not int or not 1 <= level <= 99:
+            raise ValueError('Le niveau doit être compris entre 1 et 99.')
+        party = state['party_units']
+        if FIRST_RECRUIT_ID in party:
+            raise ValueError('Cette recrue fait déjà partie du Club.')
+        if len(party) >= 16:
+            raise ValueError('L’effectif jouable du Club est complet.')
+        pointer, memory = self.memory()
+        base = self.profile['global_base'] - 0x02000000
+        values = {RECRUIT_UNIT: FIRST_RECRUIT_ID, RECRUIT_LEVEL: level, RECRUIT_SLOT: len(party) + 1}
+        addresses = {base + 4 * (variable - 0x10000): value for variable, value in values.items()}
+        if any(memory[address:address + 4] != bytes(4) for address in addresses):
+            raise ValueError('Le local traite déjà une action de recrutement.')
+        try:
+            for address, value in addresses.items():
+                C.memmove(pointer + address, struct.pack('<I', value), 4)
+            execute_step(self.emulator, 2, ['A'], None)
+            execute_step(self.emulator, 120, [], None)
+            after = self.state()
+            _, memory = self.memory()
+            owned = [row for row in inspect_party_memory(memory) if not row['team_field'] & 0x8000]
+            if (after['phase'] != 'club'
+                    or [row['unit'] for row in owned] != [*party, FIRST_RECRUIT_ID]
+                    or owned[-1]['level'] != level):
+                raise ValueError('Inscription native non confirmée. Place-toi devant le coach.')
+            return owned[-1]
+        finally:
+            for address in addresses:
+                C.memset(pointer + address, 0, 4)
+
+    def verify_recruit(self, draft):
+        _, memory = self.memory()
+        records = [row for row in inspect_party_memory(memory)
+                   if row['unit'] == FIRST_RECRUIT_ID and not row['team_field'] & 0x8000]
+        names = encode_name(draft['name']) + encode_name(draft['short_name'])
+        matching = [position for position in occurrences(memory, names)
+                    if position + 96 <= len(memory)
+                    and struct.unpack_from('<H', memory, position + 66)[0] == FIRST_RECRUIT_ID]
+        if len(records) != 1 or records[0]['level'] != draft['level'] or not matching:
+            raise ValueError('Le nom, le niveau ou l’identifiant natif de la recrue diffère de la fiche.')
+        name, short_name = (memory[matching[0] + offset:matching[0] + offset + 32]
+                            .split(b'\0', 1)[0].decode('ascii') for offset in (0, 32))
+        return {'unit': FIRST_RECRUIT_ID, 'name': name, 'short_name': short_name,
+                'level': records[0]['level'], 'team_id': draft['team_id']}
 
     def poll_frame(self):
         if super().poll_frame(): return True
@@ -21,16 +79,35 @@ class ClubBridge(ArenaBridge):
         counter, = struct.unpack('<I', C.string_at(pointer+base+8*4, 4))
         selected, = struct.unpack('<I', C.string_at(pointer+base+15*4, 4))
         if flag == 10500 and counter == 4:
-            if selected not in FIXTURES:
+            if selected not in FIXTURES and selected != CLUB_FIXTURE:
                 raise ValueError('Affiche du PNJ inconnue')
-            home, away, _ = FIXTURES[selected]
             self.preparing = True
             try:
-                self.prepare(home, away, dialogue(home, away))
+                if selected == CLUB_FIXTURE:
+                    self.prepare_club_fixture()
+                else:
+                    home, away, _ = FIXTURES[selected]
+                    self.prepare(home, away, dialogue(home, away))
                 C.memmove(pointer+base+15*4, struct.pack('<I', 0), 4)
             finally:
                 self.preparing = False
         return False
+
+    def prepare_club_fixture(self):
+        squad = [(row['unit'], row['level']) for row in inspect_party_memory(self.memory()[1])
+                 if not row['team_field'] & 0x8000]
+        units = {unit for unit, _ in squad}
+        if FIRST_RECRUIT_ID not in units or len(squad) > 16:
+            raise ValueError('L’effectif du Club ne peut pas être aligné.')
+        home = self.recruits[-1]['team_id']
+        away = 1 if home == 10 else 10
+        if len(self.recruits) == 1 and home == 1:
+            # Keep the Club party and fill the starting eleven with Raimon players.
+            guests = [(unit, 30) for unit in self.teams[home]['roster'] if unit and unit not in units]
+            squad.extend(guests[:max(0, 11 - len(squad))])
+        else:
+            squad = recruitment_squad(self.teams[home]['roster'], home, self.recruits)
+        self.prepare(home, away, dialogue(home, away), club_squad=squad)
 
     def state(self):
         result = super().state()

@@ -34,9 +34,11 @@ function attachVideo(){
   $('frame').hidden=false;$('empty').hidden=true;setScreenVisible(true);
 }
 let profile=null,enteringClub=false;
+let recruitment=null;
 const keyboardDirections=new Set(),pendingKeys=new Set(),pointerDirections=new Map();
 let walkingTouch=null;
-function releaseInputs(){keyboardDirections.clear();pendingKeys.clear();pointerDirections.clear();walkingTouch=null;for(const b of $('keys').querySelectorAll('[data-key]'))b.removeAttribute('data-held');}
+let stylusPointer=null,path=[];
+function releaseInputs(){keyboardDirections.clear();pendingKeys.clear();pointerDirections.clear();clearStylus();for(const b of $('keys').querySelectorAll('[data-key]'))b.removeAttribute('data-held');}
 window.addEventListener('blur',releaseInputs);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
 const teams={
@@ -104,8 +106,73 @@ function controls(){
   if(finished){running=false;$('play').textContent='Continuer';}
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
   $('send').disabled=$('manualPrepare').disabled=jobRunning||profile==='club';
+  for(const button of $('recruitmentPanel').querySelectorAll('button')){
+    button.disabled=busy||jobRunning||!recruitmentAvailable();
+  }
   for(const b of $('keys').querySelectorAll('button'))b.disabled=!manual;
 }
+function recruitmentAvailable() {
+  if(!session)return true;
+  if(owner!=='human')return false;
+  return profile==='club' ? window.currentPhase==='club'
+    : profile==='arena'&&['idle','result'].includes(window.currentPhase);
+}
+function renderRecruitment(state) {
+  recruitment=state.recruitment;
+  const confirmed=state.recruited_players||[];
+  const capacity=$('recruitmentCapacity');
+  capacity.textContent=confirmed.length
+    ? confirmed.map(player=>`${teams[player.team_id].name} a recruté ${player.name} · Niveau ${player.level}`).join('\n')
+    : recruitmentAvailable() ? 'Aucune recrue inscrite'
+    : 'Recrutement disponible hors match';
+  const draft=recruitment?.result ? null : recruitment?.draft;
+  $('recruitmentHint').textContent=state.session_id&&state.profile==='club'&&!confirmed.length
+    ? 'Place-toi devant le coach pour confirmer.'
+    : 'Disponible au prochain match préparé en arène ou à la réouverture du local.';
+  $('recruitmentCancel').hidden=!recruitment||!!recruitment.result;
+  $('recruitmentPreview').hidden=!draft;
+  if(draft){
+    $('recruitmentSheet').textContent=`${teams[draft.team_id].name} peut recruter ${draft.name} · Niveau ${draft.level}`;
+  }
+  const history=$('recruitmentHistory');
+  if(history.dataset.version!==(recruitment?.version||'')){
+    history.dataset.version=recruitment?.version||'';
+    history.replaceChildren(...(recruitment?.history||[]).map(entry=>{
+      const line=document.createElement('p');
+      const speaker=entry.role==='joueur'?'Toi':'Celia';
+      line.textContent=`${speaker} · ${entry.message}`;
+      return line;
+    }));
+  }
+}
+async function recruitmentAction(operation, data={}) {
+  if(busy||jobRunning||!recruitmentAvailable())return;
+  $('recruitmentError').textContent='';
+  releaseInputs();
+  busy=true;
+  controls();
+  try {
+    const result=await api(operation,{session_id:session,...data});
+    if(result.job)jobRunning=true;
+    if(result.observation)show(result.observation);
+    return result;
+  } catch(error) {
+    $('recruitmentError').textContent=error.message;
+  } finally {
+    busy=false;
+    controls();
+    await poll();
+  }
+}
+$('recruitmentChat').onsubmit=async event=>{
+  event.preventDefault();
+  const field=$('recruitmentPrompt');
+  if(await recruitmentAction('recruitment_turn',{message:field.value}))field.value='';
+};
+$('recruitmentCancel').onclick=()=>recruitmentAction('recruitment_cancel');
+$('recruitmentConfirm').onclick=()=>{
+  if(recruitment)recruitmentAction('recruitment_confirm',{version:recruitment.version,revision});
+};
 async function mutate(op,data={}){
   if(busy)return;
   busy=true;$('error').textContent='';
@@ -130,6 +197,7 @@ async function poll(){
     if(state.fixture&&JSON.stringify(state.fixture)!==JSON.stringify(fixture))renderFixture(state.fixture);
     if(!state.fixture&&fixture)renderFixture(null);
     show(state.observation);window.currentPhase=state.observation?.match?.phase;
+    renderRecruitment(state);
     if(state.job.id&&lastJob!==state.job.id+state.job.state&&state.job.state!=='running'){
       lastJob=state.job.id+state.job.state;message(state.job.message);if(state.job.state==='error')$('error').textContent=state.job.message;
     }
@@ -216,9 +284,40 @@ $('keys').onclick=event=>{
   const button=event.target.closest('[data-key]');
   if(event.detail===0&&button&&!button.disabled)pendingKeys.add(button.dataset.key);
 };
-let path=[],drawingWasRunning=false;
 function point(event){const r=$('frame').getBoundingClientRect();const x=Math.floor((event.clientX-r.left)*256/r.width),y=Math.floor((event.clientY-r.top)*384/r.height)-192;return x>=0&&x<256&&y>=0&&y<192?{x,y,frames:2}:null;}
-$('frame').onpointerdown=event=>{if(owner!=='human'||jobRunning)return;const p=point(event);if(!p)return;event.preventDefault();if(window.currentPhase==='club'){walkingTouch=[p.x,p.y];$('frame').setPointerCapture(event.pointerId);return;}if(busy)return;drawingWasRunning=running;path=[p];$('frame').setPointerCapture(event.pointerId);if(running)playback(false);};
-$('frame').onpointermove=event=>{if(walkingTouch){const p=point(event);if(p)walkingTouch=[p.x,p.y];return;}if(!path.length)return;const p=point(event);if(p&&path.length<50&&(p.x!==path.at(-1).x||p.y!==path.at(-1).y))path.push(p);};
-$('frame').onpointerup=async()=>{if(walkingTouch){walkingTouch=null;return;}if(!path.length)return;const points=path;path=[];while(busy)await new Promise(resolve=>setTimeout(resolve,5));if(owner!=='human'||jobRunning)return;const result=points.length===1?await step([],[points[0].x,points[0].y],6):await mutate('touch_path',{points});if(result&&drawingWasRunning)await playback(true);};
-$('frame').onpointercancel=()=>{if(walkingTouch){walkingTouch=null;return;}path=[];if(drawingWasRunning)playback(true);};
+function clearStylus(){
+  stylusPointer=null;
+  walkingTouch=null;
+  path=[];
+}
+$('frame').onpointerdown=event=>{
+  if(!session||owner!=='human'||jobRunning||stylusPointer!==null||event.button!==0)return;
+  const p=point(event);
+  if(!p)return;
+  event.preventDefault();
+  stylusPointer=event.pointerId;
+  $('frame').setPointerCapture(event.pointerId);
+  if(window.currentPhase==='club')walkingTouch=[p.x,p.y];
+  else path=[p];
+};
+$('frame').onpointermove=event=>{
+  if(event.pointerId!==stylusPointer)return;
+  const p=point(event);
+  if(!p)return;
+  if(walkingTouch)walkingTouch=[p.x,p.y];
+  else if(path.length<50&&(p.x!==path.at(-1).x||p.y!==path.at(-1).y))path.push(p);
+};
+$('frame').onpointerup=async event=>{
+  if(event.pointerId!==stylusPointer)return;
+  const points=path;
+  const inputSession=session;
+  clearStylus();
+  if(!points.length)return;
+  while(busy||polling)await new Promise(resolve=>setTimeout(resolve,5));
+  if(!session||session!==inputSession||owner!=='human'||jobRunning)return;
+  if(points.length===1)await step([],[points[0].x,points[0].y],6);
+  else await mutate('touch_path',{points});
+};
+$('frame').onpointercancel=$('frame').onlostpointercapture=event=>{
+  if(event.pointerId===stylusPointer)clearStylus();
+};
