@@ -10,11 +10,14 @@ from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, InvalidAgentRe
 from arena_bridge import NATIVE_MATCH_BY_TEAM, catalogue
 from fast_policy import fast_decision
 from player_state import text_ready
+from recruitment import propose
+from recruitment_rom import FIRST_RECRUIT_ID
+from recruitment_store import RecruitmentStore
 
 
 class Arena:
-    def __init__(self, *, stream_video=True, local_only=False):
-        self.session = GameSession(stream_video=stream_video)
+    def __init__(self, *, stream_video=True, local_only=False, recruit_in_club=False):
+        self.session = GameSession(stream_video=stream_video, recruit_in_club=recruit_in_club)
         self.lock = threading.RLock()
         self.cancel = threading.Event()
         self.thread = None
@@ -22,6 +25,7 @@ class Arena:
         self.latest = None
         self.fixture = None
         self.history = []
+        self.recruitment = None
         self.local_only = local_only
         if local_only:
             self.agent = LocalAgent(ROOT/'build/agents')
@@ -107,7 +111,13 @@ class Arena:
             raise ValueError('Six répliques de 1 à 100 caractères sont requises.')
         if self.cancel.is_set(): raise AgentCancelled()
         self.update(message='Ouverture de l’arène et préparation des équipes…')
-        opened = self.session.open('arena',cancel=self.cancel)
+        recruited = self.recruited_players() or None
+        if (self.session.session_id and self.session.profile == 'arena'
+                and self.session.arena_recruitment != recruited):
+            existing = self.checked('observe', session_id=self.session.session_id, include_image=False)
+            if existing['match']['phase'] not in ('idle', 'result'):
+                raise ValueError('Réinitialisez la rencontre avant d’en préparer une autre.')
+        opened = self.session.open('arena', cancel=self.cancel, arena_recruitment=recruited)
         sid = opened['session_id']
         observation = self.checked('observe',session_id=sid)
         if observation['match']['phase']=='result':
@@ -140,7 +150,92 @@ class Arena:
         with self.lock:
             return {'job':dict(self.job),'session_id':self.session.session_id, 'profile':self.session.profile,
                     'owner':self.session.owner,'fixture':self.fixture,'observation':self.latest,
-                    'agent_actions':len(self.history)}
+                    'agent_actions':len(self.history),
+                    'recruitment': self.recruitment,
+                    'recruited_players': self.recruited_players()}
+
+    def recruited_players(self):
+        if self.session.recruit_in_club:
+            return RecruitmentStore.read(self.session.recruitment_save)[0]
+        return []
+
+    def recruitment_context(self, session_id):
+        if not self.session.recruit_in_club:
+            raise ValueError('Ouvre InazumIA depuis le lanceur web.')
+        if session_id != self.session.session_id:
+            raise ValueError('Session périmée. Actualise la fiche.')
+        if self.session.owner != 'human' or (self.thread and self.thread.is_alive()):
+            raise ValueError('Attends la fin de l’opération en cours.')
+        if session_id is None:
+            return None
+        observation = self.checked('observe', session_id=session_id, include_image=False)
+        phase = observation['match']['phase']
+        if ((self.session.profile == 'club' and phase == 'club')
+                or (self.session.profile == 'arena' and phase in ('idle', 'result'))):
+            return observation
+        raise ValueError('Le recrutement est disponible hors match.')
+
+    def recruitment_turn(self, session_id, message):
+        if not isinstance(message, str) or not 1 <= len(message.strip()) <= 2000:
+            raise ValueError('Saisis une demande de recrutement de 1 à 2000 caractères.')
+        with self.lock:
+            observation = self.recruitment_context(session_id)
+            recruited = self.recruited_players()
+            current = self.recruitment or {'history': []}
+            message = message.strip()
+            party = observation['match']['party_units'] if self.session.profile == 'club' and observation else []
+
+            def discuss():
+                answer, draft = propose(ROOT/'rom/original.nds', catalogue(), party, message)
+                if draft:
+                    try:
+                        RecruitmentStore.check_available(recruited, draft)
+                    except ValueError as error:
+                        answer, draft = str(error), None
+                with self.lock:
+                    if self.cancel.is_set():
+                        return
+                    self.recruitment = {
+                        'version': uuid.uuid4().hex,
+                        'history': [*current['history'][-18:], {'role': 'joueur', 'message': message},
+                                    {'role': 'coach', 'message': answer}],
+                        'draft': draft,
+                    }
+                    self.update(message='Réponse de la recruteuse disponible.')
+
+            return {'job': self.launch(discuss, 'Celia examine ta demande…')}
+
+    def recruitment_cancel(self, session_id):
+        with self.lock:
+            self.recruitment_context(session_id)
+            self.recruitment = None
+            return {'cancelled': True}
+
+    def recruitment_confirm(self, session_id, version, revision=None):
+        with self.lock:
+            current = self.recruitment
+            if (not current or not current['draft'] or current['version'] != version
+                    or self.session.session_id != session_id):
+                raise ValueError('Cette version de la fiche est périmée.')
+            if current.get('result') is not None:
+                return current['result']
+            observation = self.recruitment_context(session_id)
+            draft = current['draft']
+            recruited = self.recruited_players()
+            RecruitmentStore.check_available(recruited, draft)
+            result = {'unit': FIRST_RECRUIT_ID + len(recruited), 'draft': draft}
+            if observation and self.session.profile == 'club' and not recruited:
+                if type(revision) is not int or observation['revision'] != revision:
+                    raise ValueError('État du Club périmé. Actualise la fiche.')
+                observation = self.checked('confirm_recruitment', session_id=session_id, revision=revision,
+                                           draft=draft, include_image=False)
+                if observation['recruited'] != draft or FIRST_RECRUIT_ID not in observation['match']['party_units']:
+                    raise ValueError('Inscription native non confirmée.')
+                result['observation'] = observation
+            else:
+                RecruitmentStore.reserve(self.session.recruitment_save, draft)
+            current['result'] = result
+            return result
 
     def delegate(self, session_id, max_decisions=400, mode='deterministic'):
         if mode not in ('deterministic', 'ai'):
@@ -396,30 +491,28 @@ class Arena:
                 self.checked('playback', session_id=opened['session_id'], running=True, include_image=False)
                 self.update(message='Va voir Hillman et appuie sur A. Réponds Oui pour ouvrir la route.')
             return {'job': self.launch(enter_route, 'Ouverture du local de Hillman…')}
-        if operation=='open_club':
-            if arguments: raise ValueError('Aucun argument attendu')
-            if self.session.session_id: raise ValueError('Fermez la session actuelle avant d’entrer dans le local.')
-            def enter():
-                opened = self.session.open('club', cancel=self.cancel)
-                self.checked('observe', session_id=opened['session_id'])
-                self.update(message='Parlez au coach dans le local : A ou écran tactile. Non propose l’affiche suivante. Après le match, A revient au local.')
-            return {'job':self.launch(enter, 'Ouverture du local du club…')}
         if operation=='select_agent':return self.select_agent(**arguments)
         if operation=='capabilities':return self.capabilities()
         if operation=='list_teams':return {'teams':self.list_teams()}
         if operation=='status':return self.status()
         if operation=='chat':return self.chat(**arguments)
+        if operation=='recruitment_turn':return self.recruitment_turn(**arguments)
+        if operation=='recruitment_cancel':return self.recruitment_cancel(**arguments)
+        if operation=='recruitment_confirm':return self.recruitment_confirm(**arguments)
         if operation=='stop_agent':return self.stop(**arguments)
         if operation=='delegate_player':return self.delegate(**arguments)
         if operation=='prepare_match':
             home,away,lines=arguments['home'],arguments['away'],arguments['lines']
             return {'job':self.launch(lambda:self.prepare(home,away,lines),'Préparation dynamique…')}
-        if operation=='session_open':return self.session.open(**arguments)
+        if operation=='session_open':
+            recruited = self.recruited_players() if arguments.get('profile') == 'arena' else None
+            return self.session.open(**arguments, arena_recruitment=recruited or None)
         if operation=='session_close':
-            if self.thread and self.thread.is_alive():raise ValueError('Arrêtez d’abord l’opération en cours.')
-            if arguments.get('session_id')!=self.session.session_id:raise ValueError('Session inconnue')
-            self.session.close();self.latest=None;self.fixture=None
-            return {'closed':True}
+            with self.lock:
+                if self.thread and self.thread.is_alive():raise ValueError('Arrêtez d’abord l’opération en cours.')
+                if arguments.get('session_id')!=self.session.session_id:raise ValueError('Session inconnue')
+                self.session.close();self.latest=None;self.fixture=None
+                return {'closed':True}
         if operation=='set_control':
             with self.lock:
                 if (arguments.get('session_id') == self.session.session_id

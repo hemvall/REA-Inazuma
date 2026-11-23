@@ -8,7 +8,7 @@ from arena_service import Arena
 from chester import generate_reaction
 from local_address import HOST, PORT, URL
 
-ARENA = Arena(local_only=True)
+ARENA = Arena(local_only=True, recruit_in_club=True)
 WEB = Path(__file__).resolve().parents[1] / 'web'
 CHESTER_MODEL = threading.Lock()
 
@@ -100,6 +100,8 @@ class Handler(BaseHTTPRequestHandler):
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
                  '/assets/stadium-pixel.png': ('assets/stadium-pixel.png', 'image/png'),
                  '/assets/chester.png': ('assets/chester.png', 'image/png'),
+                 '/assets/celia.png': ('assets/celia.png', 'image/png'),
+                 '/assets/hillman.png': ('assets/hillman.png', 'image/png'),
                  '/assets/team-raimon.png': ('assets/team-raimon.png', 'image/png'),
                  '/assets/team-royal.png': ('assets/team-royal.png', 'image/png'),
                  '/assets/team-occult.png': ('assets/team-occult.png', 'image/png'),
