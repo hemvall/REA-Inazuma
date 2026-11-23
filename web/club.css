@@ -6,6 +6,7 @@
   .coach-recommendations li { padding: 10px 0 2px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
   .coach-recommendations li strong { display: block; font-size: 13px; line-height: 1.45; }
   .coach-recommendations li p { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+  .coach-recommendations li .coach-context { margin: 0 0 6px; }
   .coach-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }
   #analyse-club { margin-top: 10px; }
   .coach-role { color: var(--muted); font-size: 12px; margin-top: 3px; }

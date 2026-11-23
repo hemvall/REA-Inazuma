@@ -281,35 +281,64 @@ function confirmSale(player) {
 function coachOptions() {
   const starters = state.lineup.slice(0, 11);
   const reserves = ownedPlayers(state).filter(id => !starters.includes(id)).map(id => players.get(id));
+  const lines = {AT: 'Ton attaque', MIL: 'Ton milieu', DEF: 'Ta défense'};
+  const priorityByRole = {GB: 4, DEF: 3, MIL: 2, AT: 1};
+  const rank = player => rarityRank.indexOf(player.rarity);
   const options = [];
   for (const [index, id] of starters.entries()) {
     const incumbent = players.get(id);
     const role = slots[index];
-    const rank = player => rarityRank.indexOf(player.rarity);
-    const priority = !incumbent ? 30 : incumbent.position !== role ? 20 : 0;
-    const key = player => JSON.stringify([index, id, player.id]);
-    const eligible = player => player.position === role && !declinedOptions.has(key(player))
-      && (priority || rank(player) > rank(incumbent));
+    const misplaced = incumbent && incumbent.position !== role;
+    if (incumbent?.price && !misplaced) continue;
     const position = role === 'AT' ? 'ATT' : role;
     const target = incumbent ? playerName(incumbent) : null;
+    const key = player => JSON.stringify([index, id, player.id]);
+    const eligible = player => player.position === role && !declinedOptions.has(key(player))
+      && (!incumbent || (misplaced ? rank(player) >= rank(incumbent) : rank(player) > rank(incumbent)));
+    const line = starters.filter((_, at) => slots[at] === role);
+    const scoutsInLine = line.filter(playerId => players.get(playerId)?.rarity === 'Scout').length;
+    const context = !incumbent ? (role === 'GB' ? 'Ton but est sans gardien.' : `${lines[role]} a un poste libre.`)
+      : misplaced ? `${target} joue hors poste en ${position}.`
+        : role === 'GB' ? 'Ton gardien titulaire est encore un scout.'
+          : `${lines[role]} compte ${scoutsInLine} scout${scoutsInLine > 1 ? 's' : ''} sur ${line.length} titulaires.`;
+    const offer = (player, level, title, reason, extra = {}) => options.push({
+      index, incumbentId: id, playerId: player.id, key: key(player), level, priority: priorityByRole[role],
+      title, reason, context, ...extra,
+    });
+    if (misplaced) {
+      const other = starters.findIndex((otherId, at) => {
+        const player = players.get(otherId);
+        return at > index && slots[at] !== role && player?.position === role
+          && slots[at] === incumbent.position && !declinedOptions.has(key(player));
+      });
+      if (other !== -1) {
+        const player = players.get(starters[other]);
+        offer(player, 4, `Permuter ${target} et ${playerName(player)}`,
+          'Deux joueurs retrouvent leur poste · Sans achat', {swapIndex: other});
+        continue;
+      }
+    }
     const reserve = reserves.filter(eligible).sort((a, b) => rank(b) - rank(a))[0];
     if (reserve) {
-      options.push({index, incumbentId: id, playerId: reserve.id, key: key(reserve), priority: priority + 10 + rank(reserve),
-        title: target ? `Remplacer ${target} par ${playerName(reserve)}` : `Titulariser ${playerName(reserve)}`,
-        reason: `${position} · ${target ? 'Sans achat' : 'Place libre'}`,
-        context: priority ? (target ? 'Titulaire hors poste.' : 'Place libre.') : 'Amélioration de rareté.'});
+      offer(reserve, !incumbent ? 5 : misplaced ? 4 : 2,
+        target ? `Remplacer ${target} par ${playerName(reserve)}` : `Titulariser ${playerName(reserve)}`,
+        `${position} · Sans achat`);
+      continue;
     }
-    const recruit = recruits.filter(player => eligible(player) && !state.recruits.includes(player.id)
-      && player.price <= state.credits && (!reserve || rank(player) > rank(reserve)))
+    if (incumbent?.price || (incumbent && !misplaced && role !== 'GB' && scoutsInLine < 2)) continue;
+    const budget = !incumbent || misplaced ? state.credits : Math.floor(state.credits / 2);
+    const recruit = recruits.filter(player => eligible(player) && !state.recruits.includes(player.id) && player.price <= budget)
       .sort((a, b) => a.price - b.price)[0];
     if (recruit) {
-      options.push({index, incumbentId: id, playerId: recruit.id, key: key(recruit), purchase: true, priority: priority + rank(recruit),
-        title: `Acheter ${playerName(recruit)} pour jouer en ${position}`,
-        reason: `${formatter.format(recruit.price)} crédits · ${target ? `Remplace ${target}` : 'Place libre'}`,
-        context: priority ? (target ? 'Titulaire hors poste.' : 'Place libre.') : 'Amélioration de rareté.'});
+      offer(recruit, !incumbent ? 5 : misplaced ? 3 : 1,
+        `Acheter ${playerName(recruit)} pour jouer en ${position}`,
+        `${formatter.format(recruit.price)} crédits · ${target ? `Remplace ${target}` : 'Place libre'}`,
+        {purchase: true});
     }
   }
-  return options.sort((a, b) => b.priority - a.priority).slice(0, 12);
+  return options.sort((a, b) => b.level - a.level
+    || Number(Boolean(a.purchase)) - Number(Boolean(b.purchase))
+    || b.priority - a.priority).slice(0, 12);
 }
 
 function checkCoachTarget(copy, option) {
@@ -328,6 +357,12 @@ async function acceptCoachOption(option) {
   const saved = await update(copy => {
     checkCoachTarget(copy, option);
     const previous = copy.lineup.indexOf(player.id);
+    if (option.swapIndex !== undefined) {
+      if (previous !== option.swapIndex) throw new Error('La composition a changé. Actualise les conseils de Lina.');
+      copy.lineup[previous] = option.incumbentId;
+      copy.lineup[option.index] = player.id;
+      return 'Les deux joueurs ont retrouvé leur poste.';
+    }
     if (!ownedPlayers(copy).includes(player.id) || (previous >= 0 && previous < 11)) {
       throw new Error('Ce joueur n’est plus disponible sur le banc ou en réserve.');
     }
@@ -360,7 +395,7 @@ function renderCoachOptions(options) {
       $('club-coach-title').focus();
     };
     actions.append(accept, decline);
-    row.append(node('strong', '', option.title), node('p', '', option.reason), actions);
+    row.append(node('p', 'coach-context', option.context), node('strong', '', option.title), node('p', '', option.reason), actions);
     rows.push(row);
     if (rows.length === 1) break;
   }
@@ -377,15 +412,22 @@ function resetCoachAnalysis() {
 async function analyseTeam() {
   if (!state || club.hidden) return;
   analysisController?.abort();
+  $('analyse-club').disabled = false;
   const options = coachOptions();
   const status = $('club-coach-status');
   const list = $('club-recommendations');
   list.replaceChildren();
   if (!options.length) {
-    status.textContent = 'Aucun changement adapté aux postes et au budget actuels.';
+    status.textContent = 'Je ne vois pas de changement qui justifie de toucher à ton onze avec cet effectif et ce budget.';
     return;
   }
   renderCoachOptions(options);
+  const priorityOptions = options.filter(option => option.level === options[0].level
+    && option.purchase === options[0].purchase);
+  if (priorityOptions.length < 2) {
+    status.textContent = '';
+    return;
+  }
   const controller = new AbortController();
   analysisController = controller;
   $('analyse-club').disabled = true;
@@ -395,11 +437,11 @@ async function analyseTeam() {
     const response = await fetch('/api/analyse_club', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, signal: controller.signal,
       body: JSON.stringify({credits: state.credits, formation: FORMATION,
-        candidates: options.map(option => `${option.title}. ${option.reason}. ${option.context}`)}),
+        candidates: priorityOptions.map(option => `${option.context} ${option.title}. ${option.reason}`)}),
     });
     if (!response.ok) throw new Error('Analyse locale indisponible');
     const result = await response.json();
-    recommendations = result.recommendations.map(index => options[index]);
+    recommendations = result.recommendations.map(index => priorityOptions[index]);
     if (!recommendations.length || recommendations.some(option => !option)) throw new Error('Analyse incomplète');
     if (controller.signal.aborted) return;
     status.textContent = '';
