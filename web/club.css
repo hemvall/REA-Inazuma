@@ -71,10 +71,9 @@
     grid-template-areas: 'field';
     position: relative;
     min-height: 455px;
-    border: 1px solid #496f68;
-
-    padding: 16px;
-    background: repeating-linear-gradient(#214e49 0 20%, #265650 20% 40%);
+    border: 1px solid #537b76;
+    padding: 12px;
+    background: repeating-linear-gradient(#1c4543 0 12.5%, #23524d 12.5% 25%);
     isolation: isolate;
   }
   .pitch-lines, .pitch-players { grid-area: field; }
@@ -102,7 +101,8 @@
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-template-rows: repeat(4, minmax(0, 1fr));
-    padding: 4px;
+    padding: 6px;
+    column-gap: 6px;
   }
   .pitch-players .slot { grid-column: span 2; }
   .pitch-players .slot:nth-child(1) { grid-area: 1 / 2 / auto / span 2; }
@@ -112,23 +112,60 @@
   .pitch-players .slot:nth-child(11) { grid-area: 4 / 4 / auto / span 2; }
   .slot {
     display: grid;
-    justify-items: center;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-    width: min(100%, 124px);
+    grid-template-rows: auto 1fr;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    width: min(100%, 132px);
     min-width: 0;
-    background: #122b29;
-    border-color: #80a99d;
+    --card-accent: var(--tier, var(--role-color, #8faebf));
+    background: #10223b;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 74%, #17294b);
+    border-top: 3px solid var(--card-accent);
+    box-shadow: 0 3px 0 #0a172c;
   }
-  .slot:hover:not(:disabled) { background: #183b36; border-color: var(--yellow); }
-
-  .slot-name { font-size: 12px; font-weight: 650; line-height: 1.22; overflow-wrap: anywhere; }
+  .slot:hover:not(:disabled) { background: #203754; border-color: var(--card-accent); }
+  .slot[data-role=AT] { --role-color: #ffa490; }
+  .slot[data-role=MIL] { --role-color: #8bd6ba; }
+  .slot[data-role=DEF] { --role-color: #91bfff; }
+  .slot[data-role=GB] { --role-color: #f2cc71; }
+  .slot:not([data-rarity]) { border: 1px dashed #8aa2b7; }
+  .slot-visual {
+    position: relative;
+    display: grid;
+    place-items: end center;
+    min-height: 54px;
+    background: linear-gradient(155deg, color-mix(in srgb, var(--card-accent) 38%, #14243f), #14243f 78%);
+  }
+  .slot:not([data-rarity]) .slot-visual { background: #172d44; }
+  .slot-role {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    padding: 2px 4px;
+    background: #0b1931;
+    color: var(--card-accent);
+    font-size: 9px;
+    line-height: 1.1;
+    font-weight: 850;
+  }
+  .slot-name {
+    display: grid;
+    place-items: center;
+    min-height: 26px;
+    padding: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
   .slot .empty-slot { display: grid; place-items: center; font-size: 21px; color: var(--muted); }
   .bench { border: 1px solid var(--line); background: var(--panel); padding: 12px; }
   .bench h3 { margin-bottom: 10px; }
   #bench { display: grid; gap: 6px; }
-  .bench .slot { grid-template-columns: 32px 1fr; justify-items: start; width: 100%; min-height: 54px; text-align: left; background: var(--deep); border-color: var(--line); }
+  .bench .slot { grid-template: 1fr / 56px minmax(0, 1fr); width: 100%; min-height: 52px; }
+  .bench .slot-name { place-items: center start; padding-inline: 6px; text-align: left; }
+  .bench .slot-visual { min-height: 48px; }
   .player-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
   .player-row {
     display: grid;
@@ -142,6 +179,7 @@
   }
   .player-row:has(button) { grid-template-columns: minmax(0, 1fr) 88px 150px; }
   .player-identity { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .player-row .club-portrait { background: color-mix(in srgb, var(--tier, #8faebf) 22%, var(--deep)); border-bottom: 2px solid var(--tier, #8faebf); }
   .player-details { display: grid; gap: 3px; }
   .player-identity strong { font-size: 14px; overflow-wrap: anywhere; }
   .player-identity span { color: var(--muted); font-size: 13px; }
@@ -195,7 +233,8 @@
     .pitch { min-height: 385px; padding: 6px; }
     .pitch-players { column-gap: 3px; }
     #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .bench .slot { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+    .bench .slot { grid-template: auto 1fr / minmax(0, 1fr); }
+    .bench .slot-name { place-items: center; text-align: center; padding-inline: 2px; }
     .slot { min-height: 48px; }
     .slot-name { font-size: 11px; }
     .player-row { gap: 7px; padding: 7px; }
@@ -218,11 +257,14 @@
     object-fit: contain;
     image-rendering: pixelated;
   }
-  .pitch .club-portrait { width: 48px; height: 48px; }
-  .bench .club-portrait { width: 32px; height: 32px; }
+  .pitch .club-portrait { width: 54px; height: 54px; }
+  .bench .club-portrait { width: 40px; height: 40px; }
   #catalogue-feedback { margin: 0 0 12px; }
   @media (max-width: 600px) {
-    .club-portrait, .pitch .club-portrait { width: 34px; height: 34px; }
+    .club-portrait { width: 34px; height: 34px; }
+    .pitch .club-portrait, .bench .club-portrait { width: 40px; height: 40px; }
+    .slot-visual { min-height: 44px; }
+    .slot-role { font-size: 8px; padding-inline: 2px; }
     .player-row:has(button) { grid-template-columns: minmax(0, 1fr) 62px 82px; }
     .player-identity { gap: 5px; }
     .player-identity strong { font-size: 12px; }
@@ -249,7 +291,8 @@
 @container (max-width: 560px) {
   .club-ui .squad { grid-template-columns: minmax(0, 1fr); }
   .club-ui #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .club-ui .bench .slot { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  .club-ui .bench .slot { grid-template: auto 1fr / minmax(0, 1fr); }
+  .club-ui .bench .slot-name { place-items: center; text-align: center; padding-inline: 2px; }
 }
 @media (max-width: 800px) {
   .game-layout:has(.club-workspace:not([hidden])) { grid-template-columns: minmax(0, 1fr); }

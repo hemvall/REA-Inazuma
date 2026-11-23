@@ -168,10 +168,18 @@ function squadSlot(id, index) {
   const button = node('button', 'slot');
   button.type = 'button';
   button.dataset.slot = index;
+  const starter = index < 11;
+  const role = starter ? slots[index] : player?.position;
+  const roleLabel = role === 'AT' ? 'ATT' : role;
   const label = player ? playerName(player) : 'Place libre';
-  button.setAttribute('aria-label', `${slotName(index)} — ${label}. Choisir un joueur`);
-  button.title = label;
-  const visual = player ? portrait(player) : node('span', 'club-portrait empty-slot', '+');
+  const accessibleLabel = [slotName(index), label, !starter && roleLabel, player?.rarity].filter(Boolean).join(' · ');
+  button.setAttribute('aria-label', `${accessibleLabel}. Choisir un joueur`);
+  button.title = player ? `${label} · ${player.rarity}` : label;
+  button.dataset.role = role ?? '';
+  if (player) button.dataset.rarity = player.rarity;
+  const visual = node('span', 'slot-visual');
+  visual.append(player ? portrait(player) : node('span', 'club-portrait empty-slot', '+'));
+  if (roleLabel) visual.append(node('span', 'slot-role', roleLabel));
   button.append(visual, node('span', 'slot-name', player?.name ?? label));
   button.onclick = () => {
     activeSlot = index;
@@ -185,6 +193,7 @@ function squadSlot(id, index) {
 
 function playerRow(player, info, action) {
   const row = node('li', 'player-row');
+  row.dataset.rarity = player.rarity;
   const identity = node('div', 'player-identity');
   const details = node('div', 'player-details');
   details.append(node('strong', '', playerName(player)), node('span', '', info));
