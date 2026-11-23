@@ -77,16 +77,33 @@ class BackendTests(unittest.TestCase):
                 agent.generate('Observe', {}, cancel=cancel)
             self.assertFalse(list(Path(directory).glob('*/response.json')))
 
-    def test_neuille_uses_langchain_with_the_confirmed_match_event(self):
-        client, transport = self.model_transport('{"reaction":"Oh na, défense en mode avion !"}')
+    def test_chester_requires_a_model_tool_call(self):
+        client, transport = self.model_transport()
+        read = Mock()
         with tempfile.TemporaryDirectory() as directory, client:
-            reaction = generate_reaction(LocalAgent(directory), 'goal', 'But pour Genesis.', None, 'neuille')
-            self.assertEqual(reaction['reaction'], 'Oh na, défense en mode avion !')
+            with self.assertRaises(InvalidAgentResponse):
+                LocalAgent(directory).generate('Commente', {}, match_context=read)
+            read.assert_not_called()
+            self.assertEqual(transport.call_count, 1)
+
+    def test_neuille_uses_the_langchain_match_context_tool(self):
+        client, transport = self.model_transport('{"reaction":"Oh na, défense en mode avion !"}')
+        final_response = transport.side_effect
+        tool_call = {'id': 'call_context', 'type': 'function',
+                     'function': {'name': 'get_match_context', 'arguments': '{}'}}
+        transport.side_effect = [
+            httpx.Response(200, json={'choices': [{'index': 0, 'finish_reason': 'tool_calls',
+                'message': {'role': 'assistant', 'content': None, 'tool_calls': [tool_call]}}]}),
+            final_response(None),
+        ]
+        read = Mock(return_value={'score': {'home': 2, 'away': 1}})
+        with tempfile.TemporaryDirectory() as directory, client:
+            result = generate_reaction(LocalAgent(directory), 'goal', None, match_context=read, mode='neuille')
+            self.assertEqual(result['reaction'], 'Oh na, défense en mode avion !')
+            read.assert_called_once_with()
             payload = json.loads(transport.call_args.args[0].content)
-            prompt = payload['messages'][0]['content']
-            self.assertIn('Neuille', str(prompt))
-            self.assertIn('But pour Genesis.', str(prompt))
-            self.assertEqual(payload['response_format']['type'], 'json_schema')
+            self.assertEqual(payload['messages'][-1]['role'], 'tool')
+            self.assertEqual(json.loads(payload['messages'][-1]['content']), read.return_value)
 
     def test_remote_server_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict('os.environ', {'INAZUMIA_LLM_URL':'https://example.com/v1'}):

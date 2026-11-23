@@ -114,6 +114,7 @@ class MatchCommentary:
                 'id': self.sequence, 'kind': kind, 'side': side, 'score': result_score,
                 'home': fixture['home'], 'away': fixture['away'],
                 'frame': observation['frame'], 'at': time.time(), 'text': text,
+                'match_score': score, 'clock_seconds': (observation.get('clock') or {}).get('seconds'),
             })
 
         if final and not self.finished:
@@ -154,7 +155,7 @@ class MatchCommentary:
         return {'epoch': self.epoch, 'cursor': self.sequence, 'events': list(self.events)}
 
 
-def generate_reaction(agent, kind, facts, previous, mode='chester'):
+def generate_reaction(agent, kind, previous, *, match_context, mode='chester'):
     style = {
         'chester': ('Écris une phrase originale de direct football dans l’esprit de Chester Horse Junior, '
                     'avec un ton vif, précis et enthousiaste. Réagis à l’enjeu immédiat.'),
@@ -173,11 +174,13 @@ def generate_reaction(agent, kind, facts, previous, mode='chester'):
     prompt = (
         style[mode] + ' '
         'Pas de réplique de la série, de slogan passe-partout ni de nouvel événement. '
+        'Appelle get_match_context une fois avant de répondre. Utilise le score pour situer '
+        'l’enjeu (égalité, avance ou retard) sans réciter les chiffres. '
         'Aucun chiffre, nom propre, geste, résultat ou détail de trajectoire dans ta réaction. '
         f'Une phrase de {word_limit} mots maximum, distincte de la réaction précédente. '
-        f'Événement : {kind}. Annonce déjà lue : {facts}. Réaction précédente : {previous or "aucune"}.'
+        f'Événement : {kind}. Réaction précédente : {previous or "aucune"}.'
     )
-    reaction = agent.generate(prompt, schema, timeout=0.9).get('reaction')
+    reaction = agent.generate(prompt, schema, timeout=30, match_context=match_context).get('reaction')
     if not isinstance(reaction, str):
         raise ValueError('Réaction de Chester invalide.')
     reaction = reaction.strip()
