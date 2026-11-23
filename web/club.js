@@ -37,7 +37,6 @@ const recruits = [
   {id: 'peter-drent', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/5/d5w9zd0i6nc.png', name: 'Peter Drent', position: 'DEF', rarity: 'Bronze', price: 230},
   {id: 'nathan-jones', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/a/vaeuza7dvs8.png', name: 'Nathan Jones', position: 'GB', rarity: 'Bronze', price: 240},
   {id: 'chuck-dollman', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/x/m/xmeolswmzne.png', name: 'Chuck Dollman', position: 'AT', rarity: 'Bronze', price: 250},
-  {id: 'hekyll', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/p/5/p54_qlu6ghc.png', name: 'Hekyll Jyde', position: 'DEF', rarity: 'Bronze', price: 260},
   {id: 'erik', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/e/4/e4qtt3lwf_m.png', name: 'Erik Eagle', position: 'MIL', rarity: 'Argent', price: 390},
   {id: 'kevin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/0/d/0dvmw8cb_ye.png', name: 'Kevin Dragonfly', position: 'AT', rarity: 'Argent', price: 430},
   {id: 'jack', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/r/mrvaa0xojh8.png', name: 'Jack Wallside', position: 'DEF', rarity: 'Argent', price: 420},
@@ -47,28 +46,27 @@ const recruits = [
   {id: 'rob-crombie', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/k/mkvjitw20us.png', name: 'Rob Crombie', position: 'GB', rarity: 'Argent', price: 420},
   {id: 'bruce-monkey', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/j/ijd315vl-h0.png', name: 'Bruce Monkey', position: 'MIL', rarity: 'Argent', price: 440},
   {id: 'neil-turner', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/n/inwfp5x5ak8.png', name: 'Neil Turner', position: 'AT', rarity: 'Argent', price: 450},
-  {id: 'archer', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/p/7/p7cdsgjrbs0.png', name: 'Archer Hawkins', position: 'DEF', rarity: 'Argent', price: 480},
   {id: 'mark', image: '/assets/captain-mark.png', name: 'Mark Evans', position: 'GB', rarity: 'Or', price: 800},
   {id: 'axel', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/1/f1kh7d67sbs.png', name: 'Axel Blaze', position: 'AT', rarity: 'Or', price: 850},
   {id: 'joseph-king', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/9/w/9wtikebapts.png', name: 'Joseph King', position: 'GB', rarity: 'Or', price: 720},
   {id: 'david-samford', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/d/udbgi0_9hlm.png', name: 'David Samford', position: 'AT', rarity: 'Or', price: 740},
   {id: 'hurley', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/0/i0spbukph8c.png', name: 'Hurley Kane', position: 'DEF', rarity: 'Or', price: 760},
-  {id: 'austin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/u/vu_2_98zume.png', name: 'Austin Hobbes', position: 'AT', rarity: 'Or', price: 790},
   {id: 'caleb', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/s/x/sxyalpxpni8.png', name: 'Caleb Stonewall', position: 'MIL', rarity: 'Or', price: 810},
   {id: 'shawn', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/p/opancch54ie.png', name: 'Shawn Froste', position: 'DEF', rarity: 'Or', price: 880},
-  {id: 'aiden-child', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/a/maq5sorjvom.png', name: 'Aiden Froste', position: 'AT', rarity: 'Or', price: 900},
   {id: 'nathan', image: '/assets/captain-nathan-dark.png', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
   {id: 'xene', image: '/assets/captain-xene.png', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
   {id: 'jude', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/1/l1wbplzhm4k.png', name: 'Jude Sharp', position: 'MIL', rarity: 'Légendaire', price: 1300},
   {id: 'byron', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/y/dykb3jbxeis.png', name: 'Byron Love', position: 'MIL', rarity: 'Légendaire', price: 1400},
   {id: 'torch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/d/mdglyf7jc3c.png', name: 'Torch', position: 'AT', rarity: 'Légendaire', price: 1450},
   {id: 'gazelle', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/r/ir7gceyqjb8.png', name: 'Gazelle', position: 'AT', rarity: 'Légendaire', price: 1475},
-  {id: 'xavier-foster', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/8/y/8yq-vg9hzzc.png', name: 'Xavier Foster', position: 'AT', rarity: 'Légendaire', price: 1550},
-  {id: 'xavier-schiller', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/j/b/jbof1s5dybs.png', name: 'Xavier Schiller', position: 'AT', rarity: 'Légendaire', price: 1750},
-  {id: 'aiden-adult', image: '/assets/aiden-adult.png', name: 'Aiden Froste', note: 'Version non officielle', position: 'AT', rarity: 'Légendaire', price: 1650},
 ];
 const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
+// Original prices used to refund retired entries when loading old saves.
+const retiredPrices = new Map([
+  ['hekyll', 260], ['archer', 480], ['austin', 790], ['aiden-child', 900],
+  ['aiden-adult', 1650], ['xavier-foster', 1550], ['xavier-schiller', 1750],
+]);
 const $ = id => document.getElementById(id);
 const picker = $('picker');
 const club = $('club-workspace');
@@ -93,16 +91,21 @@ function load() {
   const value = JSON.parse(localStorage.getItem(STORAGE) ?? 'null');
   if (value === null) return {recruits: [], soldScouts: [], credits: STARTING_CREDITS, lineup: [...scoutIds]};
   if (!Array.isArray(value.recruits) || !Array.isArray(value.lineup)
-      || value.recruits.some(id => !recruits.some(player => player.id === id))
+      || value.recruits.some(id => !retiredPrices.has(id) && !players.get(id)?.price)
       || new Set(value.recruits).size !== value.recruits.length) throw new Error('Sauvegarde du club illisible.');
   value.soldScouts ??= [];
-  value.credits ??= STARTING_CREDITS - value.recruits.reduce((total, id) => total + players.get(id).price, 0);
+  const originalPrice = id => retiredPrices.get(id) ?? players.get(id).price;
+  value.credits ??= STARTING_CREDITS - value.recruits.reduce((total, id) => total + originalPrice(id), 0);
   const assigned = value.lineup.filter(id => id !== null);
   if (!Array.isArray(value.soldScouts) || value.soldScouts.some(id => !scoutIds.includes(id))
       || new Set(value.soldScouts).size !== value.soldScouts.length
       || !Number.isSafeInteger(value.credits) || value.credits < 0
       || value.lineup.length !== slots.length || new Set(assigned).size !== assigned.length
       || assigned.some(id => !ownedPlayers(value).includes(id))) throw new Error('Sauvegarde du club illisible.');
+  const retired = value.recruits.filter(id => retiredPrices.has(id));
+  value.credits += retired.reduce((total, id) => total + retiredPrices.get(id), 0);
+  value.recruits = value.recruits.filter(id => !retiredPrices.has(id));
+  value.lineup = value.lineup.map(id => retiredPrices.has(id) ? null : id);
   return value;
 }
 
@@ -240,8 +243,7 @@ function renderShop() {
         $('club-coach-title').focus();
       } else if (saved && focused) ($('shop-list').querySelector('button:enabled') ?? $('rarity')).focus();
     };
-    const info = [player.position, `${formatter.format(player.price)} crédits`, player.note].filter(Boolean).join(' · ');
-    return playerRow(player, info, button);
+    return playerRow(player, `${player.position} · ${formatter.format(player.price)} crédits`, button);
   }));
 }
 

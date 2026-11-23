@@ -118,7 +118,6 @@ class Handler(BaseHTTPRequestHandler):
                  '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),
                  '/assets/captain-aphrodite.png': ('assets/captain-aphrodite.png', 'image/png'),
                  '/assets/captain-xene.png': ('assets/captain-xene.png', 'image/png'),
-                 '/assets/aiden-adult.png': ('assets/aiden-adult.png', 'image/png'),
                  '/assets/captain-nathan-dark.png': ('assets/captain-nathan-dark.png', 'image/png'),
                  '/assets/PressStart2P-Regular.ttf': ('assets/PressStart2P-Regular.ttf', 'font/ttf')}
         if self.path not in files:

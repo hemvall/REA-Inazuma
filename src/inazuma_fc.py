@@ -18,16 +18,6 @@ UNITS = {
     'nathan': 2430, 'xene': 2151, 'jude': 30,
     'byron': 190, 'torch': 2090, 'gazelle': 2089,
 }
-# Missing characters and story-only entries use named copies of playable units.
-VARIANTS = {
-    'hekyll': (42, 'Hekyll Jyde', 'Jyde'),
-    'archer': (2404, 'Archer Hawkins', 'Archer'),
-    'austin': (11, 'Austin Hobbes', 'Austin'),
-    'xavier-foster': (2151, 'Xavier Foster', 'Xavier'),
-    'xavier-schiller': (2151, 'Xavier Schiller', 'Xavier'),
-    'aiden-child': (2337, 'Aiden Froste', 'Aiden'),
-    'aiden-adult': (2329, 'Aiden Froste', 'Aiden'),
-}
 # The game's team table lists the keeper first, followed by defence, midfield and attack.
 NATIVE_ORDER = (10, 6, 7, 8, 9, 2, 3, 4, 5, 0, 1, 11, 12, 13, 14, 15)
 
@@ -38,20 +28,17 @@ def prepare_squad(lineup, rom_path, first_clone, opposing_units):
     if any(player is None for player in lineup[:STARTERS]):
         raise ValueError('Complète les onze postes titulaires d’Inazuma FC avant le match.')
     selected = [lineup[index] for index in NATIVE_ORDER if lineup[index] is not None]
-    if (any(not isinstance(player, str) or player not in UNITS and player not in VARIANTS
+    if (any(not isinstance(player, str) or player not in UNITS
             for player in selected) or len(set(selected)) != len(selected)):
         raise ValueError('La composition d’Inazuma FC contient un joueur inconnu ou en double.')
     names = {unit: (name, short_name) for unit, name, short_name in native_players(rom_path)}
     squad, drafts = [], []
     for player in selected:
-        if player in VARIANTS:
-            template, name, short_name = VARIANTS[player]
-        else:
-            template = UNITS[player]
-            name, short_name = names[template]
+        template = UNITS[player]
+        name, short_name = names[template]
         unit = template
         # The native match suppresses a shared unit ID on the away side.
-        if player in VARIANTS or template in opposing_units:
+        if template in opposing_units:
             unit = FIRST_RECRUIT_ID + first_clone + len(drafts)
             drafts.append({'template_unit': template, 'name': name, 'short_name': short_name})
         squad.append((unit, name))
