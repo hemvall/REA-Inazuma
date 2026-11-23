@@ -30,14 +30,38 @@ const recruits = [
   {id: 'max', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/r/d/rd_khczyztm.png', name: 'Maxwell Carson', position: 'MIL', rarity: 'Bronze', price: 190},
   {id: 'darren', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/y/oy1sibyz7wc.png', name: 'Darren LaChance', position: 'GB', rarity: 'Bronze', price: 200},
   {id: 'jim', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/w/owsgutjimb8.png', name: 'Jim Wraith', position: 'DEF', rarity: 'Bronze', price: 210},
+  {id: 'tim', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/f/ufxz9wwq5hm.png', name: 'Tim Saunders', position: 'MIL', rarity: 'Bronze', price: 180},
+  {id: 'sam-kincaid', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/a/1/a1orm9vieek.png', name: 'Sam Kincaid', position: 'MIL', rarity: 'Bronze', price: 210},
+  {id: 'peter-drent', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/5/d5w9zd0i6nc.png', name: 'Peter Drent', position: 'DEF', rarity: 'Bronze', price: 230},
+  {id: 'nathan-jones', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/a/vaeuza7dvs8.png', name: 'Nathan Jones', position: 'GB', rarity: 'Bronze', price: 240},
+  {id: 'chuck-dollman', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/x/m/xmeolswmzne.png', name: 'Chuck Dollman', position: 'AT', rarity: 'Bronze', price: 250},
+  {id: 'hekyll', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/p/5/p54_qlu6ghc.png', name: 'Hekyll Jyde', position: 'DEF', rarity: 'Bronze', price: 260},
   {id: 'erik', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/e/4/e4qtt3lwf_m.png', name: 'Erik Eagle', position: 'MIL', rarity: 'Argent', price: 390},
   {id: 'kevin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/0/d/0dvmw8cb_ye.png', name: 'Kevin Dragonfly', position: 'AT', rarity: 'Argent', price: 430},
   {id: 'jack', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/r/mrvaa0xojh8.png', name: 'Jack Wallside', position: 'DEF', rarity: 'Argent', price: 420},
   {id: 'celia', image: '/assets/celia.png', name: 'Celia Hills', position: 'MIL', rarity: 'Argent', price: 460},
+  {id: 'bobby', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/-/x/-xzmaq-eqf8.png', name: 'Bobby Shearer', position: 'DEF', rarity: 'Argent', price: 390},
+  {id: 'daniel-hatch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/d/ldrmvkqotue.png', name: 'Daniel Hatch', position: 'AT', rarity: 'Argent', price: 410},
+  {id: 'rob-crombie', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/k/mkvjitw20us.png', name: 'Rob Crombie', position: 'GB', rarity: 'Argent', price: 420},
+  {id: 'bruce-monkey', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/j/ijd315vl-h0.png', name: 'Bruce Monkey', position: 'MIL', rarity: 'Argent', price: 440},
+  {id: 'neil-turner', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/n/inwfp5x5ak8.png', name: 'Neil Turner', position: 'AT', rarity: 'Argent', price: 450},
+  {id: 'archer', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/p/7/p7cdsgjrbs0.png', name: 'Archer Hawkins', position: 'DEF', rarity: 'Argent', price: 480},
   {id: 'mark', image: '/assets/captain-mark.png', name: 'Mark Evans', position: 'GB', rarity: 'Or', price: 800},
   {id: 'axel', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/1/f1kh7d67sbs.png', name: 'Axel Blaze', position: 'AT', rarity: 'Or', price: 850},
+  {id: 'joseph-king', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/9/w/9wtikebapts.png', name: 'Joseph King', position: 'GB', rarity: 'Or', price: 720},
+  {id: 'david-samford', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/d/udbgi0_9hlm.png', name: 'David Samford', position: 'AT', rarity: 'Or', price: 740},
+  {id: 'hurley', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/0/i0spbukph8c.png', name: 'Hurley Kane', position: 'DEF', rarity: 'Or', price: 760},
+  {id: 'austin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/u/vu_2_98zume.png', name: 'Austin Hobbes', position: 'AT', rarity: 'Or', price: 790},
+  {id: 'caleb', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/s/x/sxyalpxpni8.png', name: 'Caleb Stonewall', position: 'MIL', rarity: 'Or', price: 810},
+  {id: 'shawn', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/p/opancch54ie.png', name: 'Shawn Froste', position: 'DEF', rarity: 'Or', price: 880},
   {id: 'nathan', image: '/assets/captain-nathan-dark.png', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
   {id: 'xene', image: '/assets/captain-xene.png', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
+  {id: 'jude', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/1/l1wbplzhm4k.png', name: 'Jude Sharp', position: 'MIL', rarity: 'Légendaire', price: 1300},
+  {id: 'byron', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/y/dykb3jbxeis.png', name: 'Byron Love', position: 'MIL', rarity: 'Légendaire', price: 1400},
+  {id: 'torch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/d/mdglyf7jc3c.png', name: 'Torch', position: 'AT', rarity: 'Légendaire', price: 1450},
+  {id: 'gazelle', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/r/ir7gceyqjb8.png', name: 'Gazelle', position: 'AT', rarity: 'Légendaire', price: 1475},
+  {id: 'xavier-foster', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/8/y/8yq-vg9hzzc.png', name: 'Xavier Foster', position: 'AT', rarity: 'Légendaire', price: 1550},
+  {id: 'xavier-schiller', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/j/b/jbof1s5dybs.png', name: 'Xavier Schiller', position: 'AT', rarity: 'Légendaire', price: 1750},
 ];
 const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
@@ -270,12 +294,11 @@ $('sale-confirm').onclick = async () => {
     copy.credits += price;
     return `${playerName(player)} a été revendu. +${formatter.format(price)} crédits.`;
   });
-  if (saved && sellingId === id) {
+  if (saved && sale.open && sellingId === id) {
     sale.close();
     $('inventory-title').focus();
   }
 };
-sale.addEventListener('close', () => { sellingId = null; });
 $('open-recruitment').onclick = () => {
   $('catalogue-feedback').hidden = true;
   catalogue.showModal();
