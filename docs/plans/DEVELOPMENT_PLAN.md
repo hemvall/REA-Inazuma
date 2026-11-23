@@ -1,5 +1,7 @@
 # Chat, rencontres dynamiques et agent joueur
 
+> Document historique. Voir le [Guide du salon et de MCP](../guides/WEB_AND_MCP.md).
+
 ## Suivi de livraison du 18 novembre 2026
 
 - [x] Branche `develop` dans le dépôt réel `REA-Inazuma`.
@@ -15,7 +17,7 @@
 - [x] Match natif complet, retour par B protégé et affiche inversée dans la même
   session : preuves et identités consignées dans le rapport de livraison.
 
-Le rapport courant est `DELIVERY_VERIFICATION.md`. Les sections suivantes
+Le rapport courant est `../verification/DELIVERY_VERIFICATION.md`. Les sections suivantes
 conservent le plan initial et les étapes de recherche ; leurs descriptions de
 blocages historiques ne remplacent pas ce suivi de livraison.
 
@@ -81,7 +83,7 @@ Empreintes du test : ROM
 `7a9435be30fea323a5d445d9f91355dd89f9e0bce714ca96954cc0f64d865033`,
 cœur `e50e675eab350e14d1cb9ccc4ada7f09fb6a3e6dcd16ef4a197d9a5b8a656f13`.
 Ce build présent sur disque diffère du dernier build décrit dans
-RUNTIME_VERIFICATION.md ; les anciennes preuves ne sont pas transférées.
+../verification/RUNTIME_VERIFICATION.md ; les anciennes preuves ne sont pas transférées.
 
 Restant : observation sémantique, hooks et allocation RAM, chargement natif des
 équipes/dialogues, agent organisateur LLM et joueur autonome, résultats/rejeu,
@@ -92,7 +94,7 @@ Limitation REA constatée : le CLI 6.9.0 refuse Node 26.12.0, exigeant au minimu
 26.12.1 dans cette branche. Aucun runtime système n'a été remplacé. Cette limite
 ne prouve pas que le pont dynamique est impossible ; sa recherche reste ouverte.
 
-Mode d'emploi et commandes : [WEB_AND_MCP.md](WEB_AND_MCP.md).
+Mode d'emploi et commandes : [WEB_AND_MCP.md](../guides/WEB_AND_MCP.md).
 
 ## Reprise du 18 novembre 2026
 

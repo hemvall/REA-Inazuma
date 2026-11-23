@@ -1,5 +1,7 @@
 # Chester Horse Junior — Commentateur IA
 
+> Document historique. Voir le [commentaire de match actuel](../guides/WEB_AND_MCP.md#commentaire-de-match).
+
 ## Première version
 
 Activez **Commentaire vocal** sous les commandes du terrain. Le commentaire est désactivé à l’ouverture du salon. Le curseur règle le volume des prochaines répliques et le niveau zéro coupe la voix en cours. Le navigateur utilise une voix française du système. En son absence, les annonces restent lisibles sous les commandes.
@@ -59,6 +61,6 @@ le débit et la hauteur selon l’action.
 
 ## Références
 
-- [Salon et observation du match](../WEB_AND_MCP.md)
-- [Observation du worker](../src/match_actions.py)
-- [Parcours de match et retour au Club](../CLUB_FRIENDLIES.md)
+- [Salon et observation du match](../guides/WEB_AND_MCP.md)
+- [Observation du worker](../../src/match_actions.py)
+- [Parcours de match et retour au Club](../guides/CLUB_FRIENDLIES.md)

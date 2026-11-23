@@ -1,7 +1,9 @@
 # Standalone scene implementation
 
-The current runnable candidate is `build/inazuma_mystery.nds`, launched with
-`Ouvrir le Club dans melonDS.cmd`. See README, RUN_SCENARIO and RUNTIME_VERIFICATION.
+This page describes the historical standalone scenario. Build
+`build/inazuma_mystery.nds` using the [scenario guide](../guides/RUN_SCENARIO.md)
+and open it directly in melonDS. See the
+[runtime report](../verification/RUNTIME_VERIFICATION.md) for observed behavior.
 
 The game retains its native title and new-game naming flow. Its chapter dispatch
 routes into the authored event at key 22010100, instead of the original campaign.
@@ -26,7 +28,7 @@ The upper screen is black during the lower-screen illustrated scenes.
 An older build froze after the match. The current source uses one unconditional
 match-return callback with result branches, rather than two callbacks requiring
 the pre-match counter. Runtime acceptance for the current hash is recorded
-separately in RUNTIME_VERIFICATION; source intent alone is not a passed check.
+separately in the runtime report; source intent alone is not a passed check.
 
 The first chapter's explicit twelve-player remove/recruit block is replaced by
 five native additions at level 1. Both initial-team resource templates match the

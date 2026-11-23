@@ -1,6 +1,10 @@
 # Gameplay acceptance procedure
 
-Current standalone scenario: see `../RUNTIME_VERIFICATION.md` for observed
+For the web lobby, Club, match pilot and MCP checks, see the
+[verification index](../docs/verification/VERIFICATION.md). This page covers
+the historical standalone scenario and one-line ROM proof.
+
+Current standalone scenario: see `../docs/verification/RUNTIME_VERIFICATION.md` for observed
 cold-boot dialogue and football checks, exact hash and remaining failures.
 Use `scenario_replay.jsonl` for the current new-game input sequence. Complete
 victory, defeat, replay and save/reload acceptance remains outstanding.

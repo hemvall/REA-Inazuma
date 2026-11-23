@@ -1,5 +1,7 @@
 # Plan exécuté : rencontres dynamiques et agents
 
+> Document historique. Voir le [contrat MCP actuel](../guides/WEB_AND_MCP.md#installer-et-configurer-mcp).
+
 ## Architecture livrée
 
 Le navigateur et l'adaptateur MCP utilisent un service Python local commun.
@@ -37,7 +39,7 @@ sans prétendre qu'un hook ARM9 consommant ce prototype aurait été installé.
 
 ## Livraison et vérification
 
-Voir `DELIVERY.md` pour lancer l'application, `WEB_AND_MCP.md` pour le client MCP,
-et `DELIVERY_VERIFICATION.md` pour les essais réellement effectués.
+Voir `../guides/DELIVERY.md` pour lancer l'application, `../guides/WEB_AND_MCP.md` pour le client MCP,
+et `../verification/DELIVERY_VERIFICATION.md` pour les essais réellement effectués.
 Les simulations statistiques, prédictions et extensions à d'autres équipes
 restent hors du périmètre de cette livraison.

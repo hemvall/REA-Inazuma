@@ -1,24 +1,22 @@
 # Run Le Defi Mystere locally
 
-Double-click `Ouvrir le Club dans melonDS.cmd` in the project folder. It opens the
-scenario ROM directly in the downloaded portable melonDS. It does not require
-Codex Computer Use permissions, change file associations, or install software.
+This guide covers the historical standalone scenario. Build
+`build/inazuma_mystery.nds` with the commands below and open that ROM in
+portable melonDS. The current Windows launcher opens the
+[Club profile and its friendlies](CLUB_FRIENDLIES.md).
 
-Install it with `python src/setup_tools.py --only melonds`. The launcher expects
+Install portable melonDS with `python src/setup_tools.py --only melonds`. The project uses
 `local/tools/melonds/melonDS.exe`; configuration lives in its `portable/` folder.
 Configure DS buttons under **Config > Input and hotkeys** if no keys are mapped.
 Use a new game and do not import DeSmuME save states.
 
-For the separate automated Libretro port:
+For the automated Libretro port, use the [verified core](DELIVERY.md#prérequis):
 
 ```powershell
-python src/setup_tools.py --only melonds-core
-python src/emulator_probe.py build/inazuma_mystery.nds --commands tests/scenario_replay.jsonl
+python src/emulator_probe.py build/inazuma_mystery.nds --commands tests/exploration_replay.jsonl
 ```
 
-Use `tests/exploration_replay.jsonl` for the current cold-boot exploration
-route on the melonDS Libretro port. `scenario_replay.jsonl` is the historical
-illustrated route. Standalone melonDS acceptance remains a separate check.
+`tests/scenario_replay.jsonl` contains input for the earlier illustrated route. Standalone melonDS acceptance remains a separate check.
 
 The original `op00` opening movie plays at power-on. Press **A** or **Start** to
 skip it, then select **Nouvelle partie**. The new episode begins after the
@@ -53,11 +51,16 @@ The native challenge is a first-goal four-a-side event. All five requested
 players are in the level-one squad. Full match result/replay and save/reload
 acceptance remain experimental. The authored post-match conversations are
 currently blocked by a black screen after native return; they are not accepted
-as reachable gameplay. See `RUNTIME_VERIFICATION.md` for evidence.
+as reachable gameplay. See `../verification/RUNTIME_VERIFICATION.md` for evidence.
 
 ## Rebuild
 
+From the repository root, with the [original ROM](DELIVERY.md#prérequis)
+at `rom/original.nds`:
+
 ```powershell
+python src/setup_tools.py --only xdelta
+New-Item -ItemType Directory -Force local, build | Out-Null
 python src/prepare_scene.py
 python src/build.py --manifest local/scene_patch.json
 python src/validate_scene.py

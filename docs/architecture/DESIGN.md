@@ -1,5 +1,7 @@
 # InazumIA — Pixel match lobby
 
+> Document historique. Voir le [guide du salon actuel](../guides/WEB_AND_MCP.md).
+
 The lobby is a game menu for choosing a fixture, preparing its captain dialogue,
 and playing the existing Nintendo DS simulation. The primary action is preparing
 the selected fixture; the live screens and match controls become central afterward.
@@ -19,7 +21,7 @@ with the fixture and preparation ahead of the live screen. Preserve the stacked
 Required states: no session, preparing, ready, human control, agent control,
 paused, final result, disconnected and error. Only show real scores if supplied
 by the emulator; no invented progress, match clock or statistics. Keep manual
-preparation, chat, both agent backends and external MCP control accessible.
+preparation, chat, pilot selection and external MCP control accessible.
 
 Finish: inspect desktop and mobile screenshots; exercise fixture swapping,
 preparation, live controls, engine selection and failures with an isolated API

@@ -2,7 +2,7 @@
 
 ## Démarrage local
 
-Installer les dépendances du coach, du pilote IA et de Chester dans le Python
+Pour le coach, le pilote IA et les réactions générées de Chester, installer les dépendances dans le Python
 utilisé par le lanceur (Python 3.11 ou supérieur) :
 
 ```powershell
@@ -26,29 +26,28 @@ le temps ; « Pause » l'arrête. Le clavier, les boutons DS et les clics/glisse
 sur l'écran inférieur commandent le même worker. Les coordonnées DS vont de
 0 à 255 en x et de 0 à 191 en y, exclusivement sur l'écran inférieur.
 
-Le salon de bureau utilise une échelle de 125 % à partir de 1000 pixels de
-largeur ; conserver le zoom du navigateur à 100 % pour cette taille. Les deux
-écrans sont intégrés dans une DS blanche dessinée en CSS pixel art. Les éléments
-de sa coque sont décoratifs ; les commandes restent disponibles dans « À la
-manette », au clavier et sur l'écran tactile inférieur.
+Les commandes DS sont disponibles dans « À la manette », au clavier et sur
+l’écran tactile inférieur. Utiliser les flèches ou ZQSD pour les directions,
+A/B/X/Y pour les boutons et Entrée pour START. Le bouton **Plein écran**
+agrandit la console si le navigateur le permet.
 
 La lecture humaine envoie deux frames DS par requête, avec une cible de
 30 affichages par seconde (60 frames DS/s). Les requêtes sont séquentielles :
 une machine lente ne cumule pas de commandes. Le suivi du statut reprend en
 pause ; pendant la lecture, les réponses des commandes actualisent l'écran.
 
-« L'agent joue pour moi » utilise un pilote local sans appel à un modèle :
+Dans **Options**, choisir **Pilote déterministe** (par défaut) ou **Pilote IA**, puis cliquer sur **L’agent joue pour moi**.
 
 - Le worker publie les identifiants des transitions reconnues et vérifie
   la session, la révision, la frame et la légalité avant chaque action.
 - Sans action proposée, le pilote avance par lots de 60 frames, puis relit
   l'état. Si la progression reste bloquée, il rend la main et consigne la
   phase, l'écran et la frame.
+- En mode déterministe, les règles choisissent l’action sans appeler de modèle. En mode IA, le modèle choisit en texte parmi les actions légales quand plusieurs options sont disponibles. Le délai est de 8 secondes. En cas d’échec, de délai dépassé ou de réponse invalide, la règle locale prend le relais.
 - Pour un duel reconnu, le pilote choisit une option du menu et le worker
   l'exécute par le tactile DS. Pour la consigne de passe reconnue, il exige
   aussi la possession de l'équipe contrôlée, lue dans la RAM.
-- Les commandes directes en RAM et les autres actions de jeu libre restent
-  à valider. Le pilote peut rendre la main avant la fin du match.
+- Le jeu libre reste limité aux actions reconnues par le worker. Le pilote peut rendre la main avant la fin du match.
 
 La lecture mémoire fournit les positions terrain des joueurs, le ballon, son
 porteur, le score et le chrono natif (ticks/30). Le chrono ne sert jamais à
@@ -106,21 +105,25 @@ avant de rendre le résultat. Les journaux restent dans `build/agents`.
 Le salon appelle LM Studio en local via `ChatOpenAI`. Quand Codex est sélectionné
 dans le parcours MCP, un adaptateur LangChain invoque le CLI avec sa configuration
 existante. Le pilote déterministe applique les règles du jeu sans appeler de
-modèle. Le navigateur lit les commentaires via la synthèse vocale du système.
+modèle. Le pilote IA ne transmet pas de capture. Le navigateur lit les commentaires via la synthèse vocale du système.
 
-Au coup d’envoi, sur un but, à la mi-temps ou au résultat, le salon diffuse
-l’annonce confirmée immédiatement. En parallèle, Chester demande au modèle
-local d’appeler une fois `get_match_context`. L’outil lit le score, le chrono
-et jusqu’à trois événements confirmés au moment de l’action. Le modèle reçoit
-le résultat et formule une réaction courte. Le salon affiche l’appel, le score
-lu et la réaction validée. Chaque appel exécuté produit un journal `tool.json`
-avec son résultat et sa durée dans `build/agents/`. Le budget des deux échanges
-est de 30 secondes. Si le modèle échoue ou expire, l’annonce initiale suffit.
+### Commentaire de match
 
-Pour la démo, lancer Occulte–Zeus avec les sous-titres activés. Au coup d’envoi,
-attendre l’affichage de `get_match_context`. Sur le premier but, montrer le
-nouveau score lu par l’outil et la réaction de Chester. Laisser LM Studio
-chargé avant la démonstration.
+Les **Sous-titres** sont activés au départ. Pour entendre les annonces, activer
+**Commentaire vocal** et régler le volume. Le style **Chester** ou **Neuille**
+change le ton. La voix dépend de la synthèse vocale du navigateur et du système.
+
+Le worker journalise les événements reconnus, dont le coup d’envoi, les buts,
+les duels, les tirs repérés et les changements de possession. La mi-temps et la
+fin affichent un bilan établi à partir du score et des événements observés,
+avec indication d’un suivi partiel après restauration d’un checkpoint. Les
+comptes de tirs et de récupérations portent sur les actions suivies.
+
+Chester peut ajouter une réaction générée. Sur le moteur local, le modèle
+appelle « get_match_context » pour lire le score, le chrono, jusqu’à trois
+événements récents et le bilan lorsqu’il est disponible. L’appel exécuté est
+journalisé dans `build/agents/`. Le budget des deux échanges est de 30
+secondes. Les annonces intégrées restent disponibles si le modèle échoue.
 
 ## Agents et connexion
 
@@ -128,31 +131,24 @@ Le salon web utilise **LM Studio** pour le chat et le pilote IA.
 
 ### IA locale
 
-Démarrer le serveur local dans LM Studio, sur le port 1234, avec le modèle
-visuel `qwen/qwen3.5-9b` déjà disponible sur ce PC. Aucun compte ni clé API
-n'est requis. Les demandes et captures sont envoyées uniquement au serveur
-HTTP de la machine, sans appel à Codex CLI.
+Le lanceur essaie de démarrer LM Studio et de charger le modèle quand la
+commande « lms » est disponible. Sinon, démarrer le serveur local de LM Studio
+sur le port 1234 et charger « qwen/qwen3.5-9b », le modèle configuré par défaut.
 
-Les variables `INAZUMIA_LLM_URL` (défaut `http://127.0.0.1:1234/v1`) et
-`INAZUMIA_LLM_MODEL` permettent de choisir un autre serveur compatible ou modèle.
-Seules les adresses de boucle locale sont acceptées. Le joueur exige un modèle
-visuel ; les deux agents exigent des réponses JSON structurées. Le délai maximal
-est de 180 secondes par décision. Annuler rend immédiatement le contrôle ;
-l'inférence déjà envoyée peut continuer sur le serveur, mais sa réponse est ignorée.
-Les requêtes locales utilisent `reasoning_effort: "none"` pour éviter que Qwen
-consomme le budget dans son raisonnement interne. Le salon affiche le temps
-d'attente de la décision ; le jeu reste en pause pendant celle-ci. La vitesse
-et la qualité des actions dépendent toujours du modèle et du matériel.
+« INAZUMIA_LLM_URL » (par défaut « http://127.0.0.1:1234/v1 ») et
+« INAZUMIA_LLM_MODEL » permettent de changer l’adresse et le modèle. Le serveur
+doit écouter sur la boucle locale. Le coach et le pilote IA utilisent du texte
+et des réponses JSON structurées. Les réactions de Chester utilisent aussi
+l’appel d’outil du modèle local. Les parties manuelles, le pilote déterministe
+et les annonces intégrées fonctionnent indépendamment du modèle.
 
 ### Codex CLI
 
-Ce choix conserve le CLI Codex déjà installé et l'authentification existante.
-Vérifier `codex login status` ; si nécessaire, se connecter avec `codex login`.
-Chaque décision est une exécution éphémère en lecture seule, sans chargement de
-la configuration utilisateur du CLI. Les agents n'ont pas besoin d'une clé API.
-Ils consomment l'usage associé à votre compte Codex. Le modèle doit accepter
-les images et les réponses structurées. Un échec, un délai dépassé ou un budget
-épuisé laisse le jeu en pause et fournit une erreur explicite dans le salon.
+Le serveur web lancé normalement utilise le moteur local, y compris pour les
+appels MCP qu’il reçoit. L’adaptateur Codex CLI reste disponible côté service
+pour les configurations et essais qui le sélectionnent explicitement. Il
+utilise une exécution éphémère en lecture seule et l’authentification existante
+du CLI.
 
 Les prompts, sorties et journaux restent dans `build/agents/`. Les sessions
 gardent leurs commandes dans `build/sessions/<id>/replay.jsonl`, leurs images
@@ -162,17 +158,6 @@ entrée et métriques de fin dans `build/agents/<job>-match.jsonl`. Le statut ex
 `rule_actions`, `rejected_commands`, `max_action_gap_seconds`, `text_calls` et
 `vision_calls`. La preuve PNG est conservée si l'écran final est atteint.
 
-Vérifications isolées, sans utiliser la session du salon :
-
-```powershell
-python -m unittest discover -s tests -p test_*.py
-python tests/smoke_hybrid_session.py
-python local/replay_pilot.py --rounds 2
-```
-
-La boucle rejoue Occulte–Zeus et Zeus–Occulte dans des sessions isolées.
-Chaque essai conserve l'état d'arrêt et une capture dans `build/pilot-replays/`.
-
 ## Installer et configurer MCP
 
 Installer l'environnement MCP avec les commandes suivantes :
@@ -180,12 +165,13 @@ Installer l'environnement MCP avec les commandes suivantes :
 ```powershell
 python -m venv local/agent-venv
 local/agent-venv/Scripts/python.exe -m pip install -r requirements-agent.txt
+python src/configure_mcp.py
 ```
 
 Le SDK officiel est fixé à `mcp==1.30.0`, API v1 :
 https://py.sdk.modelcontextprotocol.io/v1/.
 
-L'installateur génère aussi `build/mcp-client.json` et `build/mcp-codex.toml`,
+La dernière commande génère `build/mcp-client.json` et `build/mcp-codex.toml`,
 avec les chemins absolus de votre installation. Importer le premier dans un
 client compatible, ou ajouter le contenu du second à la configuration Codex.
 `python src/configure_mcp.py` régénère ces fichiers si le dossier a été déplacé.
@@ -211,32 +197,21 @@ Outils : `capabilities`, `list_teams`, `organise_match`, `prepare_match`,
 
 La préparation et les agents renvoient un job ; consulter `get_match_status`
 jusqu'à son état terminal. `observe` renvoie une image MCP réelle des deux écrans
-et la révision. Une mutation exige cette révision. Avant les commandes directes
-du client externe, cliquer « Autoriser le client MCP » dans le salon. L'agent
-joueur intégré possède son propre transfert de contrôle.
+et la révision. Une mutation exige cette révision. Pour envoyer directement des entrées depuis un client externe, mettre le jeu
+en pause, puis transférer le contrôle par le service HTTP local. Remplacer
+`<id>` par l’identifiant renvoyé par `session_open`.
+
+```powershell
+Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:18765/api/set_control' -ContentType 'application/json' -Body '{"session_id":"<id>","owner":"agent"}'
+```
+
+Pour rendre le contrôle au navigateur, renvoyer la même requête avec
+`"owner":"human"`. Le pilote intégré `delegate_player` prend et libère lui-même
+le contrôle. Pour un client qui choisit ses propres actions, lire
+`observe_match`, puis soumettre un identifiant légal avec la révision et la
+frame observées.
 
 ## Vérification
 
-```powershell
-$env:PYTHONPATH = 'src'
-python -m unittest discover -s tests -v
-python tests/smoke_session.py
-local/agent-venv/Scripts/python.exe tests/smoke_mcp.py
-python tests/smoke_delivery.py
-```
-
-Les deux derniers tests utilisent le service ouvert et modifient sa session.
-`smoke_delivery.py` appelle les vrais agents, puis prépare l'affiche inversée
-dans le même worker. Il conserve des captures et des identités dans
-`build/delivery/`. Une suite de tests verts n'est pas une garantie que le joueur
-visuel gagnera un match ; ses décisions et son niveau de jeu restent observables.
-
-Pour exiger aussi un résultat final dans l'essai du joueur visuel, avec un budget
-plus long et une durée maximale explicite :
-
-```powershell
-python tests/smoke_delivery.py --max-decisions 400 --require-result --timeout 7200
-```
-
-Ce mode échoue si l'agent s'arrête avant le résultat ; il ne transforme pas une
-limite de budget en réussite de match.
+Voir [l’index des vérifications](../verification/VERIFICATION.md) pour les
+commandes, les prérequis des essais natifs et les résultats datés.

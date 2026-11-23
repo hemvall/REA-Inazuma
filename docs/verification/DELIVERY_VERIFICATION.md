@@ -1,5 +1,7 @@
 # Vérification de livraison — 18 novembre 2026
 
+> Document historique. Voir le [index des vérifications actuelles](VERIFICATION.md).
+
 ## Identités testées
 
 - Original BEBF révision 0 :
