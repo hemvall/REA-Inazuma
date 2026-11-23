@@ -48,7 +48,7 @@ const teams={
 const chester = createChester({
   api, enabled: $('chesterEnabled'), captions: $('chesterCaptions'),
   volume: $('chesterVolume'), line: $('chesterLine'), hint: $('chesterHint'),
-  status: $('chesterStatus'),
+  status: $('chesterStatus'), tool: $('chesterTool'),
 });
 async function api(op,data={}) {
   const response=await fetch('/api/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});

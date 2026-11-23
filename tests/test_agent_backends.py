@@ -76,6 +76,15 @@ class BackendTests(unittest.TestCase):
                 agent.generate('Observe', {}, cancel=cancel)
             self.assertFalse(list(Path(directory).glob('*/response.json')))
 
+    def test_chester_requires_a_model_tool_call(self):
+        client, transport = self.model_transport()
+        read = Mock()
+        with tempfile.TemporaryDirectory() as directory, client:
+            with self.assertRaises(InvalidAgentResponse):
+                LocalAgent(directory).generate('Commente', {}, match_context=read)
+            read.assert_not_called()
+            self.assertEqual(transport.call_count, 1)
+
     def test_remote_server_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict('os.environ', {'INAZUMIA_LLM_URL':'https://example.com/v1'}):
             with self.assertRaises(ValueError):

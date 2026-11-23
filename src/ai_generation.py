@@ -1,5 +1,6 @@
 """LangChain structured generation shared by the coach, pilot and Chester."""
 import base64
+from collections.abc import Callable
 from dataclasses import dataclass
 import http.client
 import json
@@ -29,6 +30,7 @@ class GenerationRequest:
     image: Path | None
     cancel: threading.Event | None
     timeout: float
+    match_context: Callable[[], dict] | None = None
 
     def check_cancelled(self):
         if self.cancel and self.cancel.is_set():
@@ -47,10 +49,11 @@ class StructuredGeneration:
     def available(self):
         return self.provider.available()
 
-    def generate(self, prompt, schema, *, image=None, cancel=None, timeout=None):
+    def generate(self, prompt, schema, *, image=None, cancel=None, timeout=None, match_context=None):
         run = self.directory / uuid.uuid4().hex
         request = GenerationRequest(
             prompt, schema, run, image, cancel, self.default_timeout if timeout is None else timeout,
+            match_context,
         )
         request.check_cancelled()
         try:
@@ -104,7 +107,8 @@ class LocalModel:
 
     def invoke(self, request):
         from httpx import Client
-        from langchain_core.messages import HumanMessage
+        from langchain_core.messages import HumanMessage, ToolMessage
+        from langchain_core.tools import tool
         from langchain_openai import ChatOpenAI
         from openai import APITimeoutError, ContentFilterFinishReasonError, LengthFinishReasonError
 
@@ -126,13 +130,36 @@ class LocalModel:
                     model=self.model, temperature=0.2, timeout=request.timeout,
                     max_retries=0,
                     # LM Studio documents max_tokens, which ChatOpenAI normally renames.
-                    extra_body={'max_tokens': 256 if request.timeout <= 9 else 1500},
+                    extra_body={'max_tokens': 96 if request.match_context else 256 if request.timeout <= 9 else 1500},
                     use_responses_api=False, http_client=client,
                 )
-                return model.invoke(
-                    [HumanMessage(content=content)],
-                    response_format=response_format, reasoning_effort='none',
-                )
+                messages = [HumanMessage(content=content)]
+                if request.match_context:
+                    @tool
+                    def get_match_context() -> dict:
+                        """Lire le score, le chrono et les derniers événements confirmés au moment de l’action."""
+                        return request.match_context()
+
+                    decision = model.bind_tools([get_match_context]).invoke(messages, reasoning_effort='none')
+                    if (decision.invalid_tool_calls or len(decision.tool_calls) != 1
+                            or decision.tool_calls[0]['name'] != get_match_context.name
+                            or decision.tool_calls[0]['args'] or not decision.tool_calls[0]['id']):
+                        raise InvalidAgentResponse('Chester doit appeler get_match_context une seule fois, sans argument.')
+                    request.check_cancelled()
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError('Chester a dépassé le délai de commentaire.')
+                    started = time.monotonic()
+                    context = get_match_context.invoke({})
+                    trace = {'name': get_match_context.name, 'context': context,
+                             'duration_ms': round((time.monotonic() - started) * 1000, 1)}
+                    (request.run / 'tool.json').write_text(json.dumps(trace, ensure_ascii=False), encoding='utf-8')
+                    messages.extend([decision, ToolMessage(content=json.dumps(context, ensure_ascii=False),
+                                                          tool_call_id=decision.tool_calls[0]['id'])])
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError('Délai de réponse de l’IA locale dépassé.')
+                return model.invoke(messages, response_format=response_format, reasoning_effort='none',
+                                    **({'timeout': remaining} if request.match_context else {}))
 
         completed = threading.Event()
         outcome = {}
@@ -154,6 +181,8 @@ class LocalModel:
         request.check_cancelled()
         if 'error' in outcome:
             error = outcome['error']
+            if isinstance(error, (InvalidAgentResponse, TimeoutError, AgentCancelled)):
+                raise error
             if isinstance(error, APITimeoutError):
                 raise TimeoutError('IA locale trop lente ; émulation laissée en pause.') from error
             if isinstance(error, (LengthFinishReasonError, ContentFilterFinishReasonError)):
