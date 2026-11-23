@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inazuma FC · InazumIA</title>
+  <link rel="stylesheet" href="/club.css">
+  <script src="/club.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/">INAZUM<span>IA</span></a>
+    <a class="back" href="/">Retour au salon</a>
+  </header>
+  <main>
+    <header class="club-heading">
+      <div class="crest" aria-hidden="true"><span>IFC</span><i></i></div>
+      <div>
+        <h1>Inazuma FC</h1>
+        <p>Recrute tes joueurs et compose ton onze.</p>
+      </div>
+      <div class="wallet"><span>Crédits du club</span><strong id="balance">–</strong></div>
+    </header>
+    <nav class="club-nav" aria-label="Gestion du club">
+      <button type="button" data-view="lineup" aria-pressed="true">Composition</button>
+      <button type="button" data-view="shop" aria-pressed="false">Boutique</button>
+      <button type="button" data-view="inventory" aria-pressed="false">Inventaire</button>
+    </nav>
+    <p id="feedback" class="feedback" role="status" hidden></p>
+    <section id="lineup" aria-labelledby="lineup-title">
+      <div class="section-heading">
+        <div><h2 id="lineup-title">Onze titulaire</h2><p>Sélectionne un poste pour changer de joueur.</p></div>
+        <span class="formation">4–4–2</span>
+      </div>
+      <div class="squad">
+        <div class="pitch">
+          <div class="pitch-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="pitch-players" id="pitch"></div>
+        </div>
+        <aside class="bench" aria-labelledby="bench-title">
+          <h3 id="bench-title">Remplaçants</h3>
+          <div id="bench"></div>
+        </aside>
+      </div>
+    </section>
+    <section id="shop" aria-labelledby="shop-title" hidden>
+      <div class="section-heading">
+        <div><h2 id="shop-title">Boutique</h2><p>Les joueurs recrutés rejoignent ton inventaire.</p></div>
+        <label>Rareté
+          <select id="rarity"><option value="">Toutes</option><option>Bronze</option><option>Argent</option><option>Or</option><option>Légendaire</option></select>
+        </label>
+      </div>
+      <ul class="player-list" id="shop-list"></ul>
+    </section>
+    <section id="inventory" aria-labelledby="inventory-title" hidden>
+      <div class="section-heading"><div><h2 id="inventory-title">Inventaire</h2><p>Retrouve les joueurs de ton club et leur place dans l’équipe.</p></div><span id="inventory-count" class="formation"></span></div>
+      <ul class="player-list" id="inventory-list"></ul>
+    </section>
+    <p class="storage-note">Le club est sauvegardé dans ce navigateur.</p>
+  </main>
+  <dialog id="picker" aria-labelledby="picker-title">
+    <div class="dialog-heading">
+      <h2 id="picker-title">Choisir un joueur</h2>
+      <form method="dialog"><button type="submit" aria-label="Fermer">Fermer</button></form>
+    </div>
+    <p id="picker-error" role="alert" hidden></p>
+    <ul class="player-list" id="picker-list"></ul>
+  </dialog>
+</body>
+</html>

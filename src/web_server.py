@@ -95,6 +95,9 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                 '/inazuma-fc': ('club.html', 'text/html; charset=utf-8'),
+                 '/club.css': ('club.css', 'text/css; charset=utf-8'),
+                 '/club.js': ('club.js', 'text/javascript; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/chester.js': ('chester.js', 'text/javascript; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
