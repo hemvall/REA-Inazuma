@@ -1,6 +1,8 @@
 const STORAGE = 'inazuma-fc:v1';
 const STARTING_CREDITS = 3800;
 const SCOUT_RESALE_CREDITS = 50;
+const FORMATION = '4–4–2';
+const rarityRank = ['Scout', 'Bronze', 'Argent', 'Or', 'Légendaire'];
 const slots = ['AT', 'AT', 'MIL', 'MIL', 'MIL', 'MIL', 'DEF', 'DEF', 'DEF', 'DEF', 'GB',
   'Banc', 'Banc', 'Banc', 'Banc', 'Banc'];
 const scouts = [
@@ -73,6 +75,7 @@ const sale = $('club-sale');
 const formatter = new Intl.NumberFormat('fr-FR');
 let activeSlot = null;
 let sellingId = null;
+let analysisController;
 
 function ownedPlayers(state) {
   return [...state.recruits, ...scoutIds.filter(id => !state.soldScouts.includes(id))];
@@ -241,7 +244,89 @@ function confirmSale(player) {
   sale.showModal();
 }
 
+function coachOptions() {
+  const starters = state.lineup.slice(0, 11);
+  const reserves = ownedPlayers(state).filter(id => !starters.includes(id)).map(id => players.get(id));
+  const options = [];
+  for (const [index, id] of starters.entries()) {
+    const incumbent = players.get(id);
+    const role = slots[index];
+    const rank = player => rarityRank.indexOf(player.rarity);
+    const priority = !incumbent ? 30 : incumbent.position !== role ? 20 : 0;
+    const eligible = player => player.position === role && (priority || rank(player) > rank(incumbent));
+    const target = `${slotName(index)} (${incumbent ? playerName(incumbent) : 'libre'})`;
+    const reserve = reserves.filter(eligible).sort((a, b) => rank(b) - rank(a))[0];
+    if (reserve) {
+      options.push({index, priority: priority + 10 + rank(reserve),
+        title: `Titulariser ${playerName(reserve)} au ${target}`,
+        reason: priority ? `Ce changement couvre le poste ${role} avec l’effectif actuel.`
+          : `Ce changement améliore la rareté au poste ${role}, sans dépenser de crédits.`});
+    }
+    const recruit = recruits.filter(player => eligible(player) && !state.recruits.includes(player.id)
+      && player.price <= state.credits && (!reserve || rank(player) > rank(reserve)))
+      .sort((a, b) => a.price - b.price)[0];
+    if (recruit) {
+      options.push({index, priority: priority + rank(recruit),
+        title: `Recruter ${playerName(recruit)} via Célia pour le ${target} · ${formatter.format(recruit.price)} crédits`,
+        reason: `Cette recrue ${recruit.rarity} joue au poste ${role} et entre dans ton budget.`});
+    }
+  }
+  return options.sort((a, b) => b.priority - a.priority).slice(0, 12);
+}
+
+function resetCoachAnalysis() {
+  analysisController?.abort();
+  $('analyse-club').disabled = false;
+  $('club-coach-status').textContent = '';
+  $('club-recommendations').replaceChildren();
+}
+
+async function analyseTeam() {
+  if (!state) return;
+  const options = coachOptions();
+  const status = $('club-coach-status');
+  const list = $('club-recommendations');
+  list.replaceChildren();
+  if (!options.length) {
+    status.textContent = 'Aucun changement adapté aux postes et au budget actuels.';
+    return;
+  }
+  const controller = new AbortController();
+  analysisController = controller;
+  $('analyse-club').disabled = true;
+  status.textContent = 'Lina étudie ton effectif…';
+  let recommendations;
+  try {
+    const response = await fetch('/api/analyse_club', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, signal: controller.signal,
+      body: JSON.stringify({credits: state.credits, formation: FORMATION,
+        candidates: options.map(option => `${option.title}. ${option.reason}`)}),
+    });
+    if (!response.ok) throw new Error('Analyse locale indisponible');
+    const result = await response.json();
+    recommendations = result.recommendations.map(index => options[index]);
+    if (!recommendations.length || recommendations.some(option => !option)) throw new Error('Analyse incomplète');
+    status.textContent = 'Priorités de Lina';
+  } catch {
+    if (controller.signal.aborted) return;
+    recommendations = options;
+    status.textContent = 'IA locale indisponible. Suggestions basées sur les postes, les raretés et ton budget.';
+  }
+  const seen = new Set();
+  for (const option of recommendations) {
+    const role = slots[option.index];
+    if (seen.has(role)) continue;
+    seen.add(role);
+    const row = node('li');
+    row.append(node('strong', '', option.title), node('p', '', option.reason));
+    list.append(row);
+    if (seen.size === 3) break;
+  }
+  $('analyse-club').disabled = false;
+}
+
 function render() {
+  resetCoachAnalysis();
   $('balance').textContent = formatter.format(state.credits);
   $('pitch').replaceChildren(...state.lineup.slice(0, 11).map(squadSlot));
   $('bench').replaceChildren(...state.lineup.slice(11).map((id, index) => squadSlot(id, index + 11)));
@@ -280,6 +365,7 @@ for (const button of document.querySelectorAll('[data-view]')) {
   };
 }
 const openClub = $('open-club');
+$('analyse-club').onclick = analyseTeam;
 openClub.onclick = () => club.showModal();
 club.addEventListener('close', () => openClub.focus());
 $('sale-confirm').onclick = async () => {

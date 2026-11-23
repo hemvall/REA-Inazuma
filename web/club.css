@@ -3,6 +3,11 @@
   .recruiter { margin: 16px 0 20px; }
   .recruiter .coach-dialogue { padding: 12px; margin-bottom: 16px; }
   .recruiter p { font-size: 14px; line-height: 1.55; }
+  .coach-status:not(:empty) { margin-top: 14px; color: var(--muted); }
+  .coach-recommendations:empty { display: none; }
+  .coach-recommendations { padding-left: 23px; margin-bottom: 0; }
+  .coach-recommendations li { padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .coach-recommendations li::marker { color: var(--yellow); }
   .catalogue-filter label { margin: 0; }
   .catalogue-filter select { width: auto; }
 

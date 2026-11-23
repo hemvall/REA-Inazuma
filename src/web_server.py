@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 from arena_service import Arena
 from chester import generate_reaction
+from club_coach import analyse_club
 from local_address import HOST, PORT, URL
 
 ARENA = Arena(local_only=True, recruit_in_club=True)
@@ -137,7 +138,12 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(arguments, dict):
                 raise ValueError('Expected object')
             operation = self.path[5:]
-            result = chester_reaction(**arguments) if operation == 'chester_reaction' else ARENA.call(operation, arguments)
+            if operation == 'chester_reaction':
+                result = chester_reaction(**arguments)
+            elif operation == 'analyse_club':
+                result = analyse_club(**arguments)
+            else:
+                result = ARENA.call(operation, arguments)
             self.reply(200, result)
         except (ValueError, TypeError) as error:
             self.reply(400, {'error': str(error)})
