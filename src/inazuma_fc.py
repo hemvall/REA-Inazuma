@@ -11,19 +11,22 @@ UNITS = {
     **{f'scout-{i}': unit for i, unit in enumerate(SCOUTS, 1)},
     'willy': 12, 'steve': 6, 'tod': 5, 'max': 9, 'darren': 2381, 'jim': 4,
     'tim': 7, 'sam-kincaid': 8, 'peter-drent': 22, 'nathan-jones': 41,
-    'chuck-dollman': 53, 'hekyll': 1122, 'erik': 1091, 'kevin': 11, 'jack': 3,
+    'chuck-dollman': 53, 'erik': 1091, 'kevin': 11, 'jack': 3,
     'celia': 14, 'bobby': 1092, 'daniel-hatch': 29, 'rob-crombie': 52,
     'bruce-monkey': 68, 'neil-turner': 91, 'mark': 1, 'axel': 10, 'joseph-king': 21,
     'david-samford': 31, 'hurley': 2404, 'caleb': 2370, 'shawn': 2329,
-    'aiden-child': 1307, 'nathan': 2430, 'xene': 2151, 'jude': 30,
-    'byron': 190, 'torch': 2090, 'gazelle': 2089, 'xavier-foster': 1308,
+    'nathan': 2430, 'xene': 2151, 'jude': 30,
+    'byron': 190, 'torch': 2090, 'gazelle': 2089,
 }
-# Players without a distinct entry in this ROM use a named copy of a native template.
+# Missing characters and story-only entries use named copies of playable units.
 VARIANTS = {
+    'hekyll': (42, 'Hekyll Jyde', 'Jyde'),
     'archer': (2404, 'Archer Hawkins', 'Archer'),
     'austin': (11, 'Austin Hobbes', 'Austin'),
-    'xavier-schiller': (1308, 'Xavier Schiller', 'Xavier'),
-    'aiden-adult': (1307, 'Aiden Froste (adulte)', 'Aiden adulte'),
+    'xavier-foster': (2151, 'Xavier Foster', 'Xavier'),
+    'xavier-schiller': (2151, 'Xavier Schiller', 'Xavier'),
+    'aiden-child': (2337, 'Aiden Froste (enfant)', 'Aiden enfant'),
+    'aiden-adult': (2329, 'Aiden Froste (adulte)', 'Aiden adulte'),
 }
 # The game's team table lists the keeper first, followed by defence, midfield and attack.
 NATIVE_ORDER = (10, 6, 7, 8, 9, 2, 3, 4, 5, 0, 1, 11, 12, 13, 14, 15)
