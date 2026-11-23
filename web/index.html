@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d42"><title>InazumIA — À toi de jouer !</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23ffcf35' d='M18 0 4 19h10l-2 13 16-21H17z'/%3E%3C/svg%3E"><link rel="stylesheet" href="/style.css"></head>
+<body>
+<svg class="sprite-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<symbol id="icon-bolt" viewBox="0 0 32 32"><path fill="currentColor" d="M18 1h8l-8 11h10L10 31l4-14H5z"/></symbol>
+<symbol id="icon-ball" viewBox="0 0 32 32"><path fill="#edf6ff" d="M10 2h12v3h5v5h3v12h-3v5h-5v3H10v-3H5v-5H2V10h3V5h5z"/><path fill="#172b50" d="M12 10h8v3h3v7h-6v3h-7v-5H7v-5h5zM10 2h5v4h-5zM24 6h3v6h-4V9h-3V6zM26 21h4v3h-3v3h-6v-4h5zM5 22h5v5H5zM2 11h4v8H2z"/></symbol>
+</svg>
+<a class="skip-link" href="#matchArena">Aller au terrain</a>
+<header class="masthead"><a class="brand" href="/" aria-label="InazumIA, salon de match"><span class="brand-mark"><svg><use href="#icon-bolt"/></svg></span><span class="brand-word">INAZUM<span>IA</span><small>Le football a une nouvelle énergie</small></span></a></header>
+<main>
+<form id="manual" class="matchup" aria-label="Choisir les équipes"><div class="team-tile home-team"><div class="team-emblem"><img id="homeEmblem" src="/assets/team-occult.png" alt=""></div><div class="team-info"><label for="home">Équipe à domicile</label><select id="home"><button type="button"><selectedcontent></selectedcontent></button><option value="3"><img src="/assets/team-occult.png" alt="" width="30" height="30">Occulte</option><option value="10"><img src="/assets/team-zeus.png" alt="" width="30" height="30">Zeus</option><option value="1"><img src="/assets/team-raimon.png" alt="" width="30" height="30">Raimon</option><option value="2"><img src="/assets/team-royal.png" alt="" width="30" height="30">Royal Academy</option><option value="41"><img src="/assets/team-dark-emperors.png" alt="" width="30" height="30">Empereurs noirs</option><option value="33"><img src="/assets/team-genesis.png" alt="" width="30" height="30">Genesis</option></select><span id="homeCaptain">Capitaine · Talisman</span></div><img class="captain-portrait" id="homePortrait" src="/assets/captain-talisman.png" alt="" width="68" height="68"><span class="team-code" id="homeCode" aria-hidden="true">OCC</span></div><div class="versus"><span>Match amical</span><strong>vs</strong><button id="swapTeams" type="button" aria-label="Inverser les équipes" title="Inverser les équipes"><span aria-hidden="true">⇄</span></button></div><div class="team-tile away-team"><span class="team-code" id="awayCode" aria-hidden="true">ZEU</span><img class="captain-portrait" id="awayPortrait" src="/assets/captain-aphrodite.png" alt="" width="68" height="68"><div class="team-info"><label for="away">Équipe à l’extérieur</label><select id="away"><button type="button"><selectedcontent></selectedcontent></button><option value="10"><img src="/assets/team-zeus.png" alt="" width="30" height="30">Zeus</option><option value="3"><img src="/assets/team-occult.png" alt="" width="30" height="30">Occulte</option><option value="1"><img src="/assets/team-raimon.png" alt="" width="30" height="30">Raimon</option><option value="2"><img src="/assets/team-royal.png" alt="" width="30" height="30">Royal Academy</option><option value="41"><img src="/assets/team-dark-emperors.png" alt="" width="30" height="30">Empereurs noirs</option><option value="33"><img src="/assets/team-genesis.png" alt="" width="30" height="30">Genesis</option></select><span id="awayCaptain">Capitaine · Aphrodite</span></div><div class="team-emblem"><img id="awayEmblem" src="/assets/team-zeus.png" alt=""></div></div></form>
+<div class="game-layout">
+<aside class="setup-column" id="matchSetup" aria-label="Avant le match"><section class="pixel-panel preparation"><div class="panel-body"><p class="panel-kicker">Le vestiaire</p><button id="manualPrepare" form="manual" class="button-primary prepare-button"><svg><use href="#icon-bolt"/></svg> Préparer le match</button><button id="enterClub" type="button" class="button-outline"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M4 2h16v20h-2V4H6v18H4zm4 4 8-2v18l-8 2zm4 7v2h2v-2z" fill-rule="evenodd"/></svg> Entrer dans le local</button><div class="divider-label"><span>Ou passe par le staff</span></div><form id="chat"><textarea id="prompt" aria-label="Ta consigne au coach" rows="3" maxlength="2000" placeholder="Fais s’affronter Occulte et Zeus" required></textarea><button id="send" class="button-outline">Envoyer au coach</button></form></div></section><section class="pixel-panel match-brief" id="fixture" hidden><div class="panel-heading"><span class="step-number">✓</span><h2>Feuille de match</h2></div><div class="panel-body"><h3 id="fixtureTitle"></h3><p id="captains" class="muted"></p><details><summary>Dialogue des capitaines</summary><ol id="dialogues"></ol></details></div></section></aside>
+<section class="pixel-panel arena" id="matchArena" aria-label="Terrain"><div class="stadium-stage" id="stadiumStage"><div class="stage-corner top-left" aria-hidden="true"></div><div class="stage-corner bottom-right" aria-hidden="true"></div><div class="screen" id="gameScreen"><div class="ds-shell" id="dsShell" hidden>
+<div class="ds-lid" aria-hidden="true"></div><div class="ds-base" aria-hidden="true"></div>
+<div class="ds-speaker ds-speaker-left" aria-hidden="true"></div><div class="ds-speaker ds-speaker-right" aria-hidden="true"></div>
+<div class="ds-top"><img id="topFrame" alt="Écran supérieur Nintendo DS" draggable="false"></div>
+<div class="ds-hinge" aria-hidden="true"><span></span></div>
+<div class="ds-bottom"><img id="frame" alt="Écran tactile Nintendo DS : clique ou glisse pour jouer" hidden draggable="false"></div>
+<div id="keys" class="ds-keys" role="group" aria-label="Commandes de la console">
+  <div class="ds-cross">
+    <button type="button" data-key="UP" aria-label="Haut" disabled>▴</button>
+    <button type="button" data-key="LEFT" aria-label="Gauche" disabled>◂</button>
+    <button type="button" data-key="RIGHT" aria-label="Droite" disabled>▸</button>
+    <button type="button" data-key="DOWN" aria-label="Bas" disabled>▾</button>
+  </div>
+  <div class="ds-buttons">
+    <button type="button" data-key="X" disabled>X</button>
+    <button type="button" data-key="Y" disabled>Y</button>
+    <button type="button" data-key="A" disabled>A</button>
+    <button type="button" data-key="B" disabled>B</button>
+  </div>
+  <button type="button" class="ds-start" data-key="START" disabled>START</button>
+</div>
+<span class="ds-brand" aria-hidden="true">Nintendo DS</span><span class="ds-led" aria-hidden="true"></span>
+</div><div id="empty" class="arena-empty"><span class="empty-ball"><svg><use href="#icon-ball"/></svg></span><span class="empty-tag">Coup d’envoi imminent</span><span class="empty-hint"><span>01</span> Préparer <b>›</b> <span>02</span> Jouer</span></div></div>
+  <button id="arenaFullscreen" type="button" aria-label="Plein écran" title="Plein écran" hidden>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>
+      <path class="collapse-icon" d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/>
+    </svg>
+  </button>
+</div>
+<section class="chester-dialogue" aria-labelledby="chesterName">
+  <div class="chester-speaker">
+    <img class="chester-sprite" src="/assets/chester.png" alt="" width="161" height="180">
+    <h2 id="chesterName">Chester Horse Junior</h2>
+  </div>
+  <div class="chester-box">
+    <p id="chesterLine" class="chester-line" aria-live="polite" aria-atomic="true"></p>
+    <p id="chesterHint" class="chester-hint">Active le commentaire vocal pour entendre Chester.</p>
+    <p id="chesterTool" class="chester-hint" hidden></p>
+  </div>
+</section>
+<div class="arena-controls"><div class="arena-actions">
+  <button id="start" class="button-primary" hidden>▶ Lancer le dialogue</button>
+  <button id="play" class="button-primary" hidden>Continuer</button>
+  <button id="stop" class="button-primary" hidden>Reprendre la main</button>
+  <details id="arenaOptions" hidden>
+    <summary>Options</summary>
+    <div class="arena-option-list">
+      <div id="pilotControls" hidden>
+        <select id="pilotMode" aria-label="Mode du pilote">
+          <option value="ai">Pilote IA</option>
+          <option value="deterministic">Pilote déterministe</option>
+        </select>
+        <button id="delegate">L’agent joue pour moi</button>
+      </div>
+      <button id="reset">Nouvelle rencontre</button>
+      <button id="close">Fermer</button>
+    </div>
+  </details>
+</div><fieldset class="chester-controls">
+  <legend>Réglages du commentaire</legend>
+  <div class="chester-options">
+    <label>Style <select id="chesterMode"><option value="chester">Chester</option><option value="neuille">Neuille</option></select></label>
+    <label><input id="chesterEnabled" type="checkbox"> Commentaire vocal</label>
+    <label><input id="chesterCaptions" type="checkbox" checked> Sous-titres</label>
+    <label class="chester-volume">Volume <input id="chesterVolume" type="range" min="0" max="1" step="0.05" value="0.8" disabled></label>
+  </div>
+  <p id="chesterStatus" class="chester-status" role="status"></p>
+</fieldset><div class="match-status"><span class="status-pointer" aria-hidden="true">▶</span><p id="job" role="status" aria-live="polite">Choisis tes équipes pour entrer sur le terrain.</p></div><p id="error" role="alert"></p></div></section>
+<aside class="coach-column" id="coachPanel" aria-label="Ton staff IA"><section class="pixel-panel coach"><div class="panel-body"><div class="coach-intro"><div class="coach-avatar" aria-hidden="true"><svg><use href="#icon-bolt"/></svg></div><div><h3>Le coach</h3></div></div><div class="coach-dialogue"><div class="speaker">Staff <span>● ● ●</span></div><div id="messages" role="log" aria-live="polite"><p class="answer">À toi de choisir l’affiche ! Je prépare les équipes et le dialogue. Ensuite, à nous le terrain.</p></div></div><p class="note">Démarre le serveur LM Studio avec le modèle qwen/qwen3.5-9b.</p></div></section></aside>
+</div>
+</main><script type="module" src="/app.js"></script></body></html>

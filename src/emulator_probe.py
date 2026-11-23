@@ -38,7 +38,10 @@ def png(path, width, height, pixels, pitch, pixel_format):
     for y in range(height):
         raw = pixels[y*pitch:(y+1)*pitch]
         if pixel_format == 1:
-            rgb = bytes(component for x in range(width) for component in (raw[x*4+2], raw[x*4+1], raw[x*4]))
+            # Slice in C instead of looping over every pixel in Python.
+            raw = raw[:width*4]
+            rgb = bytearray(width*3)
+            rgb[0::3], rgb[1::3], rgb[2::3] = raw[2::4], raw[1::4], raw[0::4]
         else:
             values = struct.unpack_from('<'+'H'*width, raw)
             if pixel_format == 2:
@@ -50,7 +53,7 @@ def png(path, width, height, pixels, pitch, pixel_format):
     def chunk(kind, data):
         return struct.pack('>I', len(data))+kind+data+struct.pack('>I', zlib.crc32(kind+data)&0xFFFFFFFF)
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))+chunk(b'IDAT', zlib.compress(b''.join(rows)))+chunk(b'IEND', b''))
+    Path(path).write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))+chunk(b'IDAT', zlib.compress(b''.join(rows), 1))+chunk(b'IEND', b''))
 
 
 class Emulator:

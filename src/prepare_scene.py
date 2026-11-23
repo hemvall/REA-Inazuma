@@ -16,6 +16,11 @@ BASE = 'data_iz/script/fr/'
 
 
 def prepare(rom, config):
+    if config.get('arena'):
+        # Arena callbacks use a host-controlled roster and return to their own event.
+        from prepare_arena_scene import prepare as prepare_arena_scene
+        return prepare_arena_scene(rom, config)
+
     if sha(rom.data) != config['rom_sha256']:
         raise ValueError('Unsupported ROM')
     resources = {}
@@ -184,6 +189,12 @@ def prepare(rom, config):
     event.end(begin)
 
     generated = {config['entry_key']: event.encode()}
+    if 'friendly_event_key' in config:
+        from arena_bridge import catalogue
+        from native_club_scene import event_pair
+        key = config['friendly_event_key']
+        generated[key] = event_pair(*original_pair(key), config,
+                                    {team['id']: team for team in catalogue()})
     # Disconnect all original chapter dispatchers, including old-save chapter loads.
     for chapter_no in range(1, 12):
         generated[21000000+chapter_no*10000] = chapter_pair

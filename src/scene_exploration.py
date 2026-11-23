@@ -28,7 +28,8 @@ def exploration_chapter(ssd, sst, config):
     clear = rows[2052]
     if clear.opcode != 0x7001 or clear.types != [6,1] or clear.args != [0x10009,0]:
         raise ValueError('Unexpected native regular-challenge restoration')
-    clear.opcode, clear.types, clear.args = 0x3002, [1], [0]
+    if not config.get('native_club'):
+        clear.opcode, clear.types, clear.args = 0x3002, [1], [0]
     start = rows[2662]
     if start.opcode != 0x4019 or records[start.args[0]]['text'] != b'mr07i02':
         raise ValueError('Unexpected native new-game map load')
@@ -39,8 +40,19 @@ def exploration_chapter(ssd, sst, config):
     explore = config['exploration']
     on_map = lambda: expression(0x7011, expression(0x4027), string(config['map']))
     begin = p.function(0x1017, on_map())
-    p.emit(0x308C, explore['object_unit'], explore['object_group'],
-           *(fixed(v) for v in explore['object_position']))
+    if config.get('club'):
+        p.emit(0x3058, explore['object_unit'], explore['object_group'])
+        p.emit(0x305A, explore['object_unit'], explore['object_group'],
+               *(fixed(v) for v in explore['object_position']))
+        p.emit(0x305C, explore['object_unit'], explore['object_group'], fixed(90))
+    else:
+        p.emit(0x308C, explore['object_unit'], explore['object_group'],
+               *(fixed(v) for v in explore['object_position']))
+    if 'seymour' in config:
+        npc = config['seymour']
+        p.emit(0x3058, npc['unit'], npc['group'])
+        p.emit(0x305A, npc['unit'], npc['group'], *(fixed(v) for v in npc['position']))
+        p.emit(0x305C, npc['unit'], npc['group'], fixed(90))
     p.emit(0x6008, expression(0x7003, variable(0x10005), 10100))
     branch = p.emit(0x6001, 1, 0)
     p.assign(0x10005, config['standalone_story_flag'])
@@ -58,7 +70,7 @@ def exploration_chapter(ssd, sst, config):
     result_ready = expression(0x700F, on_map(),
         expression(0x700E, expression(0x7003,variable(0x10009),1),
                            expression(0x7003,variable(0x10009),3)))
-    begin=p.function(0x1013,result_ready)
+    begin=p.function(0x1013,0 if config.get('native_club') else result_ready)
     p.emit(0x6008,expression(0x7003,variable(0x10009),1))
     branch=p.emit(0x6001,1,0)
     p.assign(0x10005,config['post_match_victory_flag'])
@@ -79,4 +91,12 @@ def exploration_chapter(ssd, sst, config):
     begin = p.function(0x1014, guard)
     p.emit(0x2010, config['entry_key'])
     p.end(begin)
+    if 'seymour' in config:
+        guard = expression(0x700F, on_map(),
+            expression(0x700F,
+                expression(0x7003, expression(0x4015), npc['unit']),
+                expression(0x7003, expression(0x405F), npc['group'])))
+        begin = p.function(0x1014, guard)
+        p.emit(0x2010, config['friendly_event_key'])
+        p.end(begin)
     return p.encode()

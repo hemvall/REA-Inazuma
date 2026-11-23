@@ -1,4 +1,57 @@
-# Inazuma Eleven 2: Le Defi Mystere
+# InazumIA
+
+**Compose une affiche, fais parler les capitaines et joue le match dans le moteur Nintendo DS.**
+
+InazumIA est un projet de fans autour d’*Inazuma Eleven 2 : Tempête de Glace*. Son salon web affiche les deux écrans de la DS et permet de préparer un match, de le jouer au clavier ou au tactile, puis de revenir au salon pour enchaîner.
+
+[Prise en main](#prise-en-main) · [Architecture](#architecture) · [Documentation](#documentation)
+
+## Du vestiaire au terrain
+
+> Fais s’affronter Occulte et Zeus.
+
+- **Prépare la rencontre.** Choisis les équipes ou donne une consigne au coach. L’organisateur peut écrire six répliques de capitaines qui s’affichent dans le jeu avant le coup d’envoi. La préparation manuelle utilise un dialogue prédéfini.
+- **Joue ou délègue.** Prends les commandes au clavier ou au tactile. Essaie le pilote déterministe ou le pilote IA, puis reprends la main à tout moment. Les pilotes sont expérimentaux et peuvent s’arrêter avant la fin du match.
+- **Enchaîne les affiches.** Le bouton **Nouvelle rencontre** restaure le checkpoint initial. Les équipes et le dialogue suivants sont préparés en mémoire dans la même session.
+- **Passe voir Hillman.** Dans le navigateur, **Entrer dans le local** te laisse rejoindre Hillman. Parle-lui pour ouvrir sa route native et ses deux matchs amicaux. [Matchs amicaux du club](CLUB_FRIENDLIES.md)
+
+## Prise en main
+
+Il te faut **Windows**, **Python 3.11+**, ta ROM française de *Tempête de Glace* (**BEBF, révision 0**) et le cœur **melonDS Libretro** validé par le projet. Les empreintes SHA-256 des deux fichiers figurent dans les [prérequis de livraison](DELIVERY.md#prérequis).
+
+```powershell
+git clone https://github.com/hemvall/REA-Inazuma.git
+cd REA-Inazuma
+```
+
+1. Place ta ROM dans `rom/original.nds` et le cœur validé dans `local/tools/melonds-core/melonds_libretro.dll`.
+2. Ouvre **Lancer InazumIA.cmd**. Le lanceur prépare l’arène et ouvre le salon sur `http://127.0.0.1:18765`.
+3. Sélectionne **Occulte** et **Zeus**, clique sur **Préparer le match**, puis sur **Lancer le dialogue**.
+
+Le parcours manuel fonctionne sans modèle. Le coach et le pilote IA utilisent le moteur configuré dans le salon. Le client MCP est facultatif. [Configurer LM Studio, Codex CLI ou MCP](WEB_AND_MCP.md)
+
+## Architecture
+
+| Composant | Rôle |
+| --- | --- |
+| [Salon web](web/) | Sélection des équipes, affichage des deux écrans et commandes DS. |
+| [Session et émulation](src/game_session.py) | Worker isolé, entrées DS, captures et checkpoints. |
+| [Service d’arène](src/arena_service.py) | Préparation des rencontres en mémoire, dialogue des capitaines et délégation du jeu. |
+| [Serveur MCP](src/mcp_server.py) | Accès à la même session depuis un client compatible. |
+
+Le pilote s’appuie sur l’état du match lu en mémoire et sur la reconnaissance des menus. Le worker traduit les actions reconnues en entrées DS. Le lanceur construit l’arène à partir de la ROM originale lors de la préparation initiale.
+
+## Documentation
+
+- [Salon web et MCP](WEB_AND_MCP.md) — commandes, configuration des modèles et protocole.
+- [Livraison](DELIVERY.md) — versions attendues, empreintes et construction.
+- [Vérifications](DELIVERY_VERIFICATION.md) — essais réalisés et limites observées.
+- [Défi Mystère](RUN_SCENARIO.md) — scénario historique jouable jusqu’au match. Le retour automatique après le match reste bloqué. [Vérification du scénario](RUNTIME_VERIFICATION.md)
+
+Les ROM, sauvegardes, ressources extraites et binaires d’émulation restent locaux. InazumIA est un projet non officiel.
+
+<details>
+<summary>Notes techniques du profil historique Défi Mystère</summary>
 
 A local modification of the user-supplied French Tempete de Glace Nintendo DS
 ROM. New Game now starts in the real, sunny Raimon **Club de foot** map,
@@ -21,7 +74,7 @@ into the scene. **Their automatic runtime entry is still blocked after the
 match**: the diagnostic native return currently leaves the lower screen black.
 This build is not accepted as a complete playable episode.
 
-**Run:** double-click `Jouer au Defi Mystere.cmd`, choose **Nouvelle partie**,
+**Run:** double-click `Ouvrir le Club dans melonDS.cmd`, choose **Nouvelle partie**,
 enter a save-file name and confirm **OK**. Use a fresh game. Skip the original
 opening movie with A or Start, then advance the original introduction notices.
 See [RUN_SCENARIO.md](RUN_SCENARIO.md) for controls and
@@ -41,7 +94,7 @@ The Downloads source remains unchanged.
 - `story/standalone_scene.json`: authored French text and measured character IDs.
 - `story/five_minute_scenario.md`: readable French script with stage directions.
 - `TEAM_INITIALIZATION.md`: native roster/level evidence and memory layout.
-- `Jouer au Defi Mystere.cmd`: portable melonDS launcher.
+- `Ouvrir le Club dans melonDS.cmd`: portable melonDS launcher.
 
 ROMs, extracted resources, private manifests, emulator states and downloaded
 tools are ignored by Git. Do not commit or redistribute copyrighted ROM assets.
@@ -153,3 +206,5 @@ REA 6.9.0 was separately installed for Codex with the user's approval. Its MCP
 handshake exposed 255 tools; the current chat needs a client reload to discover
 them. No optional native-analysis engine was installed. REA is not a dependency
 of these build scripts.
+
+</details>

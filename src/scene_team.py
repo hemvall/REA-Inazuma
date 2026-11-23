@@ -17,6 +17,21 @@ BASE_RECORDS = (1, 3, 28, 157, 1589)
 NAMES = ('Mark Evans', 'Jack Wallside', 'Daniel Hatch', 'Byron Love', 'Nathan Swift')
 
 
+def emit_dynamic_removals(program):
+    """132 bounded slots cover the entire measured native player database.
+
+    The host fills these with owned units before the event is allowed to run;
+    empty slots are guarded, so reserve players cannot leak into a friendly.
+    """
+    from ssd import expression
+    for index in range(132):
+        placeholder = 0x400000 + index
+        program.emit(0x6008, expression(0x7002, expression(0x7003, placeholder, 0)))
+        branch = program.emit(0x6001, 1, 0)
+        program.emit(0x403F, placeholder)
+        program.end(branch)
+
+
 def isolate_first_chapter_roster(ssd):
     """Disable the original chapter's explicit twelve-player rebuild.
 
