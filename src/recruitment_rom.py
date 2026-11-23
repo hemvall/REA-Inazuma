@@ -61,6 +61,10 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
     imported = source_players() if any('souls_unit' in draft for draft in drafts) else {}
     if imported and not arena:
         raise ValueError('Le joueur personnalisé est réservé à Inazuma FC.')
+    if imported:
+        field_hashes = next(iter(imported.values()))['field_hashes']
+        if any(sha(rom.data[slice(*rom.files[path])]) != digest for path, digest in field_hashes.items()):
+            raise ValueError('Cette version de Souls 2 utilise des archives de sprites de terrain différentes.')
     edits = []
     imported_graphics = {}
     for index, draft in enumerate(drafts):
@@ -85,6 +89,9 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
             elif path.endswith('unitbase.dat'):
                 if souls:
                     source_base = souls['base']
+                    # Souls 2 Extreme shares the French ROM's field sprite archives.
+                    # Copy the body, head, palette and skin references from its player row.
+                    after[0x46:0x52] = source_base[0x46:0x52]
                     for field in (0x40, 0x52, 0x54, 0x55, 0x5A):
                         after[field] = source_base[field]
                     struct.pack_into('<H', after, 0x44, model)

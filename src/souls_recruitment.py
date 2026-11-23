@@ -7,7 +7,7 @@ import struct
 
 from arena_graphics import FACE, HEAD_PACKS
 from ie2_formats import decompress_lz10, unpack_index
-from nds import read_rom
+from nds import read_rom, sha
 
 
 # Curated entries with a playable record and all five graphic resources.
@@ -17,6 +17,8 @@ PLAYERS = {
     633: 'Victor Blade', 714: 'Arion Sherwind', 2186: 'Arion Sherwind',
 }
 GRAPHIC_PACKS = (FACE, *(f'data_iz/model/char/{name}' for name in HEAD_PACKS))
+FIELD_FILES = tuple(f'data_iz/spr/char/{name}.{extension}'
+                    for name in ('pcb', 'pch', 'ppb', 'pph') for extension in ('pkh', 'pkb'))
 
 
 def local_source():
@@ -69,6 +71,9 @@ def read_players(path, mtime, size):
         }
     if results.keys() != PLAYERS.keys():
         raise ValueError('Des joueurs du catalogue Souls 2 sont absents de cette ROM.')
+    field_hashes = {path: sha(resource(path)) for path in FIELD_FILES}
+    for player in results.values():
+        player['field_hashes'] = field_hashes
     for path in GRAPHIC_PACKS:
         header, blob = (resource(path + suffix) for suffix in ('.pkh', '.pkb'))
         entries = {key: (offset, length) for key, offset, length in unpack_index(header, blob)}
