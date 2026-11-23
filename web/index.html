@@ -6,7 +6,7 @@
 <symbol id="icon-ball" viewBox="0 0 32 32"><path fill="#edf6ff" d="M10 2h12v3h5v5h3v12h-3v5h-5v3H10v-3H5v-5H2V10h3V5h5z"/><path fill="#172b50" d="M12 10h8v3h3v7h-6v3h-7v-5H7v-5h5zM10 2h5v4h-5zM24 6h3v6h-4V9h-3V6zM26 21h4v3h-3v3h-6v-4h5zM5 22h5v5H5zM2 11h4v8H2z"/></symbol>
 </svg>
 <a class="skip-link" href="#matchArena">Aller au terrain</a>
-<header class="masthead"><a class="brand" href="/" aria-label="InazumIA, salon de match"><span class="brand-mark"><svg><use href="#icon-bolt"/></svg></span><span class="brand-word">INAZUM<span>IA</span><small>Le football a une nouvelle énergie</small></span></a><button type="button" class="club-entry" id="open-club" aria-haspopup="dialog" aria-controls="club-window">Inazuma FC</button></header>
+<header class="masthead"><a class="brand" href="/" aria-label="InazumIA, salon de match"><span class="brand-mark"><svg><use href="#icon-bolt"/></svg></span><span class="brand-word">INAZUM<span>IA</span><small>Le football a une nouvelle énergie</small></span></a></header>
 <main>
 <form id="manual" class="matchup" aria-label="Choisir les équipes"><div class="team-tile home-team"><div class="team-emblem"><img id="homeEmblem" src="/assets/team-occult.png" alt=""></div><div class="team-info"><label for="home">Équipe à domicile</label><select id="home"><button type="button"><selectedcontent></selectedcontent></button><option value="3"><img src="/assets/team-occult.png" alt="" width="30" height="30">Occulte</option><option value="10"><img src="/assets/team-zeus.png" alt="" width="30" height="30">Zeus</option><option value="1"><img src="/assets/team-raimon.png" alt="" width="30" height="30">Raimon</option><option value="2"><img src="/assets/team-royal.png" alt="" width="30" height="30">Royal Academy</option><option value="41"><img src="/assets/team-dark-emperors.png" alt="" width="30" height="30">Empereurs noirs</option><option value="33"><img src="/assets/team-genesis.png" alt="" width="30" height="30">Genesis</option><option value="1000"><img src="/assets/team-inazuma-fc.png" alt="" width="30" height="30">Inazuma FC</option></select><span id="homeCaptain">Capitaine · Talisman</span></div><img class="captain-portrait" id="homePortrait" src="/assets/captain-talisman.png" alt="" width="68" height="68"><span class="team-code" id="homeCode" aria-hidden="true">OCC</span></div><div class="versus"><span>Match amical</span><strong>vs</strong><button id="swapTeams" type="button" aria-label="Inverser les équipes" title="Inverser les équipes"><span aria-hidden="true">⇄</span></button></div><div class="team-tile away-team"><span class="team-code" id="awayCode" aria-hidden="true">ZEU</span><img class="captain-portrait" id="awayPortrait" src="/assets/captain-aphrodite.png" alt="" width="68" height="68"><div class="team-info"><label for="away">Équipe à l’extérieur</label><select id="away"><button type="button"><selectedcontent></selectedcontent></button><option value="10"><img src="/assets/team-zeus.png" alt="" width="30" height="30">Zeus</option><option value="3"><img src="/assets/team-occult.png" alt="" width="30" height="30">Occulte</option><option value="1"><img src="/assets/team-raimon.png" alt="" width="30" height="30">Raimon</option><option value="2"><img src="/assets/team-royal.png" alt="" width="30" height="30">Royal Academy</option><option value="41"><img src="/assets/team-dark-emperors.png" alt="" width="30" height="30">Empereurs noirs</option><option value="33"><img src="/assets/team-genesis.png" alt="" width="30" height="30">Genesis</option></select><span id="awayCaptain">Capitaine · Aphrodite</span></div><div class="team-emblem"><img id="awayEmblem" src="/assets/team-zeus.png" alt=""></div></div></form>
 <div class="game-layout">
@@ -82,6 +82,79 @@
   </div>
   <p id="chesterStatus" class="chester-status" role="status"></p>
 </fieldset><div class="match-status"><span class="status-pointer" aria-hidden="true">▶</span><p id="job" role="status" aria-live="polite">Choisis tes équipes pour entrer sur le terrain.</p></div><p id="error" role="alert"></p></div></section>
+<div class="club-ui club-workspace" id="club-workspace" hidden>
+  <section id="club-window" class="pixel-panel" aria-labelledby="club-title">
+    <div class="club-close"><button type="button" id="close-club">Retour au match</button></div>
+    <header class="club-heading">
+      <div class="crest" aria-hidden="true"><span>IFC</span><i></i></div>
+      <div>
+        <h2 id="club-title" tabindex="-1">Inazuma FC</h2>
+        <p>Recrute tes joueurs et compose ton onze.</p>
+      </div>
+      <div class="wallet"><span>Crédits du club</span><strong id="balance">–</strong></div>
+    </header>
+    <nav class="club-nav" aria-label="Gestion du club">
+      <button type="button" data-view="lineup" aria-pressed="true">Composition</button>
+      <button type="button" data-view="inventory" aria-pressed="false">Inventaire</button>
+    </nav>
+    <p id="feedback" class="feedback" role="status" hidden></p>
+    <section id="lineup" aria-labelledby="lineup-title">
+      <div class="section-heading">
+        <div><h2 id="lineup-title">Onze titulaire</h2><p>Sélectionne un poste pour changer de joueur.</p></div>
+        <div class="lineup-tools">
+          <span class="formation">4–4–2</span>
+          <button type="button" id="show-lina">Voir les conseils de Lina</button>
+        </div>
+      </div>
+      <div class="squad">
+        <div class="pitch">
+          <div class="pitch-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="pitch-players" id="pitch"></div>
+        </div>
+        <aside class="bench" aria-labelledby="bench-title">
+          <h3 id="bench-title">Remplaçants</h3>
+          <div id="bench"></div>
+        </aside>
+      </div>
+    </section>
+    <dialog id="recruitment-catalogue" class="pixel-panel club-popup" aria-labelledby="catalogue-title">
+        <div class="panel-heading popup-heading"><h2 id="catalogue-title">Joueurs disponibles</h2><form method="dialog"><button type="submit">Fermer</button></form></div>
+        <div class="panel-body">
+          <div class="section-heading catalogue-filter">
+            <label>Rareté
+              <select id="rarity"><option value="">Toutes</option><option>Bronze</option><option>Argent</option><option>Or</option><option>Légendaire</option></select>
+            </label>
+          </div>
+          <p id="catalogue-feedback" class="feedback" role="status" hidden></p>
+          <ul class="player-list" id="shop-list"></ul>
+        </div>
+    </dialog>
+    <section id="inventory" aria-labelledby="inventory-title" hidden>
+      <div class="section-heading"><div><h2 id="inventory-title" tabindex="-1">Inventaire</h2><p>Revends des joueurs pour récupérer des crédits.</p></div><span id="inventory-count" class="formation"></span></div>
+      <p id="inventory-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
+      <ul class="player-list" id="inventory-list"></ul>
+    </section>
+    <p class="storage-note">Le club est sauvegardé dans ce navigateur.</p>
+  </section>
+  <dialog class="pixel-panel club-popup" id="picker" aria-labelledby="picker-title">
+    <div class="dialog-heading">
+      <h2 id="picker-title">Choisir un joueur</h2>
+      <form method="dialog"><button type="submit" aria-label="Fermer">Fermer</button></form>
+    </div>
+    <p id="picker-error" role="alert" hidden></p>
+    <p id="picker-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
+    <ul class="player-list" id="picker-list"></ul>
+  </dialog>
+  <dialog class="pixel-panel club-popup" id="club-sale" aria-labelledby="sale-title" aria-describedby="sale-details">
+    <div class="dialog-heading"><h2 id="sale-title">Confirmer la revente</h2></div>
+    <p id="sale-details"></p>
+    <p id="sale-error" role="alert" hidden></p>
+    <div class="sale-actions">
+      <form method="dialog"><button type="submit" autofocus>Annuler</button></form>
+      <button type="button" class="button-primary" id="sale-confirm">Confirmer la revente</button>
+    </div>
+  </dialog>
+</div>
 <aside class="coach-column" id="recruitmentColumn" aria-label="Recrutement">
 
 <section class="pixel-panel" id="recruitmentPanel" aria-labelledby="recruitmentTitle">
@@ -104,112 +177,25 @@
     </div>
     <button type="button" class="button-outline" id="recruitmentCancel" hidden>Annuler le brouillon</button>
     <p id="recruitmentError" role="alert"></p>
+    <div class="celia-club-actions">
+      <button type="button" class="button-primary prepare-button" id="open-club" aria-expanded="false" aria-controls="club-workspace">Ouvrir Inazuma FC</button>
+      <button type="button" class="button-outline" id="open-recruitment" aria-haspopup="dialog" aria-controls="recruitment-catalogue" hidden>Recruter pour Inazuma FC</button>
+    </div>
   </div>
-</section></aside>
+</section>
+<section class="club-ui pixel-panel" id="club-coach" aria-labelledby="club-coach-title" hidden>
+  <div class="panel-body">
+    <div class="recruitment-heading">
+      <img class="coach-avatar staff-portrait" src="https://dxi4wb638ujep.cloudfront.net/1/k/g/-/g-obvenkgrc.png" alt="" width="43" height="43" referrerpolicy="no-referrer">
+      <div><h2 id="club-coach-title" tabindex="-1">Lina Schiller</h2><p class="coach-role">Conseils tactiques</p></div>
+    </div>
+    <p class="coach-status" id="club-coach-status" role="status"></p>
+    <ol class="coach-recommendations" id="club-recommendations"></ol>
+    <button type="button" id="analyse-club">Actualiser les conseils</button>
+  </div>
+</section>
+</aside>
 </div>
 
 </main>
-<div class="club-ui">
-  <dialog id="club-window" class="pixel-panel club-popup" aria-labelledby="club-title">
-    <form method="dialog" class="club-close"><button type="submit">Fermer</button></form>
-    <header class="club-heading">
-      <div class="crest" aria-hidden="true"><span>IFC</span><i></i></div>
-      <div>
-        <h2 id="club-title">Inazuma FC</h2>
-        <p>Recrute tes joueurs et compose ton onze.</p>
-      </div>
-      <div class="wallet"><span>Crédits du club</span><strong id="balance">–</strong></div>
-    </header>
-    <nav class="club-nav" aria-label="Gestion du club">
-      <button type="button" data-view="lineup" aria-pressed="true">Composition</button>
-      <button type="button" data-view="shop" aria-pressed="false">Célia</button>
-      <button type="button" data-view="inventory" aria-pressed="false">Inventaire</button>
-    </nav>
-    <p id="feedback" class="feedback" role="status" hidden></p>
-    <section id="lineup" aria-labelledby="lineup-title">
-      <div class="section-heading">
-        <div><h2 id="lineup-title">Onze titulaire</h2><p>Sélectionne un poste pour changer de joueur.</p></div>
-        <div class="lineup-tools">
-          <span class="formation">4–4–2</span>
-          <button type="button" id="show-lina">Voir les conseils de Lina</button>
-        </div>
-      </div>
-      <div class="squad">
-        <div class="pitch">
-          <div class="pitch-lines" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="pitch-players" id="pitch"></div>
-        </div>
-        <aside class="bench" aria-labelledby="bench-title">
-          <h3 id="bench-title">Remplaçants</h3>
-          <div id="bench"></div>
-        </aside>
-      </div>
-      <section id="club-coach" aria-labelledby="club-coach-title">
-        <div class="recruiter pixel-panel">
-          <div class="panel-heading"><h2 id="club-coach-title" tabindex="-1">Conseils tactiques</h2></div>
-          <div class="panel-body">
-            <div class="coach-intro">
-              <img class="coach-avatar staff-portrait" src="https://dxi4wb638ujep.cloudfront.net/1/k/g/-/g-obvenkgrc.png" alt="" width="43" height="43" referrerpolicy="no-referrer">
-              <h3>Lina Schiller</h3>
-            </div>
-            <p class="coach-status" id="club-coach-status" role="status"></p>
-            <ol class="coach-recommendations" id="club-recommendations"></ol>
-            <button type="button" id="analyse-club">Actualiser les conseils</button>
-          </div>
-        </div>
-      </section>
-    </section>
-    <section id="shop" aria-labelledby="shop-title" hidden>
-      <div class="recruiter pixel-panel">
-        <div class="panel-heading"><h2 id="shop-title">Recrutement avec Célia</h2></div>
-        <div class="panel-body">
-          <div class="coach-intro">
-            <img class="coach-avatar staff-portrait" src="/assets/celia.png" alt="" width="43" height="43">
-            <h3>Célia Hills</h3>
-          </div>
-          <div class="coach-dialogue">
-            <p>Tu cherches du renfort pour Inazuma FC ? Je peux te présenter les joueurs disponibles.</p>
-          </div>
-          <button class="button-primary" id="open-recruitment" type="button" aria-haspopup="dialog" aria-controls="recruitment-catalogue">Parler à Célia</button>
-        </div>
-      </div>
-    </section>
-    <dialog id="recruitment-catalogue" class="pixel-panel club-popup" aria-labelledby="catalogue-title">
-        <div class="panel-heading popup-heading"><h2 id="catalogue-title">Joueurs disponibles</h2><form method="dialog"><button type="submit">Fermer</button></form></div>
-        <div class="panel-body">
-          <div class="section-heading catalogue-filter">
-            <label>Rareté
-              <select id="rarity"><option value="">Toutes</option><option>Bronze</option><option>Argent</option><option>Or</option><option>Légendaire</option></select>
-            </label>
-          </div>
-          <p id="catalogue-feedback" class="feedback" role="status" hidden></p>
-          <ul class="player-list" id="shop-list"></ul>
-        </div>
-    </dialog>
-    <section id="inventory" aria-labelledby="inventory-title" hidden>
-      <div class="section-heading"><div><h2 id="inventory-title" tabindex="-1">Inventaire</h2><p>Revends des joueurs pour récupérer des crédits.</p></div><span id="inventory-count" class="formation"></span></div>
-      <p id="inventory-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
-      <ul class="player-list" id="inventory-list"></ul>
-    </section>
-    <p class="storage-note">Le club est sauvegardé dans ce navigateur.</p>
-  </dialog>
-  <dialog class="pixel-panel club-popup" id="picker" aria-labelledby="picker-title">
-    <div class="dialog-heading">
-      <h2 id="picker-title">Choisir un joueur</h2>
-      <form method="dialog"><button type="submit" aria-label="Fermer">Fermer</button></form>
-    </div>
-    <p id="picker-error" role="alert" hidden></p>
-    <p id="picker-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
-    <ul class="player-list" id="picker-list"></ul>
-  </dialog>
-  <dialog class="pixel-panel club-popup" id="club-sale" aria-labelledby="sale-title" aria-describedby="sale-details">
-    <div class="dialog-heading"><h2 id="sale-title">Confirmer la revente</h2></div>
-    <p id="sale-details"></p>
-    <p id="sale-error" role="alert" hidden></p>
-    <div class="sale-actions">
-      <form method="dialog"><button type="submit" autofocus>Annuler</button></form>
-      <button type="button" class="button-primary" id="sale-confirm">Confirmer la revente</button>
-    </div>
-  </dialog>
-</div>
 <script type="module" src="/club.js"></script><script type="module" src="/app.js"></script></body></html>

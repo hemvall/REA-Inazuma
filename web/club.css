@@ -1,15 +1,14 @@
 .club-ui {
   h2, h3, p { margin: 0; }
-  .recruiter { margin: 16px 0 20px; }
-  .recruiter .coach-dialogue { padding: 12px; margin-bottom: 16px; }
-  .recruiter p { font-size: 14px; line-height: 1.55; }
-  .coach-status:not(:empty) { margin-top: 14px; color: var(--muted); }
+  .coach-status:not(:empty) { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
   .coach-recommendations:empty { display: none; }
-  .coach-recommendations { padding-left: 23px; margin-bottom: 0; }
-  .coach-recommendations li { padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
-  .coach-recommendations li::marker { color: var(--yellow); }
-  .coach-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .coach-recommendations { padding: 0; margin: 12px 0 0; list-style: none; }
+  .coach-recommendations li { padding: 12px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .coach-recommendations li strong { display: block; font-size: 13px; line-height: 1.45; }
+  .coach-recommendations li p { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+  .coach-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }
   #analyse-club { margin-top: 12px; }
+  .coach-role { color: var(--muted); font-size: 12px; margin-top: 3px; }
   .lineup-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
   .catalogue-filter label { margin: 0; }
   .catalogue-filter select { width: auto; }
@@ -205,8 +204,8 @@
 
 
   #club-window {
-    width: min(1040px, calc(100% - 24px));
-    padding: clamp(12px, 3vw, 24px);
+    container-type: inline-size;
+    padding: clamp(12px, 2vw, 24px);
   }
   #recruitment-catalogue { width: min(680px, calc(100% - 24px)); padding: 0; }
   .club-close { display: flex; justify-content: flex-end; margin-bottom: 12px; }
@@ -228,4 +227,20 @@
     .player-identity { gap: 5px; }
     .player-identity strong { font-size: 12px; }
   }
+}
+.club-workspace { min-width: 0; width: 100%; }
+.celia-club-actions { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (min-width: 1200px) {
+  .game-layout:has(.club-workspace:not([hidden])) {
+    grid-template-columns: minmax(190px, .85fr) minmax(0, 2fr) minmax(235px, 1fr);
+  }
+  .game-layout:has(.club-workspace:not([hidden])) #recruitmentColumn { grid-column: 3; }
+}
+@container (max-width: 560px) {
+  .club-ui .squad { grid-template-columns: minmax(0, 1fr); }
+  .club-ui #bench { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .club-ui .bench .slot { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+}
+@media (max-width: 620px) {
+  .club-workspace { order: 1; }
 }

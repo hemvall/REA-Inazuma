@@ -588,21 +588,3 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 .game-layout.is-club-route .arena {
   grid-column: 1 / -1;
 }
-.club-entry {
-  position: absolute;
-  right: clamp(14px, 3vw, 36px);
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 6px 10px;
-  border: 1px solid #63779a;
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 750;
-  text-decoration: none;
-}
-.club-entry:hover { color: var(--yellow); border-color: var(--yellow); }
-@media (max-width: 600px) {
-  .masthead:has(.club-entry) { justify-content: space-between; gap: 6px; }
-  .club-entry { position: static; flex-shrink: 0; }
-}

@@ -1,5 +1,5 @@
 import {createChester} from './chester.js';
-import {inazumaMatchSquad} from './club.js';
+import {closeInazumaClub,inazumaMatchSquad} from './club.js';
 
 const $ = id => document.getElementById(id);
 const INAZUMA_FC=1000;
@@ -43,6 +43,7 @@ let walkingTouch=null;
 let stylusPointer=null,path=[];
 function releaseInputs(){keyboardDirections.clear();pendingKeys.clear();pointerDirections.clear();clearStylus();for(const b of $('keys').querySelectorAll('[data-key]'))b.removeAttribute('data-held');}
 window.addEventListener('blur',releaseInputs);
+document.addEventListener('inazuma-club-view',releaseInputs);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
 const teams={
   1:{name:'Raimon',captain:'Mark',portrait:'mark',code:'RAI',emblem:'raimon'},
@@ -117,6 +118,7 @@ function controls(){
   $('manual').hidden=clubRoute;
   $('matchSetup').hidden=clubRoute;
   $('recruitmentColumn').hidden=clubRoute;
+  if(clubRoute)closeInazumaClub();
   arena.querySelector('.chester-dialogue').hidden=routeBoard;
   arena.querySelector('.chester-controls').hidden=routeBoard;
   for(const id of ['home','away'])$(id).disabled=jobRunning||clubRoute||profile==='club';
@@ -139,6 +141,7 @@ function controls(){
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
   $('send').disabled=$('manualPrepare').disabled=jobRunning||clubRoute||profile==='club';
   for(const button of $('recruitmentPanel').querySelectorAll('button')){
+    if(button.closest('.celia-club-actions'))continue;
     button.disabled=busy||jobRunning||!recruitmentAvailable();
   }
   for(const b of $('keys').querySelectorAll('button'))b.disabled=!manual;
@@ -256,13 +259,13 @@ async function pumpInputs(){
 pumpInputs();
 $('enterClub').onclick=async()=>{
   $('error').textContent='';
-  try{await api('open_club_route');jobRunning=true;controls();await poll();}
+  try{await api('open_club_route');closeInazumaClub();jobRunning=true;controls();await poll();}
   catch(error){$('error').textContent=error.message;}
 };
 $('chat').onsubmit=async event=>{
   event.preventDefault();running=false;const text=$('prompt').value.trim();if(!text)return;
   message(text,'question');$('prompt').value='';$('error').textContent='';
-  try{await api('chat',{message:text});jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
+  try{await api('chat',{message:text});closeInazumaClub();jobRunning=true;controls();await poll();}catch(error){$('error').textContent=error.message;}
 };
 $('manual').onsubmit=async event=>{
   event.preventDefault();running=false;const home=Number($('home').value),away=Number($('away').value);
@@ -278,7 +281,7 @@ $('manual').onsubmit=async event=>{
       payload.club_lineup=lineup;
     }
     $('error').textContent='';
-    await api('prepare_match',payload);jobRunning=true;controls();await poll();
+    await api('prepare_match',payload);closeInazumaClub();jobRunning=true;controls();await poll();
   }catch(error){$('error').textContent=error.message;}
 };
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
@@ -295,7 +298,7 @@ $('close').onclick=async()=>{running=false;const result=await mutate('session_cl
 const directionKeys={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',z:'UP',q:'LEFT',s:'DOWN',d:'RIGHT'};
 const actionKeys={a:'A',b:'B',x:'X',y:'Y',Enter:'START'};
 document.addEventListener('keydown',event=>{
-  if(document.getElementById('club-window').open)return;
+  if(!$('club-workspace').hidden)return;
   if(['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName)||event.ctrlKey||event.metaKey||event.altKey)return;
   if(event.key==='Enter'&&event.target.tagName==='BUTTON')return;
   const key=directionKeys[event.key]||actionKeys[event.key];

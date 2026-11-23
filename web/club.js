@@ -71,7 +71,7 @@ const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
 const $ = id => document.getElementById(id);
 const picker = $('picker');
-const club = $('club-window');
+const club = $('club-workspace');
 const catalogue = $('recruitment-catalogue');
 const sale = $('club-sale');
 const formatter = new Intl.NumberFormat('fr-FR');
@@ -363,7 +363,7 @@ function resetCoachAnalysis() {
 }
 
 async function analyseTeam() {
-  if (!state || !club.open || $('lineup').hidden) return;
+  if (!state || club.hidden) return;
   analysisController?.abort();
   const options = coachOptions();
   const status = $('club-coach-status');
@@ -439,21 +439,37 @@ for (const button of document.querySelectorAll('[data-view]')) {
       $(item.dataset.view).hidden = !active;
       item.setAttribute('aria-pressed', active);
     }
-    if (button.dataset.view === 'lineup') analyseTeam();
   };
 }
 const openClub = $('open-club');
 $('analyse-club').onclick = analyseTeam;
-$('show-lina').onclick = () => $('club-coach-title').focus();
+$('show-lina').onclick = () => {
+  $('club-coach-title').focus({preventScroll: true});
+  $('club-coach').scrollIntoView({block: 'start'});
+};
 function showClub() {
-  club.showModal();
+  club.hidden = false;
+  $('matchArena').hidden = true;
+  $('club-coach').hidden = false;
+  $('open-recruitment').hidden = false;
+  openClub.setAttribute('aria-expanded', 'true');
+  document.dispatchEvent(new Event('inazuma-club-view'));
+  $('club-title').focus();
   analyseTeam();
 }
-openClub.onclick = showClub;
-club.addEventListener('close', () => {
+export function closeInazumaClub(restoreFocus = false) {
+  if (club.hidden) return;
+  for (const dialog of [picker, catalogue, sale]) if (dialog.open) dialog.close();
+  club.hidden = true;
+  $('matchArena').hidden = false;
+  $('club-coach').hidden = true;
+  $('open-recruitment').hidden = true;
+  openClub.setAttribute('aria-expanded', 'false');
   resetCoachAnalysis();
-  openClub.focus();
-});
+  if (restoreFocus) openClub.focus();
+}
+openClub.onclick = () => club.hidden ? showClub() : $('club-title').focus();
+$('close-club').onclick = () => closeInazumaClub(true);
 $('sale-confirm').onclick = async () => {
   const id = sellingId;
   const saved = await update(copy => {
@@ -481,7 +497,7 @@ catalogue.addEventListener('close', () => {
   if (proposedRecruitment) {
     proposedRecruitment = null;
     analyseTeam();
-    $('club-coach-title').focus();
+    if (!club.hidden) $('club-coach-title').focus();
   }
 });
 if (location.hash === '#inazuma-fc') {
