@@ -18,7 +18,7 @@ def source_identity():
 
 
 def ensure_built(profile='arena'):
-    if profile not in ('arena', 'club', 'club_native'): raise ValueError('Unknown arena profile')
+    if profile not in ('arena', 'club', 'club_native', 'club_web'): raise ValueError('Unknown arena profile')
     folder=ROOT/'build'/profile
     try:
         identity=json.loads((folder/'profile.json').read_text())
@@ -41,7 +41,7 @@ def scene_pair(rom):
 
 
 def build(profile='arena'):
-    if profile not in ('arena', 'club', 'club_native'): raise ValueError('Unknown arena profile')
+    if profile not in ('arena', 'club', 'club_native', 'club_web'): raise ValueError('Unknown arena profile')
     build_identity = source_identity()
     config = json.loads((ROOT/'story/standalone_scene.json').read_text())
     config['arena'] = True
@@ -53,9 +53,10 @@ def build(profile='arena'):
     config['victory'] = [{'speaker': 'Mark', 'text': 'Victoire ! La rencontre est terminee.'}]
     config['defeat'] = [{'speaker': 'Mark', 'text': 'Defaite. Une nouvelle rencontre nous attend.'}]
     config['native_match_id'] = 33
-    if profile in ('club','club_native'):
+    native_route = profile in ('club_native', 'club_web')
+    if profile in ('club', 'club_native', 'club_web'):
         config['club'] = True
-        config['native_club'] = profile == 'club_native'
+        config['native_club'] = native_route
         config['map'] = 'mr07i01'
         config['exploration'] = {'object_unit':261, 'object_group':28,
                                  'object_position':[0, 0.16, 2.5], 'spawn':[0, 0.16, 5.5]}
@@ -75,7 +76,7 @@ def build(profile='arena'):
     raimon = bytearray(teams[keys.index(1)*320:(keys.index(1)+1)*320])
     struct.pack_into('<H', raimon, 32, 70)
     pos = keys.index(70)*320
-    if profile != 'club_native':
+    if not native_route:
         manifest['edits'].append({'path':team_path, 'resource_sha256':sha(teams), 'offset':pos,
             'before_hex':teams[pos:pos+320].hex(), 'after_hex':raimon.hex()})
     games_path = 'data_iz/logic/games.dat'
@@ -83,7 +84,7 @@ def build(profile='arena'):
     match = bytearray(games[33*48:34*48])
     if struct.unpack_from('<H', match)[0] != 10: raise ValueError('Unexpected native match table')
     struct.pack_into('<H', match, 0, 70)
-    if profile == 'club_native':
+    if native_route:
         from native_club_scene import route_data
         matches=bytearray()
         # The board reads its caption and badge from this separate team key,
@@ -158,14 +159,14 @@ def build(profile='arena'):
                 raise ValueError('Portrait/text adjacency changed')
             pos = 32 + sum(len(r.encode()) for r in rows[:portrait.id-1])
             slots['portraits'].append(pos+16)
-    if profile != 'club_native' and (len(slots['roster']) != 16 or len(slots['roster_guards']) != 16 or len(slots['texts']) != 6):
+    if not native_route and (len(slots['roster']) != 16 or len(slots['roster_guards']) != 16 or len(slots['texts']) != 6):
         raise ValueError('Unexpected arena slot layout')
-    if profile != 'club_native' and (len(slots['removals']) != 132 or len(slots['removal_guards']) != 132):
+    if not native_route and (len(slots['removals']) != 132 or len(slots['removal_guards']) != 132):
         raise ValueError('Unexpected native roster-removal slots')
     folder = ROOT/'build'/profile; folder.mkdir(parents=True, exist_ok=True)
     from validate_patch import validate
     verification=validate(original,output,manifest)
-    if profile == 'club_native':
+    if native_route:
         from native_route_patch import unlock_route
         output,native_verification=unlock_route(output)
         verification={'resources':verification,'native_route':native_verification,

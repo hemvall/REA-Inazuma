@@ -12,6 +12,7 @@ import os
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+ARENA_PROFILES = ('arena', 'club', 'club_web')
 
 
 def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=None,
@@ -125,6 +126,8 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
 
         controller = Controller(emulator, on_frame)
         club_return = None
+        route_return = None
+        route_open_frame = None
         def snapshot():
             size = emulator.lib.retro_serialize_size()
             if not 0 < size <= 128*1024*1024:
@@ -156,19 +159,38 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
             controller.emulator = emulator
             bridge = ClubBridge(emulator, rom_sha256=digest)
 
-        if profile in ('arena', 'club'):
+        def remember_route():
+            nonlocal route_return, route_open_frame
+            if profile != 'club_web' or bridge.fixture:
+                return
+            if not bridge.route_open():
+                route_return = route_open_frame = None
+            elif route_open_frame is None:
+                route_open_frame = emulator.frames
+            elif route_return is None and emulator.frames >= route_open_frame + 60:
+                route_return = snapshot()
+
+        if profile in ARENA_PROFILES:
             from arena_bridge import ArenaBridge
-            from club_bridge import ClubBridge
-            bridge = ClubBridge(emulator, rom_sha256=digest) if profile == 'club' else ArenaBridge(emulator, rom_sha256=digest)
+            from club_bridge import ClubBridge, NativeClubBridge
+            if profile == 'club_web':
+                bridge = NativeClubBridge(emulator)
+            else:
+                bridge_type = ClubBridge if profile == 'club' else ArenaBridge
+                bridge = bridge_type(emulator, rom_sha256=digest)
             commands = json.loads((ROOT/'profiles/arena_boot.json').read_text(encoding='utf-8'))
-            for command in commands:
-                emulator.command(command)
-                if (bridge.state()['phase'] == 'club' if profile == 'club' else bridge.state()['native_counter'] == 4):
-                    if profile == 'club':
-                        emulator.command({'frames':600})
-                    break
-            if (bridge.state()['phase'] != 'club' if profile == 'club' else bridge.state()['native_counter'] != 4):
-                raise RuntimeError('Arena boot failed: waiting dialogue not reached')
+            if profile == 'club_web':
+                bridge.open_room(commands)
+            else:
+                for command in commands:
+                    emulator.command(command)
+                    state = bridge.state()
+                    if (state['phase'] == 'club' if profile == 'club' else state['native_counter'] == 4):
+                        if profile == 'club':
+                            emulator.command({'frames':600})
+                        break
+                else:
+                    raise RuntimeError('Arena boot failed: waiting dialogue not reached')
             baseline = snapshot()
             club_return = baseline
         if stored:
@@ -192,6 +214,7 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
         while True:
             if live and not pipe.poll(max(0, next_tick-time.monotonic())):
                 execute_step(emulator, 1, [], None, lambda:bool(bridge and bridge.poll_frame()))
+                remember_route()
                 sample_commentary()
                 if emulator.frames % 2 == 0:
                     publish_video()
@@ -210,7 +233,7 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
                         recruitment_store.save(club_recruits, saved[0])
                     pipe.send({'closed': True})
                     break
-                if bridge and not bridge.fixture and bridge.state()['native_counter']==4 and op in ('step','touch_path'):
+                if profile in ('arena', 'club') and not bridge.fixture and bridge.state()['native_counter']==4 and op in ('step','touch_path'):
                     if op=='touch_path' or request.get('keys') or request.get('touch') is not None:
                         raise ValueError('Préparez une rencontre avant de quitter le salon.')
                 if op == 'playback':
@@ -266,7 +289,10 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
                         club_return = snapshot()
                     try:
                         if bridge and bridge.poll_frame():
-                            if keys or touch is not None:restore(club_return if profile == 'club' else baseline)
+                            if keys or touch is not None:
+                                restore(route_return or club_return or baseline)
+                                if profile == 'club_web':
+                                    live = True
                         else:
                             execute_step(emulator,frames,keys,touch,on_frame,release=not continuous)
                     finally:
@@ -351,19 +377,23 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
                     if type(request['revision']) is not int or request['revision'] != controller.revision:
                         raise ValueError('Stale revision')
                     if op == 'reset_match':
-                        restore(club_return if profile == 'club' else baseline)
+                        restore(route_return or club_return or baseline)
+                        if profile == 'club_web':
+                            live = True
                     elif op == 'prepare_match':
-                        if profile == 'club': raise ValueError('Choisissez votre affiche en parlant au PNJ.')
+                        if profile != 'arena': raise ValueError('Choisissez votre affiche dans le club.')
                         home, away = request['home'], request['away']
                         squad = None
                         if arena_recruitment and any(draft['team_id'] == home for draft in arena_recruitment):
                             squad = recruitment_squad(bridge.teams[home]['roster'], home, arena_recruitment)
                         bridge.prepare(home, away, request['lines'], club_squad=squad)
                     else:
+                        if profile == 'club_web': raise ValueError('Lancez le match depuis la route.')
                         bridge.start()
                     controller.revision += 1
                 elif op != 'observe':
                     raise ValueError('Unknown operation')
+                remember_route()
                 result = {'revision': controller.revision, 'frame': emulator.frames}
                 publish_video()
                 if bridge:
@@ -433,7 +463,7 @@ class GameSession:
 
     def open(self, profile='scenario', cancel=None, *, arena_recruitment=None):
         with self.lock:
-            if profile not in ('scenario','arena','club'):
+            if profile not in ('scenario', *ARENA_PROFILES):
                 raise ValueError('Unknown session profile')
             if self.process and self.process.is_alive():
                 if profile != self.profile:
@@ -441,16 +471,16 @@ class GameSession:
                 if profile != 'arena' or self.arena_recruitment == arena_recruitment:
                     return {'session_id': self.session_id,'profile':self.profile, **self.identity}
             self.close()
-            if profile in ('arena', 'club'):
+            if profile in ARENA_PROFILES:
                 from prepare_arena import ensure_built
                 ensure_built(profile)
-            rom = ROOT / (f'build/{profile}/arena.nds' if profile in ('arena','club') else 'build/inazuma_mystery.nds')
+            rom = ROOT / (f'build/{profile}/arena.nds' if profile in ARENA_PROFILES else 'build/inazuma_mystery.nds')
             core = ROOT / 'local/tools/melonds-core/melonds_libretro.dll'
             if not rom.is_file() or not core.is_file():
                 raise ValueError('ROM ou cœur melonDS manquant. Voir README.md.')
             self.identity = {name: hashlib.sha256(path.read_bytes()).hexdigest()
                              for name, path in [('rom_sha256', rom), ('core_sha256', core)]}
-            if profile in ('arena','club'):
+            if profile in ARENA_PROFILES:
                 expected=json.loads((ROOT/f'build/{profile}/profile.json').read_text())
                 if expected.get('core_sha256',self.identity['core_sha256']) != self.identity['core_sha256']:
                     raise ValueError('Cœur melonDS incompatible avec le profil validé de cette arène.')
@@ -470,7 +500,7 @@ class GameSession:
             self.process.start()
             child.close()
             try:
-                result = self._receive(120 if profile in ('arena','club') else 30,cancel)
+                result = self._receive(120 if profile in ARENA_PROFILES else 30,cancel)
                 if 'error' in result:
                     raise RuntimeError(result['error'])
             except Exception:

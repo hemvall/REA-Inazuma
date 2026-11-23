@@ -1,6 +1,7 @@
 import {createChester} from './chester.js';
 
 const $ = id => document.getElementById(id);
+const isClubRoute = value => value === 'club_web' || value === 'club_native';
 const pilotMode = $('pilotMode');
 const arena = $('matchArena');
 const fullscreenButton = $('arenaFullscreen');
@@ -33,7 +34,7 @@ function attachVideo(){
   $('frame').src=$('topFrame').src='/video?session='+encodeURIComponent(session);
   $('frame').hidden=false;$('empty').hidden=true;setScreenVisible(true);
 }
-let profile=null,enteringClub=false;
+let profile=null;
 let recruitment=null;
 const keyboardDirections=new Set(),pendingKeys=new Set(),pointerDirections=new Map();
 let walkingTouch=null;
@@ -46,9 +47,11 @@ const teams={
   2:{name:'Royal Academy',captain:'Joseph King',portrait:'king',code:'ROY',emblem:'royal'},
   3:{name:'Occulte',captain:'Talisman',portrait:'talisman',code:'OCC',emblem:'occult'},
   10:{name:'Zeus',captain:'Aphrodite',portrait:'aphrodite',code:'ZEU',emblem:'zeus'},
+  33:{name:'Genesis',captain:'Xene',portrait:'xene',code:'GEN',emblem:'genesis'},
+  41:{name:'Empereurs noirs',captain:'Nathan Swift',portrait:'nathan-dark',code:'EMP',emblem:'dark-emperors'},
 };
 const chester = createChester({
-  api, enabled: $('chesterEnabled'), captions: $('chesterCaptions'),
+  api, mode: $('chesterMode'), enabled: $('chesterEnabled'), captions: $('chesterCaptions'),
   volume: $('chesterVolume'), line: $('chesterLine'), hint: $('chesterHint'),
   status: $('chesterStatus'), tool: $('chesterTool'),
 });
@@ -85,27 +88,45 @@ updateTeamPreview();
 function show(result){
   chester.observe(session, result?.commentary);
   if(!result)return;
+  if(isClubRoute(profile)&&['club','route'].includes(result.match?.phase)&&
+     !['club','route'].includes(window.currentPhase)){
+    running=true;
+    $('play').textContent='Pause';
+  }
+  if(isClubRoute(profile)&&result.match?.phase==='route'){
+    $('job').textContent='Choisis un écusson sur l’écran tactile de la DS.';
+  }
   if(Number.isInteger(result.revision))revision=result.revision;
   attachVideo();
 }
 function controls(){
-  for(const id of ['home','away','swapTeams'])$(id).disabled=jobRunning||profile==='club';
+  const clubRoute=!!session&&isClubRoute(profile);
+  const routeBoard=clubRoute&&!fixture;
+  arena.parentElement.classList.toggle('is-club-route',clubRoute);
+  $('manual').hidden=clubRoute;
+  $('matchSetup').hidden=clubRoute;
+  $('recruitmentColumn').hidden=clubRoute;
+  arena.querySelector('.chester-dialogue').hidden=routeBoard;
+  arena.querySelector('.chester-controls').hidden=routeBoard;
+  for(const id of ['home','away','swapTeams'])$(id).disabled=jobRunning||clubRoute||profile==='club';
   $('enterClub').disabled=jobRunning||!!session;
-  $('reset').textContent=profile==='club'?'Retour au local':'Nouvelle rencontre';
+  $('enterRecruitmentClub').disabled=jobRunning||!!session;
+  $('reset').textContent=clubRoute?'Retour à la route':profile==='club'?'Retour au local':'Nouvelle rencontre';
+  $('reset').hidden=routeBoard;
   $('stadiumStage').classList.toggle('is-preparing',jobRunning&&!session);
   const manual=!!session&&owner==='human'&&!jobRunning;
   if(!manual||window.currentPhase==='result')releaseInputs();
   const finished=window.currentPhase==='result';
   const canStart=manual&&!!fixture&&window.currentPhase==='idle';
   $('start').hidden=!canStart;
-  $('play').hidden=!manual||canStart||finished;
+  $('play').hidden=!manual||canStart||finished||routeBoard;
   $('stop').hidden=!jobRunning&&owner!=='agent';
   $('pilotControls').hidden=!manual||!fixture||finished;
   $('arenaOptions').hidden=!manual;
   if(!manual)$('arenaOptions').open=false;
   if(finished){running=false;$('play').textContent='Continuer';}
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
-  $('send').disabled=$('manualPrepare').disabled=jobRunning||profile==='club';
+  $('send').disabled=$('manualPrepare').disabled=jobRunning||clubRoute||profile==='club';
   for(const button of $('recruitmentPanel').querySelectorAll('button')){
     button.disabled=busy||jobRunning||!recruitmentAvailable();
   }
@@ -202,7 +223,6 @@ async function poll(){
       lastJob=state.job.id+state.job.state;message(state.job.message);if(state.job.state==='error')$('error').textContent=state.job.message;
     }
     controls();
-    if(enteringClub&&!jobRunning){enteringClub=false;if(session&&profile==='club'){running=true;$('play').textContent='Pause';}}
   }catch(error){$('error').textContent='Connexion au serveur interrompue : '+error.message;running=false;chester.observe(null);}
   finally{polling=false;}
 }
@@ -224,11 +244,13 @@ async function pumpInputs(){
   setTimeout(pumpInputs,Math.max(0,1000/30-(performance.now()-started)));
 }
 pumpInputs();
-$('enterClub').onclick=async()=>{
+async function enterClub(operation) {
   $('error').textContent='';
-  try{await api('open_club');enteringClub=true;jobRunning=true;controls();await poll();}
-  catch(error){$('error').textContent=error.message;enteringClub=false;}
-};
+  try{await api(operation);jobRunning=true;controls();await poll();}
+  catch(error){$('error').textContent=error.message;}
+}
+$('enterClub').onclick=()=>enterClub('open_club_route');
+$('enterRecruitmentClub').onclick=()=>enterClub('open_club');
 $('chat').onsubmit=async event=>{
   event.preventDefault();running=false;const text=$('prompt').value.trim();if(!text)return;
   message(text,'question');$('prompt').value='';$('error').textContent='';

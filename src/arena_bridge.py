@@ -17,6 +17,7 @@ from frame_state import screen_phase, screen_observation
 from tactical_state import extract_tactical_state
 
 ROOT = Path(__file__).resolve().parents[1]
+NATIVE_MATCH_BY_TEAM = {1: 500, 2: 51, 3: 52, 10: 33, 33: 72, 41: 11}
 
 
 @lru_cache(maxsize=1)
@@ -26,13 +27,17 @@ def catalogue():
         raise ValueError('Unsupported original ROM')
     def resource(path): return rom.data[slice(*rom.files[path])]
     index, blob = resource('data_iz/logic/fr/team.pkh'), resource('data_iz/logic/fr/team.pkb')
+    games = resource('data_iz/logic/games.dat')
     units = resource('data_iz/logic/fr/unitbase.dat')
     names = {struct.unpack_from('<H', units, pos+66)[0]: units[pos:pos+32].split(b'\0')[0].decode('latin1')
              for pos in range(0, len(units), 96)}
     result = []
     for i in range(len(blob)//320):
         key = struct.unpack_from('<I', index, 48+i*4)[0]
-        if key not in (1, 2, 3, 10): continue
+        if key not in NATIVE_MATCH_BY_TEAM: continue
+        match = NATIVE_MATCH_BY_TEAM[key]
+        if struct.unpack_from('<H', games, match * 48)[0] != key:
+            raise ValueError('Native match points at the wrong team')
         row = blob[i*320:(i+1)*320]
         roster = [struct.unpack_from('<H', row, 64+j*8)[0] for j in range(16)]
         captain = struct.unpack_from('<H', row, 46)[0]
@@ -40,7 +45,7 @@ def catalogue():
                        'captain_id': captain, 'captain': names[captain], 'roster': roster,
                        'roster_names': {unit: names[unit] for unit in roster if unit in names},
                        'header_hex': row[:64].hex(),
-                       'native_match_id': {1:500, 2:51, 3:52, 10:33}[key]})
+                       'native_match_id': match})
     return result
 
 
@@ -103,7 +108,8 @@ class ArenaBridge:
             phase = 'booting' if self.fixture is None else ('playing' if counter == 10 else 'loading')
         if self.completed:phase='result'
         elif phase=='playing' and screen_phase(self.emulator.last_frame)=='halftime':phase='halftime'
-        players = inspect_party_memory(memory) if phase in ('playing','halftime','result') else []
+        players = ([player for player in inspect_party_memory(memory) if player['unit']]
+                   if phase in ('playing','halftime','result') else [])
         return {'phase': phase, 'native_counter': counter,
                 'screen':screen_observation(self.emulator.last_frame),
                 'tactical':extract_tactical_state(memory,phase,players),
@@ -173,7 +179,8 @@ class ArenaBridge:
         # 0x0206B704 returns team manager +0x17C + side*0x40. The measured
         # manager is 0x020E8720; native loader copies its 64-byte team header.
         header_offset = 0x020E889C-0x02000000
-        if memory[header_offset:header_offset+32].split(b'\0')[0] not in (b'Raimon',b'Royal Academy',b'Occulte',b'Zeus'):
+        if memory[header_offset:header_offset+32].split(b'\0')[0] not in {
+                team['name'].encode('ascii') for team in self.teams.values()}:
             raise ValueError('Native home-team header invariant failed')
         header = bytearray.fromhex(self.teams[home]['header_hex'])
         struct.pack_into('<H',header,62,home)

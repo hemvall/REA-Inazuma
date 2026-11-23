@@ -18,7 +18,8 @@ le salon. Les commandes suivantes partagent ce même processus d'émulation.
 Le chat appelle un agent organisateur avec le moteur sélectionné. Il résout les deux équipes et écrit
 six répliques originales, alternant les capitaines. La préparation manuelle
 propose un dialogue court prédéfini si l'on ne souhaite pas appeler cet agent.
-Le catalogue de cette livraison contient Occulte et Zeus, dans les deux sens.
+Le catalogue propose Raimon, Royal Academy, Occulte, Zeus, Genesis et les
+Empereurs noirs à domicile comme à l’extérieur.
 
 « Lancer le dialogue » ouvre l'échange dans le jeu. « Continuer » fait avancer
 le temps ; « Pause » l'arrête. Le clavier, les boutons DS et les clics/glissers

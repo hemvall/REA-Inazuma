@@ -4,8 +4,10 @@ FIXTURES = {
     2: (2, 1, 'Royal Academy contre Raimon'),
     3: (10, 3, 'Zeus contre Occulte'),
     4: (1, 2, 'Raimon contre Royal Academy'),
+    5: (41, 33, 'Empereurs noirs\\ncontre Genesis'),
+    6: (33, 41, 'Genesis contre\\nEmpereurs noirs'),
 }
-CLUB_FIXTURE = 5
+CLUB_FIXTURE = max(FIXTURES) + 1
 CLUB_TEAM_IDS = frozenset(team for home, away, _ in FIXTURES.values() for team in (home, away))
 
 

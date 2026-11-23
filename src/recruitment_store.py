@@ -11,6 +11,10 @@ from recruitment import validate_draft
 from recruitment_rom import MAX_TEAM_RECRUITS, build_recruitment_rom
 
 
+# Previous web Club shell, before the two new standard fixtures.
+PREVIOUS_CLUB_SHA256 = '665dbb18affd13d7457586175b24eda662cac2659fc4a6d8c2371bbe562d8256'
+
+
 class RecruitmentStore:
     def __init__(self, path, rom, directory):
         self.path = Path(path) if path is not None else None
@@ -60,7 +64,7 @@ class RecruitmentStore:
         if not drafts:
             return None
         previous_count = metadata.get('state_count', 1 if metadata['format'] == 1 else 0)
-        if state is not None and (metadata['base_sha256'] != self.base_hash
+        if state is not None and (metadata['base_sha256'] not in (self.base_hash, PREVIOUS_CLUB_SHA256)
                                   or not 1 <= previous_count <= len(drafts)):
             raise ValueError('La sauvegarde du recrutement utilise une autre version du Club.')
         return drafts, state, previous_count

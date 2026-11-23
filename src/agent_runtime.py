@@ -44,16 +44,18 @@ class MatchAgent(StructuredGeneration):
             schema, cancel=cancel, timeout=8)
 
     def organise(self, message, teams, cancel=None):
+        catalogue = [{key: team[key] for key in ('id', 'name', 'captain') if key in team}
+                     for team in teams]
         return self.generate(
-            'Tu es l’organisateur de rencontres Inazuma Eleven 2 en français. '
-            'N’utilise aucun outil, ne lis aucun fichier : toutes les données sont ici. '
-            'Résous la demande utilisateur avec les identifiants du catalogue uniquement. '
-            'Si ambiguë ou non prise en charge, retourne home et away null, lines vide et une question claire. '
-            'Sinon, écris exactement six courtes répliques françaises originales entre les deux capitaines, '
+            'Dans InazumIA, toute paire de deux équipes distinctes de ce catalogue est jouable. '
+            'Catalogue complet (id, nom, capitaine) : '+json.dumps(catalogue, ensure_ascii=False)+
+            '\nDemande : '+message+
+            '\nUtilise les identifiants du catalogue pour home et away. '
+            'Écris exactement six courtes répliques françaises originales entre les deux capitaines, '
             'en alternant domicile puis extérieur. Chaque réplique fait au maximum 75 caractères, '
-            'sans nom de locuteur préfixé, sans retour à la ligne. Ne promets pas une victoire. '
-            'Les deux équipes doivent être distinctes.\nCatalogue : '+json.dumps(teams,ensure_ascii=False)+
-            '\nDemande : '+message, ORGANISER_SCHEMA,cancel=cancel)
+            'sans nom de locuteur préfixé ni retour à la ligne. Ne promets pas une victoire. '
+            'Si la demande est ambiguë ou désigne une équipe absente, retourne home et away null, '
+            'une liste de répliques vide et une question claire.', ORGANISER_SCHEMA, cancel=cancel)
 
     def play(self, image, state, history, cancel):
         if image is None:

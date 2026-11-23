@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / 'src'))
 
 from arena_bridge import catalogue
 from arena_service import Arena
+from club_fixtures import FIXTURES
 from recruitment import closest, validate_draft
 from nds import sha
 from recruitment_rom import FIRST_RECRUIT_ID
@@ -54,9 +55,11 @@ def exercise(arena):
     assert observe()['match']['party_units'] == list(ROSTER)
 
     first = revise('raimon peut recruter xene')
-    for team_id, name in [(1, 'Raimon'), (2, 'Royal Acadmy'), (3, 'Oculte'), (10, 'Zues')]:
-        sheet = revise(f'{name} peut recruter Xnee')['draft']
-        assert sheet['team_id'] == team_id and sheet['template_unit'] == 2151
+    for team_id, name in [(1, 'Raimon'), (2, 'Royal Acadmy'), (3, 'Oculte'), (10, 'Zues'),
+                          (33, 'Genesiss'), (41, 'Empereurs noirs')]:
+        player = 'Byron Love' if team_id in (33, 41) else 'Xnee'
+        sheet = revise(f'{name} peut recruter {player}')['draft']
+        assert sheet['team_id'] == team_id
     already_owned = revise('Occulte peut recruter Talisman')
     assert already_owned['draft'] is None
     assert closest('Xeae', [(1, 'Xene'), (2, 'Xeze')]) == [(1, 'Xene'), (2, 'Xeze')]
@@ -103,7 +106,7 @@ def exercise(arena):
     press()
     match = press()['match']
     assert match['phase'] == 'choosing', match
-    for _ in range(4):
+    for _ in FIXTURES:
         step(('DOWN',), 2)
         match = press()['match']
     for _ in range(5):
@@ -172,7 +175,19 @@ def exercise_lobby(arena):
     assert arena.status()['recruited_players'] == [first, second['draft']]
     print('Recrutement confirmé depuis le salon', flush=True)
 
-    for home, away, side in ((10, 1, 'home_units'), (1, 10, 'away_units')):
+    arena.call('recruitment_turn', {'session_id': None, 'message': 'Genesis peut recruter Mark Evans'})
+    arena.thread.join(5)
+    assert arena.job['state'] == 'complete', arena.job
+    sheet = arena.status()['recruitment']
+    genesis = arena.call('recruitment_confirm', {'session_id': None, 'version': sheet['version']})
+    assert genesis['unit'] == FIRST_RECRUIT_ID + 2
+
+    fixtures = [
+        (10, 1, 'home_units', {FIRST_RECRUIT_ID, FIRST_RECRUIT_ID + 1}),
+        (1, 10, 'away_units', {FIRST_RECRUIT_ID, FIRST_RECRUIT_ID + 1}),
+        (41, 33, 'away_units', {genesis['unit']}),
+    ]
+    for home, away, side, units in fixtures:
         result = arena.prepare(home, away, ['Place au match !'] * 6)
         sid = arena.session.session_id
 
@@ -190,7 +205,7 @@ def exercise_lobby(arena):
             else:
                 command('step', keys=['A'], frames=2)
             match = command('step', keys=[], frames=120)['match']
-        assert {FIRST_RECRUIT_ID, FIRST_RECRUIT_ID + 1} <= set(match[side]), match
+        assert units <= set(match[side]), match
         print(f'Arène, recrue présente dans {side}', flush=True)
         command('reset_match')
     arena.session.close()

@@ -19,47 +19,18 @@ les cinq joueurs d'exploration ; son déroulement complet reste à valider.
 
 ## Jouer dans le navigateur
 
-Double-cliquer **Lancer InazumIA.cmd** pour ouvrir la page InazumIA.
+Ouvrez le salon avec **Lancer InazumIA.cmd**, puis choisissez **Entrer dans le
+local**. Déplacez-vous jusqu’à Hillman avec les flèches ou ZQSD, puis appuyez
+sur **A** pour lui parler. Répondez **Oui** pour ouvrir la route native.
+Touchez un écusson sur l’écran inférieur et confirmez la rencontre.
 
-Maintenir les flèches ou ZQSD pour marcher, même après avoir cliqué un bouton.
-La croix directionnelle accepte aussi un appui prolongé à la souris ou au
-doigt. Dans le local, maintenir le stylet sur l'écran inférieur fait marcher
-Mark vers le point indiqué. Relâcher ou quitter la fenêtre arrête l'appui.
+- Occulte contre Zeus
+- Royal Academy contre Raimon
 
-Dans le lanceur InazumIA, fermer la session éventuelle puis choisir **Entrer
-dans le local**. Avancer vers Hillman et lui parler avec **A** ou l'écran
-tactile. Aucun agent IA n'est nécessaire pour ces rencontres.
-
-Le PNJ propose, avec le sélecteur Oui/Non natif :
-
-- Occulte contre Zeus ;
-- Royal Academy contre Raimon ;
-- Zeus contre Occulte ;
-- Raimon contre Royal Academy.
-
-**Non** passe à l'affiche suivante. Refuser les quatre offres rend la main
-dans la pièce. **Oui** prépare les effectifs, puis A avance les six répliques
-des capitaines et lance le vrai match. Les équipes sont celles du catalogue
-d'origine, avec leurs remplaçants disponibles ; le groupe d'exploration ne
-participe pas à leur place.
-
-Le profil `club` réutilise le moteur dynamique de `develop` : slots SSD/SST
-bornés, chargement natif du match, worker melonDS isolé et arrêt sur le
-résultat final natif. A après le résultat, ou **Retour au local**, restaure
-l'état précédant la conversation : position, groupe et effectif d'exploration.
-Les gains des équipes invitées ne sont pas transférés au groupe du joueur.
-Le retour direct d'une ROM seule reste soumis à la limitation documentée dans
-`DELIVERY.md` ; utiliser le lanceur fourni.
-
-La ROM BEBF fournie ne contient pas de local de club intact. Ce profil réemploie
-l'intérieur natif `mr07i01`, renommé « Local du club », avec un PNJ Hillman.
-Il ne remplace ni les cartes ni les événements du profil scénario historique.
-
-Le premier accès construit `build/club/arena.nds` une seule fois à partir de
-`rom/original.nds`. Changer d'affiche ne reconstruit pas la ROM. Raimon adverse
-utilise une copie isolée de son effectif complet dans le profil amical ;
-l'équipe de départ conserve son propre modèle. Aucun asset du jeu, ROM ou
-savestate ne doit être ajouté au dépôt.
+**Options → Retour à la route** revient au tableau. Depuis le résultat, la
+touche **A** permet aussi de revenir à la route. **Options → Fermer** rend
+l’accès au salon, où les six équipes restent sélectionnables pour un match
+personnalisé.
 
 ### Recrutement spécial
 
@@ -67,13 +38,13 @@ Depuis le salon web, écris « Raimon peut recruter Xene » à Celia dans
 son panneau de recrutement. Tu peux soumettre un autre nom ou annuler le brouillon, puis
 cliquer sur **Recruter**. La recrue rejoint son équipe à la prochaine
 préparation d'un match en arène, à domicile comme à l'extérieur. Elle sera
-aussi disponible pour les matchs du Club à la prochaine ouverture du local.
+aussi disponible pour les matchs du Club à la prochaine ouverture via
+**Ouvrir le Club des recrues**, dans le panneau de Celia.
 La première recrue rejoint également le groupe qui se déplace dans le local.
 Pour l'inscrire pendant une session Club déjà ouverte, avance devant le coach
 avant de confirmer.
 
-Raimon, Royal Academy, Occulte et Zeus peuvent recruter jusqu’à onze joueurs
-chacun. Celia reste disponible après chaque confirmation. Le salon accepte
+Les six équipes du salon peuvent recruter jusqu’à onze joueurs chacune. Celia reste disponible après chaque confirmation. Le salon accepte
 les fautes proches et demande une précision quand plusieurs noms correspondent. La recrue arrive au niveau 30 avec les
 statistiques, techniques et visuels du joueur d'origine.
 

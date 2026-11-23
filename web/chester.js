@@ -8,7 +8,20 @@ const VOICE_DELIVERY = {
 };
 const CONTEXT_EVENTS = new Set(['kickoff', 'goal', 'halftime', 'result']);
 
-export function createChester({api, enabled, captions, volume, line, hint, status, tool}) {
+const NEUILLE_LINES = {
+  kickoff: ['Azy frer, le Five est en classé !', 'Oh na, lobby de zinzins !'],
+  handoff: ['Bien, le ballon fait sa tournée !', 'Azy frer, passe en Colissimo !'],
+  turnover: ['Oh na, ballon direct sur Leboncoin !', 'Fils dé… le pressing fait les poches !'],
+  attack_duel: ['Oh na, duel de scooters !', 'Azy frer, le vigile du Franprix !'],
+  defence_duel: ['Bien, le Franprix est fermé !', 'Oh na, videur de mariage !'],
+  shot: ['Fils dé… le ballon lui doit des thunes !', 'Azy frer, colis express pour les cages !'],
+  goal: ['Oh na, défense en mode avion !', 'Bien, filet livré sans signature !', 'Fils dé… Windows Vista en défense !'],
+  halftime: ['Bien, rechargez les manettes !', 'Azy frer, pause merguez !'],
+  resume: ['Oh na, le serveur a redémarré !', 'Azy frer, deuxième fournée !'],
+  result: ['Bien, les avocats WhatsApp débarquent !', 'Oh na, le débrief va piquer !'],
+};
+
+export function createChester({api, mode, enabled, captions, volume, line, hint, status, tool}) {
   const voice = window.speechSynthesis;
   let session = null;
   let epoch = null;
@@ -21,6 +34,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   let voiceFailed = false;
   let lastContextEvent = 0;
   const previous = {};
+  const neuilleTurns = {};
 
   function renderCaption() {
     const showText = captions.checked || (enabled.checked && (!frenchVoice() || voiceFailed));
@@ -51,7 +65,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     const request = {session_id: session, epoch, event_id: event.id, previous: previous[event.kind]};
     try {
       const result = await api('chester_reaction', request);
-      if (session !== request.session_id || epoch !== request.epoch || event.id <= lastContextEvent
+      if (mode.value !== 'chester' || session !== request.session_id || epoch !== request.epoch || event.id <= lastContextEvent
           || (!enabled.checked && !captions.checked) || !result.reaction || !result.tool?.context) return;
       lastContextEvent = event.id;
       previous[event.kind] = result.reaction;
@@ -81,15 +95,34 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     renderCaption();
   }
 
-  function playNext() {
+  async function playNext() {
     if (current || paused || (!enabled.checked && !captions.checked)) return;
     const event = pending.shift();
     if (!event) return;
     if (Date.now() - event.at * 1000 > 4500) return playNext();
     const turn = {kind: event.kind, speaking: false};
     current = turn;
-    if (CONTEXT_EVENTS.has(event.kind)) showContext(event);
-    const text = event.text;
+    let text = event.text;
+    if (mode.value === 'neuille') {
+      const key = style + ':' + event.kind;
+      const riffs = style === 'neuille' ? NEUILLE_LINES[event.kind] : null;
+      const count = neuilleTurns[event.kind] ?? 0;
+      const fallback = riffs ? riffs[count % riffs.length] : '';
+      if (riffs) neuilleTurns[event.kind] = count + 1;
+      showCaption(fallback);
+      let deadline;
+      const variation = CONTEXT_EVENTS.has(event.kind) ? await Promise.race([
+        api('chester_reaction', {session_id: session, epoch, event_id: event.id, mode: style, previous: previous[key]}).catch(() => null),
+        new Promise(resolve => { deadline = setTimeout(resolve, 950); }),
+      ]) : null;
+      clearTimeout(deadline);
+      if (current !== turn) return;
+      const reaction = variation?.reaction || fallback;
+      if (reaction) previous[key] = reaction;
+      text = reaction;
+    } else if (CONTEXT_EVENTS.has(event.kind)) {
+      showContext(event);
+    }
     const selectedVoice = frenchVoice();
     showCaption(text);
     const done = () => {
@@ -146,6 +179,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     if (Number(volume.value) === 0) muteCurrent();
   });
   captions.addEventListener('change', renderCaption);
+  mode.addEventListener('change', () => { tool.hidden = true; stop(); });
   voice?.addEventListener('voiceschanged', updateStatus);
   window.addEventListener('pagehide', stop);
   updateStatus();
