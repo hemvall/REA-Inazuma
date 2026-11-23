@@ -40,6 +40,9 @@ def recruitment_squad(roster, team, drafts):
 
 def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
     """Clone the selected native units into successive reserved rows."""
+    from arena_graphics import add_graphics
+    from souls_recruitment import source_players
+
     if sha(rom.data) != expected_sha256 or rom.data[12:16] != b'BEBF' or rom.data[30] != 0:
         raise ValueError('Version de la ROM Club incompatible avec le recrutement.')
     resources = {}
@@ -55,11 +58,19 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
             or any(unit != struct.unpack_from('<H', base, row * 96 + 66)[0]
                    for row, unit in enumerate(ids))):
         raise ValueError('La cartographie native des identifiants a changé.')
+    imported = source_players() if any('souls_unit' in draft for draft in drafts) else {}
+    if imported and not arena:
+        raise ValueError('Le joueur personnalisé est réservé à Inazuma FC.')
     edits = []
+    imported_graphics = {}
     for index, draft in enumerate(drafts):
         unit = FIRST_RECRUIT_ID + index
         reserved = FIRST_RESERVED + index
-        template_unit = draft['template_unit']
+        souls = imported.get(draft.get('souls_unit'))
+        template_unit = 7 if souls else draft.get('template_unit')
+        model = 3000 + index
+        if souls:
+            imported_graphics[model] = souls
         if type(template_unit) is not int or template_unit <= 0 or template_unit not in ids:
             raise ValueError('Identifiant du modèle natif inconnu.')
         source = ids.index(template_unit)
@@ -72,11 +83,18 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
             if path.endswith('unitno.dat'):
                 struct.pack_into('<H', after, 0, unit)
             elif path.endswith('unitbase.dat'):
+                if souls:
+                    source_base = souls['base']
+                    for field in (0x40, 0x52, 0x54, 0x55, 0x5A):
+                        after[field] = source_base[field]
+                    struct.pack_into('<H', after, 0x44, model)
                 after[:64] = names
                 struct.pack_into('<H', after, 66, unit)
                 struct.pack_into('<H', after, 94, reserved)
             elif path.endswith('.STR'):
-                after = b'Recrue du Club.'.ljust(size, b'\0')
+                after[:] = b'Recrue du Club.'.ljust(size, b'\0')
+            elif souls and path.endswith('unitstat.dat'):
+                after[:] = souls['stats' if path.startswith(ROOT) else 'match_stats']
             if before != after:
                 edits.append({'path': path, 'resource_sha256': sha(data), 'offset': offset,
                               'before_hex': before.hex(), 'after_hex': after.hex()})
@@ -94,7 +112,8 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
                 edits.append({'path': path, 'resource_sha256': sha(teams), 'offset': offset,
                               'before_hex': teams[offset:offset + 2].hex(),
                               'after_hex': struct.pack('<H', unit).hex()})
-    return patch(rom, {'rom_sha256': expected_sha256, 'edits': edits})
+    rebuilt = patch(rom, {'rom_sha256': expected_sha256, 'edits': edits})
+    return add_graphics(rebuilt, imported_graphics) if imported_graphics else rebuilt
 
 
 def refresh_unit_index(pointer, memory, original, rebuilt, previous_count=0):

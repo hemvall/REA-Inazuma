@@ -7,6 +7,7 @@ from pathlib import Path
 from arena_service import Arena
 from chester import generate_reaction
 from club_coach import analyse_club
+from souls_recruitment import PLAYERS as SOULS_PLAYERS, portrait_png, source_players
 from local_address import HOST, PORT, URL
 
 ARENA = Arena(local_only=True, recruit_in_club=True)
@@ -75,6 +76,21 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.valid_host():
             return self.reply(403, {'error': 'Invalid host'})
+        if self.path == '/souls2-catalogue':
+            try:
+                source_players()
+                return self.reply(200, {'available': True})
+            except (OSError, ValueError):
+                return self.reply(200, {'available': False})
+        if self.path.startswith('/assets/souls2/'):
+            filename = self.path.removeprefix('/assets/souls2/')
+            unit = next((unit for unit in SOULS_PLAYERS if filename == f'{unit}.png'), None)
+            if unit is not None:
+                try:
+                    return self.reply(200, portrait_png(unit), 'image/png')
+                except (OSError, ValueError):
+                    pass
+            return self.reply(404, {'error': 'Portrait Souls 2 indisponible.'})
         if self.path.startswith('/video?session='):
             sid = self.path.split('=', 1)[1]
             if sid != ARENA.session.session_id:

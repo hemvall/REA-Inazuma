@@ -59,6 +59,19 @@ const recruits = [
   {id: 'byron', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/d/y/dykb3jbxeis.png', name: 'Byron Love', position: 'MIL', rarity: 'Légendaire', price: 1400},
   {id: 'torch', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/d/mdglyf7jc3c.png', name: 'Torch', position: 'AT', rarity: 'Légendaire', price: 1450},
   {id: 'gazelle', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/r/ir7gceyqjb8.png', name: 'Gazelle', position: 'AT', rarity: 'Légendaire', price: 1475},
+  ...[
+    [216, 'Jean Pierre Lapin', 'GB', 'Argent', 500],
+    [232, 'Samguk Han', 'GB', 'Or', 750],
+    [353, 'Gabriel Garcia', 'DEF', 'Or', 790],
+    [440, 'Ryoma Nishiki', 'MIL', 'Or', 820],
+    [714, 'Arion Sherwind', 'MIL', 'Or', 900],
+    [633, 'Victor Blade', 'AT', 'Légendaire', 1400],
+    [187, 'Tezcat', 'AT', 'Légendaire', 1500],
+    [194, 'Bailong', 'AT', 'Légendaire', 1550],
+    [2186, 'Arion Sherwind', 'MIL', 'Légendaire', 1650, 'Mixi Max'],
+  ].map(([unit, name, position, rarity, price, detail]) => ({
+    id: `souls-${unit}`, image: `/assets/souls2/${unit}.png`, name, position, rarity, price, detail, souls: true,
+  })),
 ];
 const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
@@ -77,6 +90,7 @@ let activeSlot = null;
 let sellingId = null;
 let analysisController;
 let proposedRecruitment = null;
+let soulsAvailable = false;
 const declinedOptions = new Set();
 
 function ownedPlayers(state) {
@@ -214,8 +228,8 @@ function renderShop() {
   const proposal = proposedRecruitment;
   $('rarity').closest('label').hidden = Boolean(proposal);
   $('catalogue-title').textContent = proposal ? 'Confirmer le recrutement avec Célia' : 'Joueurs disponibles';
-  $('shop-list').replaceChildren(...recruits.filter(player => proposal ? player.id === proposal.playerId
-    : !filter || player.rarity === filter).map(player => {
+  $('shop-list').replaceChildren(...recruits.filter(player => (!player.souls || soulsAvailable) && (proposal
+    ? player.id === proposal.playerId : !filter || (filter === 'souls2' ? player.souls : player.rarity === filter))).map(player => {
     const owned = state.recruits.includes(player.id);
     const afford = state.credits >= player.price;
     const button = node('button', 'purchase', owned ? 'Recruté' : !afford ? 'Budget insuffisant'
@@ -329,7 +343,8 @@ function coachOptions() {
     }
     if (incumbent?.price || (incumbent && !misplaced && role !== 'GB' && scoutsInLine < 2)) continue;
     const budget = !incumbent || misplaced ? state.credits : Math.floor(state.credits / 2);
-    const recruit = recruits.filter(player => eligible(player) && !state.recruits.includes(player.id) && player.price <= budget)
+    const recruit = recruits.filter(player => (!player.souls || soulsAvailable) && eligible(player)
+      && !state.recruits.includes(player.id) && player.price <= budget)
       .sort((a, b) => a.price - b.price)[0];
     if (recruit) {
       offer(recruit, !incumbent ? 5 : misplaced ? 3 : 1,
@@ -570,6 +585,13 @@ if (location.hash === '#inazuma-fc') {
   showClub();
 }
 $('rarity').onchange = () => { if (state) renderShop(); };
+fetch('/souls2-catalogue').then(response => response.json()).then(result => {
+  if (result.available === true) {
+    soulsAvailable = true;
+    $('souls2-filter').hidden = false;
+    if (state) renderShop();
+  }
+}).catch(() => {});
 picker.addEventListener('close', () => {
   document.querySelector(`[data-slot="${activeSlot}"]`)?.focus();
   activeSlot = null;
