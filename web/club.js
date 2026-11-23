@@ -56,6 +56,7 @@ const recruits = [
   {id: 'austin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/v/u/vu_2_98zume.png', name: 'Austin Hobbes', position: 'AT', rarity: 'Or', price: 790},
   {id: 'caleb', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/s/x/sxyalpxpni8.png', name: 'Caleb Stonewall', position: 'MIL', rarity: 'Or', price: 810},
   {id: 'shawn', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/p/opancch54ie.png', name: 'Shawn Froste', position: 'DEF', rarity: 'Or', price: 880},
+  {id: 'aiden-child', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/a/maq5sorjvom.png', name: 'Aiden Froste (enfant)', position: 'AT', rarity: 'Or', price: 900},
   {id: 'nathan', image: '/assets/captain-nathan-dark.png', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
   {id: 'xene', image: '/assets/captain-xene.png', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
   {id: 'jude', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/l/1/l1wbplzhm4k.png', name: 'Jude Sharp', position: 'MIL', rarity: 'Légendaire', price: 1300},
@@ -64,6 +65,7 @@ const recruits = [
   {id: 'gazelle', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/i/r/ir7gceyqjb8.png', name: 'Gazelle', position: 'AT', rarity: 'Légendaire', price: 1475},
   {id: 'xavier-foster', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/8/y/8yq-vg9hzzc.png', name: 'Xavier Foster', position: 'AT', rarity: 'Légendaire', price: 1550},
   {id: 'xavier-schiller', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/j/b/jbof1s5dybs.png', name: 'Xavier Schiller', position: 'AT', rarity: 'Légendaire', price: 1750},
+  {id: 'aiden-adult', image: '/assets/aiden-adult.png', name: 'Aiden Froste (adulte)', detail: 'Version non officielle', position: 'AT', rarity: 'Légendaire', price: 1650},
 ];
 const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
