@@ -1,13 +1,30 @@
 import {createChester} from './chester.js';
 
 const $ = id => document.getElementById(id);
-const pilotMode = document.createElement('select');
-pilotMode.id = 'pilotMode';
-pilotMode.disabled = true;
-pilotMode.setAttribute('aria-label', 'Mode du pilote');
-pilotMode.add(new Option('Pilote déterministe', 'deterministic'));
-pilotMode.add(new Option('Pilote IA', 'ai'));
-$('delegate').parentElement.before(pilotMode);
+const pilotMode = $('pilotMode');
+const arena = $('matchArena');
+const fullscreenButton = $('arenaFullscreen');
+
+if (document.fullscreenEnabled && arena.requestFullscreen) {
+  fullscreenButton.hidden = false;
+  fullscreenButton.onclick = async () => {
+    try {
+      if (document.fullscreenElement === arena) {
+        await document.exitFullscreen();
+      } else {
+        await arena.requestFullscreen();
+      }
+    } catch {
+      $('error').textContent = 'Impossible de basculer en plein écran.';
+    }
+  };
+  document.addEventListener('fullscreenchange', () => {
+    const label = document.fullscreenElement === arena ? 'Quitter le plein écran' : 'Plein écran';
+    fullscreenButton.setAttribute('aria-label', label);
+    fullscreenButton.title = label;
+  });
+}
+
 let session=null,revision=0,running=false,busy=false,owner='human',jobRunning=false,fixture=null,lastJob='',lastImage='',polling=false;
 let videoSession=null;
 function attachVideo(){
@@ -76,14 +93,15 @@ function controls(){
   $('stadiumStage').classList.toggle('is-preparing',jobRunning&&!session);
   const manual=!!session&&owner==='human'&&!jobRunning;
   if(!manual||window.currentPhase==='result')releaseInputs();
-  $('start').disabled=!manual||!fixture||!['idle'].includes(window.currentPhase);
-  $('delegate').disabled=!manual||!fixture||window.currentPhase==='result';
-  pilotMode.disabled=$('delegate').disabled;
-  $('play').disabled=!manual||window.currentPhase==='result';
-  if(window.currentPhase==='result'){running=false;$('play').textContent='Continuer';}
-  $('reset').disabled=!manual;
-  $('close').disabled=!manual;
-  $('stop').disabled=!jobRunning&&owner!=='agent';
+  const finished=window.currentPhase==='result';
+  const canStart=manual&&!!fixture&&window.currentPhase==='idle';
+  $('start').hidden=!canStart;
+  $('play').hidden=!manual||canStart||finished;
+  $('stop').hidden=!jobRunning&&owner!=='agent';
+  $('pilotControls').hidden=!manual||!fixture||finished;
+  $('arenaOptions').hidden=!manual;
+  if(!manual)$('arenaOptions').open=false;
+  if(finished){running=false;$('play').textContent='Continuer';}
   $('stop').textContent=jobRunning&&owner==='human'?'Annuler':'Reprendre la main';
   $('send').disabled=$('manualPrepare').disabled=jobRunning||profile==='club';
   for(const b of $('keys').querySelectorAll('button'))b.disabled=!manual;
@@ -158,6 +176,11 @@ $('manual').onsubmit=async event=>{
 };
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
 $('play').onclick=()=>playback(!running);
+$('arenaOptions').addEventListener('click',event=>{
+  if(!event.target.closest('button'))return;
+  $('arenaOptions').open=false;
+  $('arenaOptions').querySelector('summary').focus();
+});
 $('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session,mode:pilotMode.value});chester.pause(false);jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
 $('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent',session?{session_id:session}:{});chester.pause(true);await poll();}catch(error){$('error').textContent=error.message;}};
 $('reset').onclick=async()=>{await playback(false);await mutate('reset_match');chester.pause(false);renderFixture(null);await poll();};

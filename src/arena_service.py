@@ -252,9 +252,10 @@ class Arena:
                                 record('decision', pilot_mode=mode, mode=decision_mode, action_id=action_id,
                                        milliseconds=decision_ms, fallback=fallback, frame=frame, revision=revision)
                                 result = self.checked('apply_match_action', **arguments, revision=revision,
-                                                      frame=frame, action_id=action_id)
+                                                      frame=frame, action_id=action_id, realtime=mode == 'ai')
                             else:
-                                result = self.checked('advance_match', **arguments, revision=revision, frames=60)
+                                result = self.checked('advance_match', **arguments, revision=revision,
+                                                      frames=60, realtime=mode == 'ai')
                     except AgentCancelled:
                         finish('cancelled', phase=phase, frame=frame)
                         return

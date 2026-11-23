@@ -81,10 +81,23 @@ def _worker(pipe, rom, core, directory, profile, video=None):
             sample_commentary()
             return bool(bridge and bridge.poll_frame())
 
-        def on_match_frame():
-            publish_due()
-            sample_commentary()
-            return bridge.poll_match_result()
+        def match_frame_callback(realtime):
+            next_frame = time.monotonic()
+
+            def on_match_frame():
+                nonlocal next_frame
+                publish_due()
+                sample_commentary()
+                if bridge.poll_match_result():
+                    return True
+                if realtime:
+                    now = time.monotonic()
+                    if next_frame > now:
+                        time.sleep(next_frame - now)
+                    next_frame = max(next_frame + 1/60, time.monotonic())
+                return False
+
+            return on_match_frame
 
         controller = Controller(emulator, on_frame)
         club_return = None
@@ -181,6 +194,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                         revision = request.get('revision')
                         if type(revision) is not int or revision != controller.revision:
                             raise ValueError('Observation périmée.')
+                        on_match_frame = match_frame_callback(request.get('realtime') is True)
                         if op == 'apply_match_action':
                             frame = request.get('frame')
                             if type(frame) is not int or frame != emulator.frames:
