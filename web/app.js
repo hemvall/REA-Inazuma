@@ -273,6 +273,7 @@ $('close').onclick=async()=>{running=false;const result=await mutate('session_cl
 const directionKeys={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',z:'UP',q:'LEFT',s:'DOWN',d:'RIGHT'};
 const actionKeys={a:'A',b:'B',x:'X',y:'Y',Enter:'START'};
 document.addEventListener('keydown',event=>{
+  if(document.getElementById('club-window').open)return;
   if(['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName)||event.ctrlKey||event.metaKey||event.altKey)return;
   if(event.key==='Enter'&&event.target.tagName==='BUTTON')return;
   const key=directionKeys[event.key]||actionKeys[event.key];

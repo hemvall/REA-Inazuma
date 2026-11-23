@@ -2,30 +2,48 @@ const STORAGE = 'inazuma-fc:v1';
 const STARTING_CREDITS = 3800;
 const slots = ['AT', 'AT', 'MIL', 'MIL', 'MIL', 'MIL', 'DEF', 'DEF', 'DEF', 'DEF', 'GB',
   'Banc', 'Banc', 'Banc', 'Banc', 'Banc'];
-const scouts = slots.map((position, index) => ({
-  id: `scout-${index + 1}`, name: `Scoot ${String(index + 1).padStart(2, '0')}`,
-  position, rarity: 'Scoot', price: 0,
+const scouts = [
+  ["Monty Hillary", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/o/c/ocbppldxgwu.png"],
+  ["Penfold Pulper", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/g/q/gqakvkk4b60.png"],
+  ["Trey Spotter", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/h/j/hjhhthewqj8.png"],
+  ["Ryder Waverly", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/p/o/por5utbna8k.png"],
+  ["Ted Larkin", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/k/k/kk-nogtcxce.png"],
+  ["Odo Cologne", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/1/j/1jszwc-uppc.png"],
+  ["Onslow Ball", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/v/h/vhim9o0fvcu.png"],
+  ["Horace Coop", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/8/h/8hdet11byjm.png"],
+  ["Ness Lockley", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/c/o/co-x-oathp8.png"],
+  ["Olef Tennant", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/t/a/tapqtxmpqau.png"],
+  ["Len Scapp", 'GB', "https://dxi4wb638ujep.cloudfront.net/1/k/z/q/zqwiiallnl8.png"],
+  ["Leaf Scarlett", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/n/v/nvslakthf6k.png"],
+  ["Spike Thorne", 'DEF', "https://dxi4wb638ujep.cloudfront.net/1/k/x/t/xtiwrgzkzps.png"],
+  ["Rob Ottley", 'MIL', "https://dxi4wb638ujep.cloudfront.net/1/k/9/3/93fqekogpje.png"],
+  ["Thomas Cott", 'GB', "https://dxi4wb638ujep.cloudfront.net/1/k/3/c/3crf4bscsjc.png"],
+  ["Lincoln Hawking", 'AT', "https://dxi4wb638ujep.cloudfront.net/1/k/m/f/mf5rg5_w0ae.png"],
+].map(([name, position, image], index) => ({
+  id: `scout-${index + 1}`, name, position, image, rarity: 'Scout', price: 0,
 }));
 const recruits = [
-  {id: 'willy', name: 'Willy Glasses', position: 'AT', rarity: 'Bronze', price: 180},
-  {id: 'steve', name: 'Steve Grim', position: 'MIL', rarity: 'Bronze', price: 220},
-  {id: 'tod', name: 'Tod Ironside', position: 'DEF', rarity: 'Bronze', price: 170},
-  {id: 'max', name: 'Maxwell Carson', position: 'MIL', rarity: 'Bronze', price: 190},
-  {id: 'darren', name: 'Darren LaChance', position: 'GB', rarity: 'Bronze', price: 200},
-  {id: 'jim', name: 'Jim Wraith', position: 'DEF', rarity: 'Bronze', price: 210},
-  {id: 'erik', name: 'Erik Eagle', position: 'MIL', rarity: 'Argent', price: 390},
-  {id: 'kevin', name: 'Kevin Dragonfly', position: 'AT', rarity: 'Argent', price: 430},
-  {id: 'jack', name: 'Jack Wallside', position: 'DEF', rarity: 'Argent', price: 420},
-  {id: 'celia', name: 'Celia Hills', position: 'MIL', rarity: 'Argent', price: 460},
-  {id: 'mark', name: 'Mark Evans', position: 'GB', rarity: 'Or', price: 800},
-  {id: 'axel', name: 'Axel Blaze', position: 'AT', rarity: 'Or', price: 850},
-  {id: 'nathan', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
-  {id: 'xene', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
+  {id: 'willy', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/u/y/uy2tfhpjks0.png', name: 'Willy Glasses', position: 'AT', rarity: 'Bronze', price: 180},
+  {id: 'steve', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/3/f3asqpwqusk.png', name: 'Steve Grim', position: 'MIL', rarity: 'Bronze', price: 220},
+  {id: 'tod', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/_/y/_yjndsfyhyu.png', name: 'Tod Ironside', position: 'DEF', rarity: 'Bronze', price: 170},
+  {id: 'max', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/r/d/rd_khczyztm.png', name: 'Maxwell Carson', position: 'MIL', rarity: 'Bronze', price: 190},
+  {id: 'darren', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/y/oy1sibyz7wc.png', name: 'Darren LaChance', position: 'GB', rarity: 'Bronze', price: 200},
+  {id: 'jim', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/o/w/owsgutjimb8.png', name: 'Jim Wraith', position: 'DEF', rarity: 'Bronze', price: 210},
+  {id: 'erik', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/e/4/e4qtt3lwf_m.png', name: 'Erik Eagle', position: 'MIL', rarity: 'Argent', price: 390},
+  {id: 'kevin', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/0/d/0dvmw8cb_ye.png', name: 'Kevin Dragonfly', position: 'AT', rarity: 'Argent', price: 430},
+  {id: 'jack', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/m/r/mrvaa0xojh8.png', name: 'Jack Wallside', position: 'DEF', rarity: 'Argent', price: 420},
+  {id: 'celia', image: '/assets/celia.png', name: 'Celia Hills', position: 'MIL', rarity: 'Argent', price: 460},
+  {id: 'mark', image: '/assets/captain-mark.png', name: 'Mark Evans', position: 'GB', rarity: 'Or', price: 800},
+  {id: 'axel', image: 'https://dxi4wb638ujep.cloudfront.net/1/k/f/1/f1kh7d67sbs.png', name: 'Axel Blaze', position: 'AT', rarity: 'Or', price: 850},
+  {id: 'nathan', image: '/assets/captain-nathan-dark.png', name: 'Nathan Swift', detail: 'Empereurs noirs', position: 'AT', rarity: 'Légendaire', price: 1500},
+  {id: 'xene', image: '/assets/captain-xene.png', name: 'Xene', detail: 'Genesis', position: 'AT', rarity: 'Légendaire', price: 1600},
 ];
 const scoutIds = scouts.map(player => player.id);
 const players = new Map([...scouts, ...recruits].map(player => [player.id, player]));
 const $ = id => document.getElementById(id);
 const picker = $('picker');
+const club = $('club-window');
+const catalogue = $('recruitment-catalogue');
 const formatter = new Intl.NumberFormat('fr-FR');
 let activeSlot = null;
 
@@ -46,7 +64,8 @@ function load() {
 }
 
 function feedback(text, error = false) {
-  const message = error && picker.open ? $('picker-error') : $('feedback');
+  const message = error && picker.open ? $('picker-error')
+    : catalogue.open ? $('catalogue-feedback') : $('feedback');
   message.textContent = text;
   message.hidden = false;
   message.classList.toggle('error', error);
@@ -81,6 +100,15 @@ function playerName(player) {
   return player.detail ? `${player.name} · ${player.detail}` : player.name;
 }
 
+function portrait(player) {
+  const image = node('img', 'club-portrait');
+  image.src = player.image;
+  image.alt = '';
+  image.decoding = 'async';
+  image.referrerPolicy = 'no-referrer';
+  return image;
+}
+
 function slotName(index) {
   return index < 11 ? `Poste ${slots[index]} ${index + 1}` : `Banc ${index - 10}`;
 }
@@ -93,9 +121,7 @@ function squadSlot(id, index) {
   button.setAttribute('aria-label', `${slotName(index)} — ${playerName(player)}. Changer de joueur`);
   button.title = playerName(player);
   button.dataset.rarity = player.rarity;
-  const shirt = node('span', 'shirt', index < 11 ? String(index + 1).padStart(2, '0') : `R${index - 10}`);
-  shirt.setAttribute('aria-hidden', 'true');
-  button.append(shirt, node('span', 'slot-name', player.name));
+  button.append(portrait(player), node('span', 'slot-name', player.name));
   button.onclick = () => {
     activeSlot = index;
     $('picker-error').hidden = true;
@@ -108,16 +134,19 @@ function squadSlot(id, index) {
 
 function playerRow(player, info, action) {
   const row = node('li', 'player-row');
-  const name = node('div', 'player-identity');
-  name.append(node('strong', '', playerName(player)), node('span', '', info));
+  const identity = node('div', 'player-identity');
+  const details = node('div', 'player-details');
+  details.append(node('strong', '', playerName(player)), node('span', '', info));
+  identity.append(portrait(player), details);
   const rarity = node('span', 'rarity', player.rarity);
   rarity.dataset.rarity = player.rarity;
-  row.append(name, rarity);
+  row.append(identity, rarity);
   if (action) row.append(action);
   return row;
 }
 
 function renderShop() {
+  if (!catalogue.open) return;
   const filter = $('rarity').value;
   $('shop-list').replaceChildren(...recruits.filter(player => !filter || player.rarity === filter).map(player => {
     const owned = state.recruits.includes(player.id);
@@ -132,7 +161,7 @@ function renderShop() {
         if (copy.recruits.includes(player.id)) throw new Error('Ce joueur appartient déjà au club.');
         if (balance(copy) < player.price) throw new Error('Crédits insuffisants.');
         copy.recruits.push(player.id);
-        return `${player.name} a rejoint ton inventaire.`;
+        return `Célia confirme le recrutement de ${playerName(player)}. Tu peux retrouver le joueur dans ton inventaire.`;
       });
       if (saved && focused) ($('shop-list').querySelector('button:enabled') ?? $('rarity')).focus();
     };
@@ -191,8 +220,19 @@ for (const button of document.querySelectorAll('[data-view]')) {
       $(item.dataset.view).hidden = !active;
       item.setAttribute('aria-pressed', active);
     }
-    if (state && button.dataset.view === 'shop') renderShop();
   };
+}
+const openClub = $('open-club');
+openClub.onclick = () => club.showModal();
+club.addEventListener('close', () => openClub.focus());
+$('open-recruitment').onclick = () => {
+  $('catalogue-feedback').hidden = true;
+  catalogue.showModal();
+  if (state) renderShop();
+};
+if (location.hash === '#inazuma-fc') {
+  history.replaceState(history.state, '', location.pathname + location.search);
+  club.showModal();
 }
 $('rarity').onchange = () => { if (state) renderShop(); };
 picker.addEventListener('close', () => {
