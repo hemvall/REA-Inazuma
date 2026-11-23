@@ -4,6 +4,8 @@ FIXTURES = {
     2: (2, 1, 'Royal Academy contre Raimon'),
     3: (10, 3, 'Zeus contre Occulte'),
     4: (1, 2, 'Raimon contre Royal Academy'),
+    5: (41, 33, 'Empereurs noirs\\ncontre Genesis'),
+    6: (33, 41, 'Genesis contre\\nEmpereurs noirs'),
 }
 
 

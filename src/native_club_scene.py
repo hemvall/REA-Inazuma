@@ -75,6 +75,7 @@ def event_pair(ssd,sst,config,teams):
         p.emit(0x40C9,1,team);p.emit(0x4068,1,team)
     p.emit(0x3005,2);p.emit(0x3005,1)
     p.emit(0x30F5,1);p.emit(0x30F6,1)
+    p.assign(0x1000E,1)
     p.emit(0x203E)  # Original route/select/confirm loop from 25030300.
     p.emit(0x6008,expression(0x7003,variable(0x20005),255))
     selected=p.emit(0x6001,1,0)
@@ -98,6 +99,7 @@ def event_pair(ssd,sst,config,teams):
     p.end(yes)
     p.emit(0x6008,expression(0x7002,expression(0x7003,variable(0x10008),10)))
     cancel=p.emit(0x6001,1,0)
+    p.assign(0x1000E,0)
     p.emit(restore_id)
     p.emit(0x301E);p.emit(0x3004,2);p.emit(0x3004,1)
     p.emit(0x201B)
@@ -106,6 +108,7 @@ def event_pair(ssd,sst,config,teams):
     opened=p.function(0x1013,expression(0x700F,
         expression(0x7003,variable(0x1000A),4),
         expression(0x7003,variable(0x10008),10)))
+    p.assign(0x1000E,0)
     p.emit(restore_id)
     position = config['exploration']['spawn']
     p.emit(0x305A,expression(0x4045,0),0,*(fixed(v) for v in position))

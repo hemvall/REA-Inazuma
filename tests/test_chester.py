@@ -80,3 +80,17 @@ class ChesterTests(unittest.TestCase):
         agent.reaction = 'Score final : 24 à 0 !'
         with self.assertRaises(ValueError):
             generate_reaction(agent, 'turnover', None, match_context=dict)
+
+
+    def test_neuille_asks_for_a_joke_about_the_confirmed_action(self):
+        class Agent:
+            def generate(self, prompt, schema, *, timeout, match_context):
+                self.prompt = prompt
+                self.context = match_context()
+                return {'reaction': 'Oh na, défense en PC de CDI !'}
+
+        agent = Agent()
+        facts = 'Le porteur provoque son défenseur !'
+        self.assertIn('CDI', generate_reaction(agent, 'attack_duel', None, match_context=lambda: {'action': facts}, mode='neuille')['reaction'])
+        self.assertIn('Neuille', agent.prompt)
+        self.assertEqual(agent.context['action'], facts)

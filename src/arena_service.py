@@ -7,7 +7,7 @@ import time
 import uuid
 from game_session import GameSession, ROOT
 from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, InvalidAgentResponse, BUTTONS
-from arena_bridge import catalogue
+from arena_bridge import NATIVE_MATCH_BY_TEAM, catalogue
 from fast_policy import fast_decision
 from player_state import text_ready
 
@@ -37,7 +37,7 @@ class Arena:
     def capabilities(self):
         built = (ROOT/'build/arena/profile.json').is_file()
         return {'application':'InazumIA','protocol':1,'emulation':True,'dynamic_match':built,'player_agent':built,
-                'external_agent_control':True,'teams':[1,2,3,10], 'club':True, 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
+                'external_agent_control':True,'teams':list(NATIVE_MATCH_BY_TEAM), 'club':True, 'agent_backend':self.agent.backend, 'agent_model':self.agent.model,
                 'player_mode':'deterministic','player_modes':['deterministic','ai'],'player_inputs':['rules','text'],
                 'reason':None if built else 'Construisez l’arène avec python src/prepare_arena.py.'}
 
@@ -100,7 +100,8 @@ class Arena:
         return result
 
     def prepare(self, home, away, lines):
-        if type(home) is not int or type(away) is not int or home not in (1,2,3,10) or away not in (1,2,3,10) or home==away:
+        if (type(home) is not int or type(away) is not int or home == away
+                or home not in NATIVE_MATCH_BY_TEAM or away not in NATIVE_MATCH_BY_TEAM):
             raise ValueError('Choisissez deux équipes distinctes du catalogue.')
         if not isinstance(lines,list) or len(lines)!=6 or any(not isinstance(line,str) or not 1<=len(line)<=100 for line in lines):
             raise ValueError('Six répliques de 1 à 100 caractères sont requises.')
@@ -147,7 +148,7 @@ class Arena:
         if type(max_decisions) is not int or not 1<=max_decisions<=500:
             raise ValueError('Budget attendu : 1 à 500 décisions')
         if session_id != self.session.session_id: raise ValueError('Session inconnue')
-        if self.session.profile not in ('arena','club') or not self.fixture:
+        if self.session.profile not in ('arena','club','club_web') or not self.fixture:
             raise ValueError('Préparez d’abord une rencontre dans l’arène.')
         def player():
             with self.lock:
@@ -387,6 +388,14 @@ class Arena:
             return {'stopping':True}
 
     def call(self, operation, arguments):
+        if operation == 'open_club_route':
+            if arguments: raise ValueError('Aucun argument attendu')
+            if self.session.session_id: raise ValueError('Fermez la session actuelle avant d’ouvrir la route.')
+            def enter_route():
+                opened = self.session.open('club_web', cancel=self.cancel)
+                self.checked('playback', session_id=opened['session_id'], running=True, include_image=False)
+                self.update(message='Va voir Hillman et appuie sur A. Réponds Oui pour ouvrir la route.')
+            return {'job': self.launch(enter_route, 'Ouverture du local de Hillman…')}
         if operation=='open_club':
             if arguments: raise ValueError('Aucun argument attendu')
             if self.session.session_id: raise ValueError('Fermez la session actuelle avant d’entrer dans le local.')
