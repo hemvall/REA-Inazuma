@@ -4,8 +4,14 @@
 native event may launch. The same measured slots as the dynamic arena are used.
 """
 from ssd import Program, helper_prefix, expression, variable, string
-from club_fixtures import FIXTURES
+from club_fixtures import CLUB_FIXTURE, FIXTURES
+from recruitment_rom import FIRST_RECRUIT_ID
 from scene_team import emit_dynamic_removals
+
+RECRUIT_UNIT = 0x10010
+RECRUIT_LEVEL = 0x10011
+RECRUIT_SLOT = 0x10012
+RECRUIT_READY = 0x10013
 
 
 def event_pair(ssd, sst, config):
@@ -63,13 +69,28 @@ def event_pair(ssd, sst, config):
 
     begin = p.function(0x1023)
     p.emit(0x2012)
+    p.emit(0x6008, expression(0x7003, variable(RECRUIT_UNIT), FIRST_RECRUIT_ID))
+    recruitment = p.emit(0x6001, 1, 0)
+    p.emit(0x403E, variable(RECRUIT_UNIT), variable(RECRUIT_LEVEL), variable(RECRUIT_SLOT))
+    p.assign(RECRUIT_UNIT, 0)
+    p.assign(RECRUIT_LEVEL, 0)
+    p.assign(RECRUIT_SLOT, 0)
+    p.assign(RECRUIT_READY, FIRST_RECRUIT_ID)
+    p.emit(0x2014)
+    p.end(recruitment)
+    p.emit(0x600C, 1)
+    fixtures = p.emit(0x6001, 1, 0)
     p.assign(0x10008, 0)
     p.assign(0x1000E, 1)
     p.assign(0x1000F, 0)
     say('Bienvenue ! Choisis une affiche.\\nLes equipes invitees joueront\\navec leurs propres joueurs.')
     # A nested else chain gives each native No button the next offer.
     branches = []
-    for index, (_, _, title) in FIXTURES.items():
+    offers = [(index, title) for index, (_, _, title) in FIXTURES.items()]
+    for index, title in [*offers, (CLUB_FIXTURE, 'Mon equipe du Club')]:
+        if index == CLUB_FIXTURE:
+            p.emit(0x6008, expression(0x7003, variable(RECRUIT_READY), FIRST_RECRUIT_ID))
+            club_offer = p.emit(0x6001, 1, 0)
         p.emit(0x301E)
         p.assign(0x10008, 0)
         say(title + ' ?', question=True)
@@ -82,8 +103,15 @@ def event_pair(ssd, sst, config):
         p.end(yes)
         p.emit(0x600C, 1)
         otherwise = p.emit(0x6001, 1, 0)
-        branches.append(otherwise)
+        if index == CLUB_FIXTURE:
+            p.end(otherwise)
+            p.end(club_offer)
+        else:
+            branches.append(otherwise)
+    p.emit(0x6008, expression(0x7002, expression(0x7003, variable(0x10008), 10)))
+    no_match = p.emit(0x6001, 1, 0)
     say('Une autre fois alors !\\nReviens me voir quand tu veux.')
+    p.end(no_match)
     for branch in reversed(branches):
         p.end(branch)
     # 4016 queues the match asynchronously. Do not run the field-event return
@@ -96,5 +124,6 @@ def event_pair(ssd, sst, config):
     p.assign(0x1000E, 0)
     p.emit(0x2014)
     p.end(cancelled)
+    p.end(fixtures)
     p.end(begin)
     return p.encode()
