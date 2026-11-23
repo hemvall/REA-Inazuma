@@ -31,7 +31,7 @@ def encode_name(name):
 
 def recruitment_squad(roster, team, drafts):
     recruits = [(FIRST_RECRUIT_ID + index, draft['level']) for index, draft in enumerate(drafts)
-                if draft['team_id'] == team]
+                if draft.get('team_id') == team]
     squad = [(unit, 30) for unit in roster if unit]
     start = MAX_TEAM_RECRUITS - len(recruits)
     squad[start:start] = recruits
@@ -85,10 +85,10 @@ def build_recruitment_rom(rom, *, expected_sha256, drafts, arena=False):
         teams = rom.data[slice(*rom.files[path])]
         index = rom.data[slice(*rom.files[ROOT + 'team.pkh'])]
         keys = [struct.unpack_from('<I', index, 48 + i * 4)[0] for i in range(len(teams) // 320)]
-        for team in dict.fromkeys(draft['team_id'] for draft in drafts):
+        for team in dict.fromkeys(draft['team_id'] for draft in drafts if 'team_id' in draft):
             # Match 500 uses the isolated Raimon roster under native key 70.
             key = 70 if team == 1 else team
-            recruits = [FIRST_RECRUIT_ID + i for i, draft in enumerate(drafts) if draft['team_id'] == team]
+            recruits = [FIRST_RECRUIT_ID + i for i, draft in enumerate(drafts) if draft.get('team_id') == team]
             for slot, unit in enumerate(recruits, MAX_TEAM_RECRUITS - len(recruits)):
                 offset = keys.index(key) * 320 + 64 + slot * 8
                 edits.append({'path': path, 'resource_sha256': sha(teams), 'offset': offset,

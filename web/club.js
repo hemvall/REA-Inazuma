@@ -106,6 +106,12 @@ function load() {
   return value;
 }
 
+export function inazumaMatchSquad() {
+  const {lineup} = load();
+  const captain = players.get(lineup[10]);
+  return {lineup, captain: captain ? playerName(captain) : '', portrait: captain?.image};
+}
+
 function feedback(text, error = false) {
   const message = error && picker.open ? $('picker-error')
     : error && sale.open ? $('sale-error')
@@ -415,6 +421,7 @@ function render() {
   renderShop();
   if (picker.open) renderPicker();
   if (!catalogue.open) analyseTeam();
+  document.dispatchEvent(new Event('inazuma-lineup-change'));
 }
 
 let state;

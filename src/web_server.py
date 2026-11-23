@@ -112,6 +112,7 @@ class Handler(BaseHTTPRequestHandler):
                  '/assets/team-zeus.png': ('assets/team-zeus.png', 'image/png'),
                  '/assets/team-genesis.png': ('assets/team-genesis.png', 'image/png'),
                  '/assets/team-dark-emperors.png': ('assets/team-dark-emperors.png', 'image/png'),
+                 '/assets/team-inazuma-fc.png': ('assets/team-inazuma-fc.png', 'image/png'),
                  '/assets/captain-mark.png': ('assets/captain-mark.png', 'image/png'),
                  '/assets/captain-king.png': ('assets/captain-king.png', 'image/png'),
                  '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),

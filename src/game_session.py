@@ -3,6 +3,7 @@ import base64
 import hashlib
 import multiprocessing as mp
 from pathlib import Path
+from inazuma_fc import TEAM_ID, TEAM_NAME
 import threading
 import uuid
 import ctypes as C
@@ -69,7 +70,11 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
 
         def record_commentary(match, observation):
             nonlocal last_commentary_frame
-            commentary.observe(match, observation, bridge.teams)
+            fixture = match['fixture']
+            teams = bridge.teams
+            if fixture and fixture['home'] == TEAM_ID:
+                teams = {**teams, TEAM_ID: {'name': TEAM_NAME, 'roster_names': fixture['home_roster_names']}}
+            commentary.observe(match, observation, teams)
             last_commentary_frame = emulator.frames
 
         def sample_commentary():
@@ -384,9 +389,13 @@ def _worker(pipe, rom, core, directory, profile, video=None, recruitment_save=No
                         if profile != 'arena': raise ValueError('Choisissez votre affiche dans le club.')
                         home, away = request['home'], request['away']
                         squad = None
-                        if arena_recruitment and any(draft['team_id'] == home for draft in arena_recruitment):
+                        if home == TEAM_ID:
+                            home_squad = request['home_squad']
+                            squad = [(unit, 30) for unit, _ in home_squad]
+                        elif arena_recruitment and any(draft.get('team_id') == home for draft in arena_recruitment):
                             squad = recruitment_squad(bridge.teams[home]['roster'], home, arena_recruitment)
-                        bridge.prepare(home, away, request['lines'], club_squad=squad)
+                        bridge.prepare(home, away, request['lines'], club_squad=squad,
+                                       home_names=dict(home_squad) if home == TEAM_ID else None)
                     else:
                         if profile == 'club_web': raise ValueError('Lancez le match depuis la route.')
                         bridge.start()

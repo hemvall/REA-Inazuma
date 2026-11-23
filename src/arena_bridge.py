@@ -15,6 +15,7 @@ from nds import read_rom, sha
 from scene_team import inspect_party_memory
 from frame_state import screen_phase, screen_observation
 from tactical_state import extract_tactical_state
+from inazuma_fc import TEAM_ID, TEAM_NAME
 
 ROOT = Path(__file__).resolve().parents[1]
 NATIVE_MATCH_BY_TEAM = {1: 500, 2: 51, 3: 52, 10: 33, 33: 72, 41: 11}
@@ -121,9 +122,12 @@ class ArenaBridge:
                 'result_source':'native_final_screen' if self.completed else ('native_callback' if phase=='result' else None),
                 'fixture': self.fixture}
 
-    def prepare(self, home, away, lines, *, club_squad=None):
-        if home == away or home not in self.teams or away not in self.teams:
+    def prepare(self, home, away, lines, *, club_squad=None, home_names=None):
+        custom_home = home == TEAM_ID and home_names is not None and club_squad is not None
+        if home == away or (home not in self.teams and not custom_home) or away not in self.teams:
             raise ValueError('Unsupported teams')
+        home_team = self.teams[1 if custom_home else home]
+        captain = club_squad[0][0] if custom_home else home_team['captain_id']
         if self.state()['phase'] != 'idle':
             raise ValueError('Arena must be idle before preparation')
         if not isinstance(lines, list) or len(lines) != 6:
@@ -155,7 +159,7 @@ class ArenaBridge:
         owned = [p['unit'] for p in inspect_party_memory(memory) if not p['team_field'] & 0x8000]
         if len(owned) > len(slots['removals']): raise ValueError('Native owned roster exceeds removal slots')
         removals = owned + [0] * (len(slots['removals'])-len(owned))
-        roster = self.teams[home]['roster']
+        roster = home_team['roster']
         if club_squad is not None:
             roster = [unit for unit, _ in club_squad]
             roster += [0] * (len(slots['roster']) - len(roster))
@@ -171,7 +175,7 @@ class ArenaBridge:
             for slot, unit in zip(slots.get('roster_guards', []), roster):
                 writes.append((base+slot, struct.pack('<I', unit)))
             for i, slot in enumerate(slots['portraits']):
-                writes.append((base+slot, struct.pack('<I', self.teams[home if i%2==0 else away]['captain_id'])))
+                writes.append((base+slot, struct.pack('<I', captain if i % 2 == 0 else self.teams[away]['captain_id'])))
             writes.append((base+slots['match'], struct.pack('<I', self.teams[away]['native_match_id'])))
         for base in text_bases:
             for slot, text in zip(slots['texts'], encoded):
@@ -179,11 +183,14 @@ class ArenaBridge:
         # 0x0206B704 returns team manager +0x17C + side*0x40. The measured
         # manager is 0x020E8720; native loader copies its 64-byte team header.
         header_offset = 0x020E889C-0x02000000
-        if memory[header_offset:header_offset+32].split(b'\0')[0] not in {
-                team['name'].encode('ascii') for team in self.teams.values()}:
+        allowed_names = {team['name'].encode('ascii') for team in self.teams.values()} | {TEAM_NAME.encode('ascii')}
+        if memory[header_offset:header_offset+32].split(b'\0')[0] not in allowed_names:
             raise ValueError('Native home-team header invariant failed')
-        header = bytearray.fromhex(self.teams[home]['header_hex'])
-        struct.pack_into('<H',header,62,home)
+        header = bytearray.fromhex(home_team['header_hex'])
+        struct.pack_into('<H', header, 62, home_team['id'])
+        if custom_home:
+            header[:32] = TEAM_NAME.encode('ascii').ljust(32, b'\0')
+            struct.pack_into('<H', header, 46, captain)
         writes.append((header_offset,bytes(header)))
         for offset, value in writes:
             if not 0 <= offset <= len(memory)-len(value):
@@ -195,6 +202,8 @@ class ArenaBridge:
         self.fixture = {'id':uuid.uuid4().hex,'home': home, 'away': away, 'lines': lines}
         if club_squad is not None:
             self.fixture['club_squad'] = True
+        if custom_home:
+            self.fixture.update(home_captain=home_names[captain], home_roster_names=home_names)
         return {'prepared': True, 'script_buffers': len(script_bases), 'text_buffers': len(text_bases), **self.state()}
 
     def start(self):
