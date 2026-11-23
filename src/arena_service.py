@@ -58,7 +58,7 @@ class Arena:
         return {'agent_backend':self.agent.backend, 'agent_model':self.agent.model}
 
     def list_teams(self):
-        return [{k:v for k,v in row.items() if k not in ('header_hex','native_match_id')} for row in catalogue()]
+        return [{k:v for k,v in row.items() if k not in ('header_hex','native_match_id','roster_names')} for row in catalogue()]
 
     def update(self, **values):
         with self.lock:

@@ -314,3 +314,94 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
   height: 18px;
   color: var(--yellow);
 }
+.chester-dialogue {
+  position: relative;
+  z-index: 1;
+  margin-block-start: -20px;
+  padding: 0 clamp(12px, 3vw, 28px) 16px;
+  background: linear-gradient(transparent 20px, #132441 20px);
+}
+.chester-speaker {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  padding-inline: 8px;
+}
+.chester-sprite {
+  display: block;
+  inline-size: clamp(68px, 12vw, 108px);
+  block-size: auto;
+  object-fit: contain;
+  object-position: bottom;
+  image-rendering: pixelated;
+}
+.chester-speaker h2 {
+  margin: 0;
+  padding: 6px 10px 5px;
+  border: 1px solid #7e9bc2;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: #284c77;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.chester-box {
+  min-block-size: 74px;
+  padding: 11px 14px;
+  border: 1px solid #91a9c8;
+  border-radius: 6px;
+  background: #16283f;
+  box-shadow: inset 0 0 0 2px #0d1b30, 0 3px 0 #0c182c;
+}
+.chester-line, .chester-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.chester-line { color: var(--ink); }
+.chester-hint { color: #bfcee2; }
+.chester-controls {
+  min-inline-size: 0;
+  margin: 16px 0 0;
+  padding: 4px 12px 8px;
+  border: 1px solid var(--line);
+}
+.chester-controls legend {
+  padding-inline: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.chester-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+}
+.chester-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0;
+  font-size: 12px;
+}
+.chester-options input {
+  margin: 0;
+  accent-color: var(--yellow);
+}
+.chester-options input:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 4px;
+}
+.chester-volume input { width: 100px; min-height: 32px; }
+.chester-status {
+  margin: 4px 0 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.chester-status:empty { margin: 0; }

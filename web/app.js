@@ -1,3 +1,5 @@
+import {createChester} from './chester.js';
+
 const $ = id => document.getElementById(id);
 const pilotMode = document.createElement('select');
 pilotMode.id = 'pilotMode';
@@ -26,6 +28,11 @@ const teams={
   3:{name:'Occulte',captain:'Talisman',portrait:'talisman',code:'OCC',emblem:'occult'},
   10:{name:'Zeus',captain:'Aphrodite',portrait:'aphrodite',code:'ZEU',emblem:'zeus'},
 };
+const chester = createChester({
+  api, enabled: $('chesterEnabled'), captions: $('chesterCaptions'),
+  volume: $('chesterVolume'), line: $('chesterLine'), hint: $('chesterHint'),
+  status: $('chesterStatus'),
+});
 async function api(op,data={}) {
   const response=await fetch('/api/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   const result=await response.json();
@@ -57,6 +64,7 @@ for(const side of ['home','away'])$(side).onchange=()=>{
 };
 updateTeamPreview();
 function show(result){
+  chester.observe(session, result?.commentary);
   if(!result)return;
   if(Number.isInteger(result.revision))revision=result.revision;
   attachVideo();
@@ -109,15 +117,16 @@ async function poll(){
     }
     controls();
     if(enteringClub&&!jobRunning){enteringClub=false;if(session&&profile==='club'){running=true;$('play').textContent='Pause';}}
-  }catch(error){$('error').textContent='Connexion au serveur interrompue : '+error.message;running=false;}
+  }catch(error){$('error').textContent='Connexion au serveur interrompue : '+error.message;running=false;chester.observe(null);}
   finally{polling=false;}
 }
 setInterval(poll,650);poll();
 // The worker runs the DS clock. HTTP commands only change playback or input;
 // the persistent MJPEG connection delivers the latest frames independently.
 async function playback(value){
+  if(!value)chester.pause(true);
   const result=await mutate('playback',{running:value,include_image:false});
-  if(result){running=value;$('play').textContent=running?'Pause':'Continuer';}
+  if(result){chester.pause(!value);running=value;$('play').textContent=running?'Pause':'Continuer';}
   return result;
 }
 async function pumpInputs(){
@@ -149,10 +158,10 @@ $('manual').onsubmit=async event=>{
 };
 $('start').onclick=async()=>{if(await mutate('start_match'))await playback(true);};
 $('play').onclick=()=>playback(!running);
-$('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session,mode:pilotMode.value});jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
-$('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent',session?{session_id:session}:{});await poll();}catch(error){$('error').textContent=error.message;}};
-$('reset').onclick=async()=>{await playback(false);await mutate('reset_match');renderFixture(null);await poll();};
-$('close').onclick=async()=>{running=false;const result=await mutate('session_close');if(result){session=null;renderFixture(null);setScreenVisible(false);}await poll();};
+$('delegate').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('delegate_player',{session_id:session,mode:pilotMode.value});chester.pause(false);jobRunning=true;controls();}catch(error){$('error').textContent=error.message;}};
+$('stop').onclick=async()=>{running=false;$('play').textContent='Continuer';try{await api('stop_agent',session?{session_id:session}:{});chester.pause(true);await poll();}catch(error){$('error').textContent=error.message;}};
+$('reset').onclick=async()=>{await playback(false);await mutate('reset_match');chester.pause(false);renderFixture(null);await poll();};
+$('close').onclick=async()=>{running=false;const result=await mutate('session_close');if(result){session=null;chester.observe(null);renderFixture(null);setScreenVisible(false);}await poll();};
 const directionKeys={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',z:'UP',q:'LEFT',s:'DOWN',d:'RIGHT'};
 const actionKeys={a:'A',b:'B',x:'X',y:'Y',Enter:'START'};
 document.addEventListener('keydown',event=>{
