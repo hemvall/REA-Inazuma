@@ -39,6 +39,8 @@ def chester_reaction(session_id, epoch, event_id, previous=None, mode='chester')
             'clock_seconds': event['clock_seconds'],
             'events': [{key: item[key] for key in ('id', 'kind', 'side', 'frame')} for item in recent],
         }
+        if 'summary' in event:
+            context['summary'] = event['summary']
         return context
 
     try:

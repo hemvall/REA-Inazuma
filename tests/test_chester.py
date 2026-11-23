@@ -94,3 +94,19 @@ class ChesterTests(unittest.TestCase):
         self.assertIn('CDI', generate_reaction(agent, 'attack_duel', None, match_context=lambda: {'action': facts}, mode='neuille')['reaction'])
         self.assertIn('Neuille', agent.prompt)
         self.assertEqual(agent.context['action'], facts)
+
+    def test_summaries_use_observed_actions_and_detect_a_second_half_comeback(self):
+        self.observe('playing', 0, 0)
+        self.observe('playing', 0, 0, screen='shot_block_menu')
+        self.observe('playing', 1, 0)
+        self.observe('halftime', 1, 0)
+        halftime = self.journal.snapshot()['events'][-1]
+        self.assertEqual(halftime['summary']['shots_observed'], 1)
+        self.assertIn('Zeus devra prendre l’initiative', halftime['text'])
+        self.observe('playing', 1, 0)
+        self.observe('playing', 1, 1)
+        self.observe('playing', 1, 2)
+        self.observe('result', 1, 2, 'native_final_screen')
+        final = self.journal.snapshot()['events'][-1]
+        self.assertEqual(final['summary']['halftime_score'], {'home': 1, 'away': 0})
+        self.assertIn('Zeus a renversé le match', final['text'])

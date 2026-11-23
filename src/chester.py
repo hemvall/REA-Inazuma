@@ -22,8 +22,42 @@ ACTION_LINES = {
     'handoff': ('Le ballon change de porteur, et {team} garde la maîtrise.',
                 '{team} trouve un autre porteur et conserve le ballon.'),
     'resume': ('C’est reparti après la pause ! Voyons qui va prendre l’initiative.',),
-    'halftime': ('C’est la mi-temps ! {score}',),
 }
+
+
+def match_summary(kind, score, halftime_score, teams, recoveries, shots, partial):
+    home, away = teams
+    final = kind == 'result'
+    opening = 'C’est terminé !' if final else 'C’est la mi-temps !'
+    if score is not None:
+        h, a = score['home'], score['away']
+        opening += f' {home} {h}, {away} {a}.'
+        if final and halftime_score is not None:
+            delta = halftime_score['home'] - halftime_score['away']
+            if delta and delta * (h - a) < 0:
+                return f'{opening} {home if h > a else away} a renversé le match après la pause.'
+            if delta and h == a:
+                return f'{opening} {away if delta > 0 else home} est revenu au score après la pause.'
+        if h != a:
+            leader, trailer = (home, away) if h > a else (away, home)
+            leader_side = 'home' if h > a else 'away'
+            other_side = 'away' if h > a else 'home'
+            if recoveries[other_side] > recoveries[leader_side]:
+                return f'{opening} {trailer} a repris le ballon plus souvent sur les actions suivies, mais {leader} a fait la différence au score.'
+            if not final:
+                return f'{opening} {leader} a l’avantage. {trailer} devra prendre l’initiative à la reprise.'
+        elif h == a == 0 and shots:
+            return f'{opening} On a vu des frappes, mais personne n’a trouvé le filet.'
+    if not final and score is None:
+        opening += ' Le score n’a pas été confirmé.'
+    if final and score is None:
+        opening += ' Le résultat officiel est à l’écran.'
+    if shots:
+        label = 'tir repéré' if shots == 1 else 'tirs repérés'
+        return f'{opening} {shots} {label} sur les actions suivies.'
+    if sum(recoveries.values()):
+        return f'{opening} Les récupérations ont rythmé les actions suivies.'
+    return f'{opening} {"Le suivi a repris en cours de match." if partial else "Peu d’occasions ont été repérées."}'
 
 
 class MatchCommentary:
@@ -43,6 +77,9 @@ class MatchCommentary:
         self.phase = None
         self.halftime_seen = self.resumed = False
         self.calls = Counter()
+        self.recoveries = Counter()
+        self.halftime_score = None
+        self.partial = restored
         self.last_action = None
         self.last_action_frame = -120
         self.baseline = restored
@@ -93,15 +130,15 @@ class MatchCommentary:
                 call = ('Égalisation !' if difference == 0 else 'Le match bascule !' if difference == 1 else
                         'L’écart se réduit !' if difference < 0 else 'L’écart se creuse !')
                 text = f'Et ça rentre pour {scorer} ! {call} {score_text}'
-            elif kind == 'result':
-                text = (f'Score final. {score_text}' if score_text else
-                        'C’est terminé, le résultat officiel est à l’écran.')
+            elif kind in ('halftime', 'result'):
+                text = match_summary(kind, result_score, self.halftime_score, (home, away),
+                                     self.recoveries, self.calls['shot'], self.partial)
             elif kind == 'kickoff':
                 text = f'C’est parti ! {home} et {away} entrent dans leur match.'
             else:
                 lines = ACTION_LINES[kind]
                 text = lines[self.calls[kind] % len(lines)].format(
-                    team=home if side == 'home' else away, score=score_text).strip()
+                        team=home if side == 'home' else away).strip()
                 if kind in ('turnover', 'handoff'):
                     team = teams[fixture[side]]
                     name = team.get('roster_names', {}).get(possession.get('unit'))
@@ -110,12 +147,21 @@ class MatchCommentary:
                                 if kind == 'turnover' else f'Le ballon est maintenant à {name}. {team["name"]} conserve.')
             self.sequence += 1
             self.calls[kind] += 1
+            if kind == 'turnover':
+                self.recoveries[side] += 1
             self.events.append({
                 'id': self.sequence, 'kind': kind, 'side': side, 'score': result_score,
                 'home': fixture['home'], 'away': fixture['away'],
                 'frame': observation['frame'], 'at': time.time(), 'text': text,
                 'match_score': score, 'clock_seconds': (observation.get('clock') or {}).get('seconds'),
             })
+            if kind in ('halftime', 'result'):
+                self.events[-1]['summary'] = {
+                    'shots_observed': self.calls['shot'],
+                    'recoveries_observed': dict(self.recoveries),
+                    'halftime_score': self.halftime_score,
+                    'partial': self.partial,
+                }
 
         if final and not self.finished:
             self.finished = True
@@ -135,6 +181,7 @@ class MatchCommentary:
             self.score = score
         if phase == 'halftime' and not self.halftime_seen:
             self.halftime_seen = True
+            self.halftime_score = score
             emit('halftime', result_score=score)
         elif phase == 'playing' and old_phase == 'halftime' and not self.resumed:
             self.resumed = True

@@ -103,13 +103,14 @@ export function createChester({api, mode, enabled, captions, volume, line, hint,
     const turn = {kind: event.kind, speaking: false};
     current = turn;
     let text = event.text;
-    if (mode.value === 'neuille') {
+    const style = mode.value;
+    if (style === 'neuille') {
       const key = style + ':' + event.kind;
-      const riffs = style === 'neuille' ? NEUILLE_LINES[event.kind] : null;
+      const riffs = NEUILLE_LINES[event.kind];
       const count = neuilleTurns[event.kind] ?? 0;
       const fallback = riffs ? riffs[count % riffs.length] : '';
       if (riffs) neuilleTurns[event.kind] = count + 1;
-      showCaption(fallback);
+      showCaption(event.summary ? [event.text, fallback].filter(Boolean).join(' ') : fallback);
       let deadline;
       const variation = CONTEXT_EVENTS.has(event.kind) ? await Promise.race([
         api('chester_reaction', {session_id: session, epoch, event_id: event.id, mode: style, previous: previous[key]}).catch(() => null),
@@ -119,10 +120,14 @@ export function createChester({api, mode, enabled, captions, volume, line, hint,
       if (current !== turn) return;
       const reaction = variation?.reaction || fallback;
       if (reaction) previous[key] = reaction;
-      text = reaction;
+      text = event.summary ? [event.text, reaction].filter(Boolean).join(' ') : reaction;
     } else if (CONTEXT_EVENTS.has(event.kind)) {
       showContext(event);
     }
+    deliver(text, turn);
+  }
+
+  function deliver(text, turn) {
     const selectedVoice = frenchVoice();
     showCaption(text);
     const done = () => {
@@ -139,7 +144,7 @@ export function createChester({api, mode, enabled, captions, volume, line, hint,
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = selectedVoice;
     utterance.lang = selectedVoice.lang;
-    const delivery = VOICE_DELIVERY[event.kind] ?? {rate: 1.10, pitch: 1.20};
+    const delivery = VOICE_DELIVERY[turn.kind] ?? {rate: 1.10, pitch: 1.20};
     utterance.rate = delivery.rate;
     utterance.pitch = delivery.pitch;
     utterance.volume = Number(volume.value);
@@ -179,7 +184,14 @@ export function createChester({api, mode, enabled, captions, volume, line, hint,
     if (Number(volume.value) === 0) muteCurrent();
   });
   captions.addEventListener('change', renderCaption);
-  mode.addEventListener('change', () => { tool.hidden = true; stop(); });
+  mode.addEventListener('change', () => {
+    tool.hidden = true;
+    stop();
+    if (mode.value !== 'neuille' || (!enabled.checked && !captions.checked)) return;
+    const turn = {kind: 'preview', speaking: false};
+    current = turn;
+    deliver('Azy frer, le micro a quitté le vestiaire !', turn);
+  });
   voice?.addEventListener('voiceschanged', updateStatus);
   window.addEventListener('pagehide', stop);
   updateStatus();
@@ -210,11 +222,16 @@ export function createChester({api, mode, enabled, captions, volume, line, hint,
       const events = journal.events.filter(event => event.id > cursor && Date.now() - event.at * 1000 <= 4500);
       cursor = journal.cursor;
       if ((!enabled.checked && !captions.checked) || paused || !events.length) return;
-      const final = events.find(event => event.kind === 'result');
+      const boundary = events.find(event => event.kind === 'result')
+        ?? events.find(event => event.kind === 'halftime');
       const goals = events.filter(event => event.kind === 'goal');
-      if (final || (goals.length && current?.kind !== 'goal')) stop();
+      if (boundary || (goals.length && current?.kind !== 'goal')) stop();
       if (goals.length) pending = pending.filter(event => event.kind === 'goal');
-      pending.push(...(final ? [final] : goals.length ? goals : events));
+      if (boundary) {
+        pending.push(...events.filter(event => event.id >= boundary.id));
+      } else {
+        pending.push(...(goals.length ? goals : events));
+      }
       playNext();
     },
     pause(value) {
