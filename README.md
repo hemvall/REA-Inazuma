@@ -13,7 +13,7 @@ InazumIA est un projet de fans autour d’*Inazuma Eleven 2 : Tempête de Glace*
 - **Prépare la rencontre.** Choisis les équipes ou donne une consigne au coach. L’organisateur peut écrire six répliques de capitaines qui s’affichent dans le jeu avant le coup d’envoi. La préparation manuelle utilise un dialogue prédéfini.
 - **Joue ou délègue.** Prends les commandes au clavier ou au tactile. Essaie le pilote déterministe ou le pilote IA, puis reprends la main à tout moment. Les pilotes sont expérimentaux et peuvent s’arrêter avant la fin du match.
 - **Enchaîne les affiches.** Le bouton **Nouvelle rencontre** restaure le checkpoint initial. Les équipes et le dialogue suivants sont préparés en mémoire dans la même session.
-- **Passe voir Hillman.** Le local du club propose Occulte–Zeus et Royal Academy–Raimon dans les deux sens, avec les effectifs du jeu. [Matchs amicaux du club](CLUB_FRIENDLIES.md)
+- **Passe voir Hillman.** Dans le navigateur, **Entrer dans le local** te laisse rejoindre Hillman. Parle-lui pour ouvrir sa route native et ses deux matchs amicaux. [Matchs amicaux du club](CLUB_FRIENDLIES.md)
 
 ## Prise en main
 

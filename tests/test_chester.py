@@ -80,3 +80,15 @@ class ChesterTests(unittest.TestCase):
         agent.reaction = 'Score final : 24 à 0 !'
         with self.assertRaises(ValueError):
             generate_reaction(agent, 'turnover', 'Zeus récupère.', None)
+
+    def test_neuille_asks_for_a_joke_about_the_confirmed_action(self):
+        class Agent:
+            def generate(self, prompt, schema, *, timeout):
+                self.prompt = prompt
+                return {'reaction': 'Oh na, défense en PC de CDI !'}
+
+        agent = Agent()
+        facts = 'Le porteur provoque son défenseur !'
+        self.assertIn('CDI', generate_reaction(agent, 'attack_duel', facts, None, 'neuille')['reaction'])
+        self.assertIn('Neuille', agent.prompt)
+        self.assertIn(facts, agent.prompt)

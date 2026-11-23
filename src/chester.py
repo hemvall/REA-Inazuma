@@ -154,18 +154,27 @@ class MatchCommentary:
         return {'epoch': self.epoch, 'cursor': self.sequence, 'events': list(self.events)}
 
 
-def generate_reaction(agent, kind, facts, previous):
+def generate_reaction(agent, kind, facts, previous, mode='chester'):
+    style = {
+        'chester': ('Écris une phrase originale de direct football dans l’esprit de Chester Horse Junior, '
+                    'avec un ton vif, précis et enthousiaste. Réagis à l’enjeu immédiat.'),
+        'neuille': ('Donne uniquement une vanne de foot en mode Neuille, sans réannoncer action ni score. '
+                    'Une punchline de dix mots maximum, avec une accroche « Oh na », « Azy frer », '
+                    '« Fils dé… » ou « Bien », puis une comparaison absurde et très courte. '
+                    'Exemple : « Oh na, défense en mode avion ! ». Évite les attaques personnelles.'),
+    }
+    if mode not in style:
+        raise ValueError('Mode de commentaire inconnu.')
+    word_limit = 10 if mode == 'neuille' else 12
     schema = {
         'type': 'object', 'additionalProperties': False, 'required': ['reaction'],
         'properties': {'reaction': {'type': 'string'}},
     }
     prompt = (
-        'Écris une seule phrase originale de direct football, dans l’esprit de Chester Horse Junior : '
-        'observateur de terrain, débit vif, précis, enthousiaste sur les temps forts. '
-        'Réagis au placement, au duel ou à l’enjeu immédiat si le fait le permet. '
+        style[mode] + ' '
         'Pas de réplique de la série, de slogan passe-partout ni de nouvel événement. '
         'Aucun chiffre, nom propre, geste, résultat ou détail de trajectoire dans ta réaction. '
-        'Une phrase de 12 mots maximum, distincte de la réaction précédente. '
+        f'Une phrase de {word_limit} mots maximum, distincte de la réaction précédente. '
         f'Événement : {kind}. Annonce déjà lue : {facts}. Réaction précédente : {previous or "aucune"}.'
     )
     reaction = agent.generate(prompt, schema, timeout=0.9).get('reaction')
@@ -173,6 +182,8 @@ def generate_reaction(agent, kind, facts, previous):
         raise ValueError('Réaction de Chester invalide.')
     reaction = reaction.strip()
     if (not re.fullmatch(r'[^.!?\n\r\d:<>]{8,90}[.!?]', reaction)
-            or len(reaction.split()) > 12 or reaction.casefold() == (previous or '').casefold()):
+            or len(reaction.split()) > word_limit or reaction.casefold() == (previous or '').casefold()):
         raise ValueError('Réaction de Chester invalide.')
+    if mode == 'neuille' and not re.match(r'^(?:Oh na|Azy frer|Fils dé|Bien)\b', reaction, re.IGNORECASE):
+        raise ValueError('Accroche Neuille manquante.')
     return {'reaction': reaction}

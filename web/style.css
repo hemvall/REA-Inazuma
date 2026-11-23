@@ -29,8 +29,9 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 .skip-link:not(:focus){clip-path:inset(50%)}
 
 
-.team-tile[data-team="2"] select{font-size:22px}
-@media(max-width:620px){.team-tile[data-team="2"] select{font-size:14px;padding-inline:0}}
+.team-tile:is([data-team="2"],[data-team="41"]) select{font-size:22px}
+@media(max-width:620px){.team-tile:is([data-team="2"],[data-team="41"]) select{font-size:14px;padding-inline:0}}
+@media(max-width:360px){.team-info>span{white-space:normal}}
 
 @supports (appearance: base-select) {
   .team-info select,
@@ -114,6 +115,13 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
   @media (max-width: 620px) {
     .away-team select::picker(select) {
       justify-self: end;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .team-tile:is([data-team="2"],[data-team="41"]) selectedcontent {
+      white-space: normal;
+      line-height: 1.2;
     }
   }
 }
@@ -423,6 +431,11 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
   outline-offset: 4px;
 }
 .chester-volume input { width: 100px; min-height: 32px; }
+#chesterMode {
+  width: auto;
+  min-height: 40px;
+  padding: 6px 10px;
+}
 .chester-status {
   margin: 4px 0 6px;
   font-size: 13px;
@@ -547,4 +560,10 @@ main{max-width:1480px;padding:33px 32px 0;margin:auto}.page-intro{display:flex;a
 .arena:fullscreen .chester-box:has(.chester-line:empty),
 .arena:fullscreen .chester-box:has(.chester-line[hidden]) {
   display: none;
+}
+.game-layout.is-club-route {
+  grid-template-columns: minmax(0, 1fr);
+}
+.game-layout.is-club-route .arena {
+  grid-column: 1 / -1;
 }

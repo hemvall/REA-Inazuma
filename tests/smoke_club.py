@@ -1,4 +1,4 @@
-"""Real melonDS acceptance: native NPC, four fixtures, cancel and roster restore.
+"""Real melonDS acceptance: native NPC offers, cancel and roster restore.
 
 Run explicitly with the user's local ROM/core; artifacts remain ignored.
 """
@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from game_session import GameSession
 from arena_bridge import catalogue
+from club_fixtures import FIXTURES
 
 
 def main():
@@ -50,7 +51,7 @@ def main():
             assert value['match']['phase']=='club',value
 
         teams={row['id']:row for row in catalogue()}
-        for home,away,skip in ((3,10,0),(2,1,1),(10,3,2),(1,2,3)):
+        for skip, (home, away, _) in enumerate(FIXTURES.values()):
             restore_world();talk()
             for _ in range(skip):
                 step(['DOWN'],2);press()
@@ -88,7 +89,7 @@ def main():
             assert game.open('club')['rom_sha256']==identity['rom_sha256']
 
         restore_world();talk()
-        for _ in range(4):
+        for _ in FIXTURES:
             step(['DOWN'],2);press()
         for _ in range(5):
             if value['match']['phase']=='club':break
@@ -97,7 +98,7 @@ def main():
         assert value['match']['party_units']==initial_party,value['match']
         capture('cancelled')
         (folder/'verification.json').write_text(json.dumps({'identity':identity,'initial_party':initial_party,'steps':evidence},indent=2),encoding='utf-8')
-        print('PASS native NPC choices, four fixtures, same ROM/session, restore and cancellation',flush=True)
+        print('PASS native NPC choices, all fixtures, same ROM/session, restore and cancellation',flush=True)
     finally:
         game.close()
 

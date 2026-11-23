@@ -7,7 +7,20 @@ const VOICE_DELIVERY = {
   result: {rate: 1.01, pitch: 1.12},
 };
 
-export function createChester({api, enabled, captions, volume, line, hint, status}) {
+const NEUILLE_LINES = {
+  kickoff: ['Azy frer, le Five est en classé !', 'Oh na, lobby de zinzins !'],
+  handoff: ['Bien, le ballon fait sa tournée !', 'Azy frer, passe en Colissimo !'],
+  turnover: ['Oh na, ballon direct sur Leboncoin !', 'Fils dé… le pressing fait les poches !'],
+  attack_duel: ['Oh na, duel de scooters !', 'Azy frer, le vigile du Franprix !'],
+  defence_duel: ['Bien, le Franprix est fermé !', 'Oh na, videur de mariage !'],
+  shot: ['Fils dé… le ballon lui doit des thunes !', 'Azy frer, colis express pour les cages !'],
+  goal: ['Oh na, défense en mode avion !', 'Bien, filet livré sans signature !', 'Fils dé… Windows Vista en défense !'],
+  halftime: ['Bien, rechargez les manettes !', 'Azy frer, pause merguez !'],
+  resume: ['Oh na, le serveur a redémarré !', 'Azy frer, deuxième fournée !'],
+  result: ['Bien, les avocats WhatsApp débarquent !', 'Oh na, le débrief va piquer !'],
+};
+
+export function createChester({api, mode, enabled, captions, volume, line, hint, status}) {
   const voice = window.speechSynthesis;
   let session = null;
   let epoch = null;
@@ -19,6 +32,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   let captionTimer;
   let voiceFailed = false;
   const previous = {};
+  const neuilleTurns = {};
 
   function renderCaption() {
     const showText = captions.checked || (enabled.checked && (!frenchVoice() || voiceFailed));
@@ -69,16 +83,25 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     if (Date.now() - event.at * 1000 > 4500) return playNext();
     const turn = {kind: event.kind, speaking: false};
     current = turn;
-    showCaption(event.text);
+    const style = mode.value;
+    const key = style + ':' + event.kind;
+    const riffs = style === 'neuille' ? NEUILLE_LINES[event.kind] : null;
+    const count = neuilleTurns[event.kind] ?? 0;
+    const fallback = riffs ? riffs[count % riffs.length] : '';
+    if (riffs) neuilleTurns[event.kind] = count + 1;
+    const format = reaction => style === 'neuille' ? reaction
+      : event.text + (reaction ? ' ' + reaction : '');
+    showCaption(format(fallback));
     let deadline;
     const variation = await Promise.race([
-      api('chester_reaction', {session_id: session, epoch, event_id: event.id, previous: previous[event.kind]}).catch(() => null),
+      api('chester_reaction', {session_id: session, epoch, event_id: event.id, mode: style, previous: previous[key]}).catch(() => null),
       new Promise(resolve => { deadline = setTimeout(resolve, 950); }),
     ]);
     clearTimeout(deadline);
     if (current !== turn) return;
-    if (variation?.reaction) previous[event.kind] = variation.reaction;
-    const text = event.text + (variation?.reaction ? ' ' + variation.reaction : '');
+    const reaction = variation?.reaction || fallback;
+    if (reaction) previous[key] = reaction;
+    const text = format(reaction);
     const selectedVoice = frenchVoice();
     showCaption(text);
     const done = () => {
@@ -135,6 +158,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     if (Number(volume.value) === 0) muteCurrent();
   });
   captions.addEventListener('change', renderCaption);
+  mode.addEventListener('change', stop);
   voice?.addEventListener('voiceschanged', updateStatus);
   window.addEventListener('pagehide', stop);
   updateStatus();

@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_runtime import LocalAgent, CodexAgent, AgentCancelled, InvalidAgentResponse
 from arena_service import Arena
+from chester import generate_reaction
 
 
 class BackendTests(unittest.TestCase):
@@ -75,6 +76,17 @@ class BackendTests(unittest.TestCase):
             with self.assertRaises(AgentCancelled):
                 agent.generate('Observe', {}, cancel=cancel)
             self.assertFalse(list(Path(directory).glob('*/response.json')))
+
+    def test_neuille_uses_langchain_with_the_confirmed_match_event(self):
+        client, transport = self.model_transport('{"reaction":"Oh na, défense en mode avion !"}')
+        with tempfile.TemporaryDirectory() as directory, client:
+            reaction = generate_reaction(LocalAgent(directory), 'goal', 'But pour Genesis.', None, 'neuille')
+            self.assertEqual(reaction['reaction'], 'Oh na, défense en mode avion !')
+            payload = json.loads(transport.call_args.args[0].content)
+            prompt = payload['messages'][0]['content']
+            self.assertIn('Neuille', str(prompt))
+            self.assertIn('But pour Genesis.', str(prompt))
+            self.assertEqual(payload['response_format']['type'], 'json_schema')
 
     def test_remote_server_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict('os.environ', {'INAZUMIA_LLM_URL':'https://example.com/v1'}):

@@ -88,7 +88,7 @@ class NativeClubScriptTests(unittest.TestCase):
         ssd,_=event_pair(*scene_pair(read_rom('rom/original.nds')),config)
         rows,_=read_ssd(ssd)
         choices=[i for i,row in enumerate(rows) if row.opcode==0x3057]
-        self.assertEqual(len(choices),4)
+        self.assertEqual(len(choices),len(FIXTURES))
         for i in choices:
             self.assertEqual(rows[i-1].opcode,0x301D)
             self.assertEqual(rows[i-1].unknown,0)

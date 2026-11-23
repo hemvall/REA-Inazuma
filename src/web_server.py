@@ -13,7 +13,9 @@ WEB = Path(__file__).resolve().parents[1] / 'web'
 CHESTER_MODEL = threading.Lock()
 
 
-def chester_reaction(session_id, epoch, event_id, previous=None):
+def chester_reaction(session_id, epoch, event_id, previous=None, mode='chester'):
+    if mode not in ('chester', 'neuille'):
+        raise ValueError('Mode de commentaire inconnu.')
     if previous is not None and (not isinstance(previous, str) or len(previous) > 91):
         raise ValueError('Réaction précédente invalide.')
     commentary = (ARENA.latest or {}).get('commentary', {})
@@ -24,7 +26,7 @@ def chester_reaction(session_id, epoch, event_id, previous=None):
     if not event or time.time() - event['at'] > 4 or not CHESTER_MODEL.acquire(blocking=False):
         return {}
     try:
-        return generate_reaction(ARENA.agent, event['kind'], event['text'], previous)
+        return generate_reaction(ARENA.agent, event['kind'], event['text'], previous, mode)
     except (OSError, RuntimeError, ValueError):
         return {}
     finally:
@@ -79,10 +81,14 @@ class Handler(BaseHTTPRequestHandler):
                  '/assets/team-royal.png': ('assets/team-royal.png', 'image/png'),
                  '/assets/team-occult.png': ('assets/team-occult.png', 'image/png'),
                  '/assets/team-zeus.png': ('assets/team-zeus.png', 'image/png'),
+                 '/assets/team-genesis.png': ('assets/team-genesis.png', 'image/png'),
+                 '/assets/team-dark-emperors.png': ('assets/team-dark-emperors.png', 'image/png'),
                  '/assets/captain-mark.png': ('assets/captain-mark.png', 'image/png'),
                  '/assets/captain-king.png': ('assets/captain-king.png', 'image/png'),
                  '/assets/captain-talisman.png': ('assets/captain-talisman.png', 'image/png'),
                  '/assets/captain-aphrodite.png': ('assets/captain-aphrodite.png', 'image/png'),
+                 '/assets/captain-xene.png': ('assets/captain-xene.png', 'image/png'),
+                 '/assets/captain-nathan-dark.png': ('assets/captain-nathan-dark.png', 'image/png'),
                  '/assets/PressStart2P-Regular.ttf': ('assets/PressStart2P-Regular.ttf', 'font/ttf')}
         if self.path not in files:
             return self.reply(404, {'error': 'Not found'})
