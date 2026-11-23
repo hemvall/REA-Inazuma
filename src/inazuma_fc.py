@@ -25,8 +25,8 @@ VARIANTS = {
     'austin': (11, 'Austin Hobbes', 'Austin'),
     'xavier-foster': (2151, 'Xavier Foster', 'Xavier'),
     'xavier-schiller': (2151, 'Xavier Schiller', 'Xavier'),
-    'aiden-child': (2337, 'Aiden Froste (enfant)', 'Aiden enfant'),
-    'aiden-adult': (2329, 'Aiden Froste (adulte)', 'Aiden adulte'),
+    'aiden-child': (2337, 'Aiden Froste', 'Aiden'),
+    'aiden-adult': (2329, 'Aiden Froste', 'Aiden'),
 }
 # The game's team table lists the keeper first, followed by defence, midfield and attack.
 NATIVE_ORDER = (10, 6, 7, 8, 9, 2, 3, 4, 5, 0, 1, 11, 12, 13, 14, 15)
