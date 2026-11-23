@@ -179,6 +179,8 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                                     point = action['touch']
                                     touch = (point['x'], point['y']) if point else None
                                     execute_step(emulator, action['frames'], action['keys'], touch, on_match_frame)
+                                    if action.get('settle_frames'):
+                                        execute_step(emulator, action['settle_frames'], [], None, on_match_frame)
                             finally:
                                 controller.revision += 1
                         else:
@@ -203,6 +205,8 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                         raise ValueError('Choix indisponible pour ce duel.')
                     touch = action['touch']
                     execute_step(emulator, action['frames'], action['keys'], (touch['x'], touch['y']), on_frame)
+                    if action.get('settle_frames'):
+                        execute_step(emulator, action['settle_frames'], [], None, on_frame)
                     controller.revision += 1
                 elif op == 'touch_path':
                     if bridge and bridge.poll_frame():raise ValueError('Rencontre terminée : utilisez reset_match.')

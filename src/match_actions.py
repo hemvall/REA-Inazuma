@@ -37,8 +37,12 @@ def legal_commands(match):
         return {}
     if match['phase'] == 'playing':
         duel = DUEL_ACTION_IDS.get(screen['name'])
-        if duel and len(screen['actions']) == 2:
-            return dict(zip(duel, reversed(screen['actions'])))
+        if duel and len(screen['actions']) >= 2:
+            commands = dict(zip(duel, reversed(screen['actions'][:2])))
+            commands.update((action['id'], action) for action in screen['actions'][2:])
+            return commands
+        if screen['name'] == 'duel_special_menu':
+            return {action['id']: action for action in screen['actions']}
         tactical = match['tactical']
         possession = tactical['possession'] or {}
         if screen['name'] == 'pass_prompt' and possession.get('side') == 'home':
@@ -55,12 +59,16 @@ def legal_commands(match):
 
 def observe_match(match, frame, revision):
     tactical = match['tactical']
+    actions = [
+        {'id': action_id, 'name': command['name']} if command and 'id' in command else {'id': action_id}
+        for action_id, command in legal_commands(match).items()
+    ]
     return {
         'frame': frame, 'revision': revision, 'phase': match['phase'],
         'screen': match['screen']['name'],
         'score': tactical['score'], 'clock': tactical['clock'],
         'possession': tactical['possession'], 'controlled_player': tactical['controlled_player'],
-        'legal_actions': [{'id': action_id} for action_id in legal_commands(match)],
+        'legal_actions': actions,
         'result': match['result'], 'native_result': match['native_result'],
         'result_source': match['result_source'],
     }

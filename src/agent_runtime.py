@@ -145,6 +145,9 @@ class LocalAgent:
         }
         return self.generate(
             'Joue pour l’équipe à domicile. Choisis une seule action parmi legal_actions. '
+            'En duel, ouvre les supertechniques si l’enjeu justifie une dépense de PT, '
+            'par exemple pour arrêter un tir dangereux. Dans le menu, choisis une technique '
+            'disponible ou retourne au duel pour jouer une action ordinaire. '
             'Utilise uniquement cet état, sans outil ni image. Les valeurs inconnues restent inconnues.\n'
             + json.dumps(observation, ensure_ascii=False, separators=(',', ':')),
             schema, cancel=cancel, timeout=8)

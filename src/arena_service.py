@@ -221,13 +221,17 @@ class Arena:
                     decision_mode = 'rules'
                     fallback = None
                     try:
-                        if action_id and mode == 'ai' and len(actions) > 1:
+                        choices = actions
+                        if self.history[-1:] == ['duel.special.back']:
+                            choices = [action for action in actions if action['id'] != 'duel.special.open']
+                        if action_id and mode == 'ai' and len(choices) > 1:
                             self.update(text_calls=self.job['text_calls'] + 1,
                                         message='L’agent choisit son action…')
                             try:
-                                choice = self.agent.decide_match_action(observation, self.cancel)
+                                choice = self.agent.decide_match_action(
+                                    {**observation, 'legal_actions': choices}, self.cancel)
                                 if (not isinstance(choice, dict) or set(choice) != {'action_id'}
-                                        or choice['action_id'] not in [action['id'] for action in actions]):
+                                        or choice['action_id'] not in [action['id'] for action in choices]):
                                     raise ValueError('Choix hors des actions disponibles.')
                             except TimeoutError:
                                 fallback = 'timeout'

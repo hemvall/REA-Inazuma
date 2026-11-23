@@ -121,6 +121,24 @@ SCOREBOARD_PERIOD_TITLES = {
     'c23af18ccfe0e96cec8f6a350ef1f6bcbb2a36d46270cb1b7b05b5892c2f18e8',
 }
 
+DUEL_SCREENS = ('defence_duel', 'defence_duel_contact', 'keeper_duel',
+                'attack_duel', 'attack_duel_dodge')
+SPECIAL_BUTTON_RECT = (117, 357, 140, 378)
+LIGHTNING_SHAPE = '15140b344e38305de7ca5301f73c17081f68dfbe49cc03de137e45b851bc31af'
+LIGHTNING_RED = 'accd17fd52d46ab5be78feb086e36bc2823bb52a46d9cbefc62d7d68a521c3cf'
+SPECIAL_BACK_SHAPE = 'a5a0506d131d971b520de98de79542217d5d2f631510752ae4033316fb3796c9'
+SPECIAL_NAMES = {
+    '343f066872d77dfac5978691f0b3c91b6c2002571a6c96c9af283bae82a5e34e': 'Disparition',
+    '4aad685636dd9285409b876fca3e86393529f1cd8845a3ebfe4472e1b1388a92': 'Attaque tempête',
+    'b40e21286ec31ee733c583cbe90391c13a4d4c49f4e377e19a0fd2bc1417ce65': 'Lame gardienne',
+    'b0279799ffa7504f862fde94dd98246762cd906270ea422274ae4da895df2432': 'Distorsion',
+    'fbda10b9c4fc12e354d38b726ffdadae5ed45c4e0d1b13fd145bed485600e7b0': 'Muraille géante',
+    '76c4590e3b7577246424eb3a47eb10f0901f39d9abea1112230c549127b06bdc': 'Muraille tsunami',
+    'ccd32fe7875b16527f0826a4b7b4d6148cedc83660ea446e30faac457ba9bb9b': 'Subtilisation',
+    '55d6378de3ab6a33bbf70e1a2fa35850244c5080cc5ae7ddede45fafedd6d26e': 'Main céleste',
+    '69eeb31c82dfe9a42ce80eebd9fcea3a4256dc895d307e2bc3dc530d388e729c': 'Main magique',
+}
+
 
 def white_text_signature(frame, rect):
     return hashlib.sha256(bytes(value >= 240 for value in green_region(frame, rect))).hexdigest()
@@ -131,6 +149,32 @@ def matches_white_text(frame, signature):
 
 def _touch_action(name, x, y):
     return {'name':name, 'frames':6, 'keys':[], 'touch':{'x':x,'y':y}}
+
+
+def red_mask(frame, rect):
+    return bytes(red > green + 40 and red > blue + 40
+                 for red, green, blue in zip(*(color_region(frame, rect, channel)
+                                              for channel in range(3))))
+
+
+def special_choices(frame):
+    # The return icon identifies the menu. Enabled cards have blue fill and
+    # red lettering; empty slots and greyed-out cards must not be offered.
+    back = _touch_action('Retour au duel', 128, 175)
+    actions = [dict(back, id='duel.special.back', settle_frames=20)]
+    for side, left, x in (('left', 6, 55), ('right', 150, 200)):
+        fill = (left + 10, 374, left + 65, 378)
+        blue_fill = sum(blue > red + 35 and blue > green + 25
+                        for red, green, blue in zip(*(color_region(frame, fill, channel)
+                                                     for channel in range(3))))
+        label = red_mask(frame, (left, 363, left + 80, 374))
+        if blue_fill < 110 or not 40 <= sum(label) <= 350:
+            continue
+        name = SPECIAL_NAMES.get(hashlib.sha256(label).hexdigest())
+        if name is None:
+            name = 'Supertechnique de gauche' if side == 'left' else 'Supertechnique de droite'
+        actions.append(dict(_touch_action(name, x, 175), id=f'duel.special.{side}'))
+    return actions
 
 
 def screen_observation(frame):
@@ -187,12 +231,24 @@ def screen_observation(frame):
         'attack_duel':[_touch_action('Feinte',55,175),_touch_action('Dribble',200,175)],
         'attack_duel_dodge':[_touch_action('Esquive',55,175),_touch_action('Dribble',200,175)],
     }.get(name,[])
+    if name in DUEL_SCREENS or (name == 'unknown' and frame is not None):
+        special_button = title_signature(green_region(frame, SPECIAL_BUTTON_RECT))
+        if name in DUEL_SCREENS and special_button == LIGHTNING_SHAPE:
+            if hashlib.sha256(red_mask(frame, SPECIAL_BUTTON_RECT)).hexdigest() == LIGHTNING_RED:
+                open_menu = _touch_action('Ouvrir les supertechniques', 128, 175)
+                actions.append(dict(open_menu, id='duel.special.open', settle_frames=20))
+        elif name == 'unknown' and special_button == SPECIAL_BACK_SHAPE:
+            name = 'duel_special_menu'
+            actions = special_choices(frame)
     return {'name':name, 'source':'measured_frame_signature', 'actions':actions,
-            'requires_tactics':name in ('defence_duel','defence_duel_contact','keeper_duel',
-                                        'attack_duel','attack_duel_dodge')}
+            'requires_tactics':name in DUEL_SCREENS or name == 'duel_special_menu'}
 
 
 def green_region(frame, rectangle=TITLE_RECT):
+    return color_region(frame, rectangle, 1)
+
+
+def color_region(frame, rectangle, channel):
     if frame is None:return b''
     width,height,data,pitch,format_id=frame
     left,top,right,bottom=rectangle
@@ -201,11 +257,12 @@ def green_region(frame, rectangle=TITLE_RECT):
     values=bytearray()
     for y in range(top,bottom):
         if format_id==1:
-            values.extend(data[y*pitch+left*4+1:y*pitch+right*4:4])
+            values.extend(data[y*pitch+left*4+2-channel:y*pitch+right*4:4])
         elif format_id in (0,2):
             raw=struct.unpack_from('<'+'H'*(right-left),data,y*pitch+left*2)
-            maximum=63 if format_id==2 else 31
-            values.extend(((pixel>>5)&maximum)*255//maximum for pixel in raw)
+            maximum=63 if format_id==2 and channel==1 else 31
+            shift=(11 if format_id==2 else 10) if channel==0 else 5 if channel==1 else 0
+            values.extend(((pixel>>shift)&maximum)*255//maximum for pixel in raw)
         else:return b''
     return bytes(values)
 

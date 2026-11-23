@@ -30,7 +30,8 @@ def duel_checkpoint():
         def stop_at_duel(operation, **arguments):
             result = checked(operation, **arguments)
             state = result.get('match_observation')
-            if state and state['screen'] == 'attack_duel' and len(state['legal_actions']) == 2:
+            if (state and state['screen'] in ('attack_duel', 'attack_duel_dodge')
+                    and any(action['id'] == 'duel.special.open' for action in state['legal_actions'])):
                 arena.cancel.set()
             return result
 
@@ -40,9 +41,9 @@ def duel_checkpoint():
             assert not arena.thread.is_alive(), 'Duel checkpoint timeout'
         assert arena.job['text_calls'] == arena.job['vision_calls'] == 0
         state = arena.call('observe_match', args)
-        assert state['screen'] == 'attack_duel', state
+        assert state['screen'] in ('attack_duel', 'attack_duel_dodge'), state
         checkpoint = arena.call('checkpoint_save', args)
-        first_id, second_id = (action['id'] for action in state['legal_actions'])
+        second_id = state['legal_actions'][1]['id']
 
         def apply(action_id):
             return arena.call('apply_match_action', {**args, 'revision': state['revision'],
@@ -56,8 +57,6 @@ def duel_checkpoint():
         def advance(result):
             return arena.call('advance_match', {**args, 'revision': result['revision'], 'frames': 120})
 
-        first = advance(apply(first_id))
-        state = restore(first)
         second = advance(apply(second_id))
         state = restore(second)
         with patch.object(arena.agent, 'generate', return_value={'action_id': second_id}) as model:
@@ -71,9 +70,28 @@ def duel_checkpoint():
         effect = lambda observation: {key: value for key, value in observation.items()
                                       if key != 'revision'}
         assert effect(actual) == effect(second), (actual, second)
-        assert effect(actual) != effect(first), (actual, first)
+        state = restore(actual)
+        state = apply('duel.special.open')
+        assert state['screen'] == 'duel_special_menu', state
+        assert state['legal_actions'] == [
+            {'id': 'duel.special.back', 'name': 'Retour au duel'},
+            {'id': 'duel.special.left', 'name': 'Disparition'},
+        ], state
+        closed = apply('duel.special.back')
+        assert closed['screen'] in ('attack_duel', 'attack_duel_dodge'), closed
+        state = restore(closed)
+        with patch.object(arena.agent, 'generate', side_effect=[
+            {'action_id': 'duel.special.open'}, {'action_id': 'duel.special.left'},
+        ]) as model:
+            arena.delegate(sid, max_decisions=2, mode='ai')
+            arena.thread.join(15)
+            assert not arena.thread.is_alive(), 'Special technique decision timeout'
+            assert model.call_count == 2
+        assert arena.history == ['duel.special.open', 'duel.special.left'], arena.history
+        special = advance(arena.call('observe_match', args))
+        assert special['screen'] != 'duel_special_menu', special
         print(json.dumps({'checkpoint': state['screen'], 'action_id': second_id,
-                          'first': effect(first), 'second': effect(actual)}), flush=True)
+                          'ordinary': effect(actual), 'special': effect(special)}), flush=True)
     finally:
         arena.stop()
         if arena.thread:
