@@ -21,11 +21,11 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   const previous = {};
 
   function renderCaption() {
-    const showText = captions.checked || !frenchVoice() || voiceFailed;
-    const text = enabled.checked && showText ? caption : '';
+    const showText = captions.checked || (enabled.checked && (!frenchVoice() || voiceFailed));
+    const text = showText ? caption : '';
     if (line.textContent !== text) line.textContent = text;
     hint.hidden = Boolean(text);
-    hint.textContent = !enabled.checked ? 'Active le commentaire vocal pour entendre Chester.'
+    hint.textContent = !enabled.checked && !captions.checked ? 'Active les sous-titres ou le commentaire vocal.'
       : !showText ? 'Les sous-titres sont désactivés.'
       : paused ? 'Commentaire en pause.' : 'En attente d’une action…';
   }
@@ -63,12 +63,13 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   }
 
   async function playNext() {
-    if (current || paused || !enabled.checked) return;
+    if (current || paused || (!enabled.checked && !captions.checked)) return;
     const event = pending.shift();
     if (!event) return;
     if (Date.now() - event.at * 1000 > 4500) return playNext();
     const turn = {kind: event.kind, speaking: false};
     current = turn;
+    showCaption(event.text);
     let deadline;
     const variation = await Promise.race([
       api('chester_reaction', {session_id: session, epoch, event_id: event.id, previous: previous[event.kind]}).catch(() => null),
@@ -86,7 +87,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
       playNext();
     };
     turn.done = done;
-    if (!selectedVoice || voiceFailed || Number(volume.value) === 0) {
+    if (!enabled.checked || !selectedVoice || voiceFailed || Number(volume.value) === 0) {
       // Keep consecutive caption-only announcements readable.
       setTimeout(done, 1800);
       return;
@@ -100,7 +101,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     utterance.volume = Number(volume.value);
     utterance.onend = done;
     utterance.onerror = () => {
-      if (current !== turn) return;
+      if (current !== turn || !turn.speaking) return;
       if (Number(volume.value) !== 0) {
         voiceFailed = true;
         updateStatus();
@@ -111,21 +112,27 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     voice.speak(utterance);
   }
 
+  function muteCurrent() {
+    if (current?.speaking) {
+      const turn = current;
+      turn.speaking = false;
+      voice.cancel();
+      setTimeout(turn.done, 1800);
+    }
+  }
+
   enabled.addEventListener('change', () => {
-    if (!enabled.checked) stop();
-    else {
+    if (!enabled.checked) {
+      if (captions.checked) muteCurrent();
+      else stop();
+    } else {
       voiceFailed = false;
       voice?.resume();
     }
     updateStatus();
   });
   volume.addEventListener('input', () => {
-    if (Number(volume.value) === 0 && current?.speaking) {
-      const turn = current;
-      turn.speaking = false;
-      voice.cancel();
-      setTimeout(turn.done, 1800);
-    }
+    if (Number(volume.value) === 0) muteCurrent();
   });
   captions.addEventListener('change', renderCaption);
   voice?.addEventListener('voiceschanged', updateStatus);
@@ -153,7 +160,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
       }
       const events = journal.events.filter(event => event.id > cursor && Date.now() - event.at * 1000 <= 4500);
       cursor = journal.cursor;
-      if (!enabled.checked || paused || !events.length) return;
+      if ((!enabled.checked && !captions.checked) || paused || !events.length) return;
       const final = events.find(event => event.kind === 'result');
       const goals = events.filter(event => event.kind === 'goal');
       if (final || (goals.length && current?.kind !== 'goal')) stop();
