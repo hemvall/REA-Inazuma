@@ -38,6 +38,7 @@ def catalogue():
         captain = struct.unpack_from('<H', row, 46)[0]
         result.append({'id': key, 'name': row[:32].split(b'\0')[0].decode('ascii'),
                        'captain_id': captain, 'captain': names[captain], 'roster': roster,
+                       'roster_names': {unit: names[unit] for unit in roster if unit in names},
                        'header_hex': row[:64].hex(),
                        'native_match_id': {1:500, 2:51, 3:52, 10:33}[key]})
     return result

@@ -33,7 +33,26 @@
   <button type="button" class="ds-start" data-key="START" disabled>START</button>
 </div>
 <span class="ds-brand" aria-hidden="true">Nintendo DS</span><span class="ds-led" aria-hidden="true"></span>
-</div><div id="empty" class="arena-empty"><span class="empty-ball"><svg><use href="#icon-ball"/></svg></span><span class="empty-tag">Coup d’envoi imminent</span><span class="empty-hint"><span>01</span> Préparer <b>›</b> <span>02</span> Jouer</span></div></div></div><div class="arena-controls"><div class="toolbar primary-controls"><button id="start" class="button-primary" disabled>▶ Lancer le dialogue</button><button id="delegate" class="button-blue" disabled><svg><use href="#icon-bolt"/></svg> L’agent joue pour moi</button></div><div class="toolbar secondary"><button id="play" disabled>Continuer</button><button id="stop" disabled>Reprendre la main</button><button id="reset" disabled>Nouvelle rencontre</button><button id="close" disabled>Fermer</button></div><div class="match-status"><span class="status-pointer" aria-hidden="true">▶</span><p id="job" role="status" aria-live="polite">Choisis tes équipes pour entrer sur le terrain.</p></div><p id="error" role="alert"></p></div></section>
+</div><div id="empty" class="arena-empty"><span class="empty-ball"><svg><use href="#icon-ball"/></svg></span><span class="empty-tag">Coup d’envoi imminent</span><span class="empty-hint"><span>01</span> Préparer <b>›</b> <span>02</span> Jouer</span></div></div></div>
+<section class="chester-dialogue" aria-labelledby="chesterName">
+  <div class="chester-speaker">
+    <img class="chester-sprite" src="/assets/chester.png" alt="" width="161" height="180">
+    <h2 id="chesterName">Chester Horse Junior</h2>
+  </div>
+  <div class="chester-box">
+    <p id="chesterLine" class="chester-line" aria-live="polite" aria-atomic="true"></p>
+    <p id="chesterHint" class="chester-hint">Active le commentaire vocal pour entendre Chester.</p>
+  </div>
+</section>
+<div class="arena-controls"><div class="toolbar primary-controls"><button id="start" class="button-primary" disabled>▶ Lancer le dialogue</button><button id="delegate" class="button-blue" disabled><svg><use href="#icon-bolt"/></svg> L’agent joue pour moi</button></div><div class="toolbar secondary"><button id="play" disabled>Continuer</button><button id="stop" disabled>Reprendre la main</button><button id="reset" disabled>Nouvelle rencontre</button><button id="close" disabled>Fermer</button></div><fieldset class="chester-controls">
+  <legend>Réglages du commentaire</legend>
+  <div class="chester-options">
+    <label><input id="chesterEnabled" type="checkbox"> Commentaire vocal</label>
+    <label><input id="chesterCaptions" type="checkbox" checked> Sous-titres</label>
+    <label class="chester-volume">Volume <input id="chesterVolume" type="range" min="0" max="1" step="0.05" value="0.8" disabled></label>
+  </div>
+  <p id="chesterStatus" class="chester-status" role="status"></p>
+</fieldset><div class="match-status"><span class="status-pointer" aria-hidden="true">▶</span><p id="job" role="status" aria-live="polite">Choisis tes équipes pour entrer sur le terrain.</p></div><p id="error" role="alert"></p></div></section>
 <aside class="coach-column" id="coachPanel" aria-label="Ton staff IA"><section class="pixel-panel coach"><div class="panel-body"><div class="coach-intro"><div class="coach-avatar" aria-hidden="true"><svg><use href="#icon-bolt"/></svg></div><div><h3>Le coach</h3></div></div><div class="coach-dialogue"><div class="speaker">Staff <span>● ● ●</span></div><div id="messages" role="log" aria-live="polite"><p class="answer">À toi de choisir l’affiche ! Je prépare les équipes et le dialogue. Ensuite, à nous le terrain.</p></div></div><p class="note">Démarre le serveur LM Studio avec le modèle qwen/qwen3.5-9b.</p></div></section></aside>
 </div>
-</main><script src="/app.js"></script></body></html>
+</main><script type="module" src="/app.js"></script></body></html>

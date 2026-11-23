@@ -1,5 +1,20 @@
 # Chester Horse Junior — Commentateur IA
 
+## Première version
+
+Activez **Commentaire vocal** sous les commandes du terrain. Le commentaire est désactivé à l’ouverture du salon. Le curseur règle le volume des prochaines répliques et le niveau zéro coupe la voix en cours. Le navigateur utilise une voix française du système. En son absence, les annonces restent lisibles sous les commandes.
+
+Le worker relève les changements de porteur et de possession, les duels, les tirs
+repérés par les écrans de blocage ou du gardien, la mi-temps et la reprise, en plus
+des buts et du résultat. Il échantillonne aussi pendant la lecture continue et
+l’avance du pilote. Les annonces décrivent le changement de porteur même lorsque
+le jeu ne permet pas de confirmer le geste qui l’a provoqué.
+
+LM Studio rédige une courte réaction originale dans le registre du direct
+sportif, à partir de l’annonce et de la dernière réaction du même type. Le score
+et les faits restent dans l’annonce produite par le worker. Si le modèle ne livre
+pas de phrase valide dans le délai, le salon lit cette annonce seule.
+
 ## Objectif
 
 Faire parler Chester Horse Junior pendant les vrais matchs d’InazumIA. La première version cible le salon web, en français, avec une voix de synthèse originale de commentateur sportif énergique. Elle accompagne les matchs joués à la manette ou délégués à l’agent joueur.

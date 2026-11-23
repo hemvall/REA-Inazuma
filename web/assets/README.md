@@ -9,6 +9,9 @@
   LEVEL-5's [Inazugle emblem catalog](https://zukan.inazuma.jp/en/item/emblem/).
 - `captain-*.png`: official player portraits from
   [LEVEL-5's Inazugle character catalog](https://zukan.inazuma.jp/en/chara_param/).
+- `chester.png` is the official Chester Horse Jr (Kakuma Keita) portrait from
+  [LEVEL-5's Inazugle character catalog](https://zukan.inazuma.jp/en/chara_param/?page=5),
+  cropped to remove the transparent margins.
 - The ball, controller and lightning icons are inline SVG graphics in
   `web/index.html`, drawn on integer-coordinate grids.
 

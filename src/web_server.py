@@ -2,12 +2,33 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import time
+import threading
 from pathlib import Path
 from arena_service import Arena
+from chester import generate_reaction
 from local_address import HOST, PORT, URL
 
 ARENA = Arena(local_only=True)
 WEB = Path(__file__).resolve().parents[1] / 'web'
+CHESTER_MODEL = threading.Lock()
+
+
+def chester_reaction(session_id, epoch, event_id, previous=None):
+    if previous is not None and (not isinstance(previous, str) or len(previous) > 91):
+        raise ValueError('Réaction précédente invalide.')
+    commentary = (ARENA.latest or {}).get('commentary', {})
+    if (session_id != ARENA.session.session_id or session_id != commentary.get('session_id')
+            or epoch != commentary.get('epoch')):
+        return {}
+    event = next((item for item in commentary.get('events', ()) if item['id'] == event_id), None)
+    if not event or time.time() - event['at'] > 4 or not CHESTER_MODEL.acquire(blocking=False):
+        return {}
+    try:
+        return generate_reaction(ARENA.agent, event['kind'], event['text'], previous)
+    except (OSError, RuntimeError, ValueError):
+        return {}
+    finally:
+        CHESTER_MODEL.release()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -50,8 +71,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                 '/chester.js': ('chester.js', 'text/javascript; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
                  '/assets/stadium-pixel.png': ('assets/stadium-pixel.png', 'image/png'),
+                 '/assets/chester.png': ('assets/chester.png', 'image/png'),
                  '/assets/team-raimon.png': ('assets/team-raimon.png', 'image/png'),
                  '/assets/team-royal.png': ('assets/team-royal.png', 'image/png'),
                  '/assets/team-occult.png': ('assets/team-occult.png', 'image/png'),
@@ -79,7 +102,9 @@ class Handler(BaseHTTPRequestHandler):
             arguments = json.loads(self.rfile.read(length))
             if not isinstance(arguments, dict):
                 raise ValueError('Expected object')
-            self.reply(200, ARENA.call(self.path[5:], arguments))
+            operation = self.path[5:]
+            result = chester_reaction(**arguments) if operation == 'chester_reaction' else ARENA.call(operation, arguments)
+            self.reply(200, result)
         except (ValueError, TypeError) as error:
             self.reply(400, {'error': str(error)})
         except Exception as error:

@@ -18,6 +18,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
     from emulator_probe import Emulator, png
     from emulator_worker import Controller,validate_step,execute_step
     from match_actions import legal_commands, observe_match
+    from chester import MatchCommentary
     emulator = None
     try:
         Path(directory).mkdir(parents=True,exist_ok=True)
@@ -32,12 +33,25 @@ def _worker(pipe, rom, core, directory, profile, video=None):
         sys.stderr = open(2, 'w', encoding='utf-8', buffering=1, closefd=False)
         emulator = Emulator(rom, core, directory)
         bridge = None
+        commentary = MatchCommentary()
         checkpoints = {}
         baseline = None
         live = False
         next_tick = time.monotonic()
         video_frame = -1
         next_video = 0
+        last_commentary_frame = -30
+
+        def record_commentary(match, observation):
+            nonlocal last_commentary_frame
+            commentary.observe(match, observation, bridge.teams)
+            last_commentary_frame = emulator.frames
+
+        def sample_commentary():
+            if bridge and bridge.fixture and emulator.frames - last_commentary_frame >= 30:
+                match = bridge.state()
+                record_commentary(match, observe_match(match, emulator.frames, controller.revision))
+
         def publish_video():
             nonlocal video_frame
             if video is None or emulator.last_frame is None or video_frame == emulator.frames:
@@ -64,10 +78,12 @@ def _worker(pipe, rom, core, directory, profile, video=None):
 
         def on_frame():
             publish_due()
+            sample_commentary()
             return bool(bridge and bridge.poll_frame())
 
         def on_match_frame():
             publish_due()
+            sample_commentary()
             return bridge.poll_match_result()
 
         controller = Controller(emulator, on_frame)
@@ -89,6 +105,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 raise RuntimeError('Checkpoint restore failed; close session')
             emulator.frames,emulator.last_frame = frames,image
             emulator.pressed,emulator.touch = set(),None
+            commentary.reset(restored=True)
             if bridge:
                 bridge.fixture = fixture
                 bridge.completed=False
@@ -112,6 +129,7 @@ def _worker(pipe, rom, core, directory, profile, video=None):
         while True:
             if live and not pipe.poll(max(0, next_tick-time.monotonic())):
                 execute_step(emulator, 1, [], None, lambda:bool(bridge and bridge.poll_frame()))
+                sample_commentary()
                 if emulator.frames % 2 == 0:
                     publish_video()
                 if bridge and bridge.completed:
@@ -240,8 +258,11 @@ def _worker(pipe, rom, core, directory, profile, video=None):
                 publish_video()
                 if bridge:
                     result['match'] = bridge.state()
+                    observation = observe_match(result['match'], emulator.frames, controller.revision)
+                    record_commentary(result['match'], observation)
+                    result['commentary'] = commentary.snapshot()
                 if op in ('observe_match', 'apply_match_action', 'advance_match'):
-                    result['match_observation'] = observe_match(result['match'], emulator.frames, controller.revision)
+                    result['match_observation'] = observation
                 if emulator.last_frame:
                     image_bytes = None
                     if request.get('include_image', True):
@@ -358,7 +379,10 @@ class GameSession:
             if op not in ('observe', 'observe_match') and actor != self.owner:
                 raise ValueError('Contrôle détenu par ' + self.owner)
             self.pipe.send({'op': op, **arguments})
-            return self._receive(15)
+            result = self._receive(15)
+            if 'commentary' in result:
+                result['commentary']['session_id'] = session_id
+            return result
 
     def set_control(self, session_id, owner):
         with self.lock:
