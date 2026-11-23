@@ -70,13 +70,13 @@ class ChesterTests(unittest.TestCase):
         class Agent:
             reaction = 'Le bloc va devoir se replacer très vite !'
 
-            def generate(self, prompt, schema, *, timeout):
+            def generate(self, prompt, schema, *, timeout, match_context):
                 return {'reaction': self.reaction}
 
         agent = Agent()
-        self.assertEqual(generate_reaction(agent, 'turnover', 'Zeus récupère.', None)['reaction'], agent.reaction)
+        self.assertEqual(generate_reaction(agent, 'turnover', None, match_context=dict)['reaction'], agent.reaction)
         with self.assertRaises(ValueError):
-            generate_reaction(agent, 'turnover', 'Zeus récupère.', agent.reaction)
+            generate_reaction(agent, 'turnover', agent.reaction, match_context=dict)
         agent.reaction = 'Score final : 24 à 0 !'
         with self.assertRaises(ValueError):
-            generate_reaction(agent, 'turnover', 'Zeus récupère.', None)
+            generate_reaction(agent, 'turnover', None, match_context=dict)

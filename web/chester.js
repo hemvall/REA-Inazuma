@@ -6,8 +6,9 @@ const VOICE_DELIVERY = {
   halftime: {rate: 1.03, pitch: 1.15},
   result: {rate: 1.01, pitch: 1.12},
 };
+const CONTEXT_EVENTS = new Set(['kickoff', 'goal', 'halftime', 'result']);
 
-export function createChester({api, enabled, captions, volume, line, hint, status}) {
+export function createChester({api, enabled, captions, volume, line, hint, status, tool}) {
   const voice = window.speechSynthesis;
   let session = null;
   let epoch = null;
@@ -18,6 +19,7 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
   let caption = '';
   let captionTimer;
   let voiceFailed = false;
+  let lastContextEvent = 0;
   const previous = {};
 
   function renderCaption() {
@@ -45,6 +47,23 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     showCaption('');
   }
 
+  async function showContext(event) {
+    const request = {session_id: session, epoch, event_id: event.id, previous: previous[event.kind]};
+    try {
+      const result = await api('chester_reaction', request);
+      if (session !== request.session_id || epoch !== request.epoch || event.id <= lastContextEvent
+          || (!enabled.checked && !captions.checked) || !result.reaction || !result.tool?.context) return;
+      lastContextEvent = event.id;
+      previous[event.kind] = result.reaction;
+      const {score} = result.tool.context;
+      const source = score ? `${result.tool.name} · Score ${score.home}–${score.away}` : result.tool.name;
+      tool.textContent = `${source} · « ${result.reaction} »`;
+      tool.hidden = false;
+    } catch {
+      // The confirmed announcement has already played.
+    }
+  }
+
   function frenchVoice() {
     const options = voice?.getVoices().filter(item => /^fr(?:[-_]|$)/i.test(item.lang)) ?? [];
     const france = options.filter(item => /^fr[-_]FR$/i.test(item.lang));
@@ -62,23 +81,15 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
     renderCaption();
   }
 
-  async function playNext() {
+  function playNext() {
     if (current || paused || (!enabled.checked && !captions.checked)) return;
     const event = pending.shift();
     if (!event) return;
     if (Date.now() - event.at * 1000 > 4500) return playNext();
     const turn = {kind: event.kind, speaking: false};
     current = turn;
-    showCaption(event.text);
-    let deadline;
-    const variation = await Promise.race([
-      api('chester_reaction', {session_id: session, epoch, event_id: event.id, previous: previous[event.kind]}).catch(() => null),
-      new Promise(resolve => { deadline = setTimeout(resolve, 950); }),
-    ]);
-    clearTimeout(deadline);
-    if (current !== turn) return;
-    if (variation?.reaction) previous[event.kind] = variation.reaction;
-    const text = event.text + (variation?.reaction ? ' ' + variation.reaction : '');
+    if (CONTEXT_EVENTS.has(event.kind)) showContext(event);
+    const text = event.text;
     const selectedVoice = frenchVoice();
     showCaption(text);
     const done = () => {
@@ -145,6 +156,8 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
         session = sessionId;
         paused = false;
         stop();
+        lastContextEvent = 0;
+        tool.hidden = true;
         epoch = null;
         cursor = 0;
       }
@@ -156,6 +169,8 @@ export function createChester({api, enabled, captions, volume, line, hint, statu
       }
       if (journal.epoch !== epoch) {
         stop();
+        lastContextEvent = 0;
+        tool.hidden = true;
         epoch = journal.epoch;
       }
       const events = journal.events.filter(event => event.id > cursor && Date.now() - event.at * 1000 <= 4500);

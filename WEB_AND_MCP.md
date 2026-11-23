@@ -89,6 +89,8 @@ flowchart LR
     Chester --> Chaine
     Chaine --> Moteur{Moteur sélectionné}
     Moteur --> Local["ChatOpenAI · LM Studio"]
+    Local <-->|Appel et résultat| Contexte["get_match_context"]
+    Contexte --> Journal["Événements confirmés du match"]
     Moteur --> CLI["Adaptateur Codex CLI"]
     Local --> Validation["Validation JSON Schema"]
     CLI --> Validation
@@ -104,6 +106,20 @@ Le salon appelle LM Studio en local via `ChatOpenAI`. Quand Codex est sélection
 dans le parcours MCP, un adaptateur LangChain invoque le CLI avec sa configuration
 existante. Le pilote déterministe applique les règles du jeu sans appeler de
 modèle. Le navigateur lit les commentaires via la synthèse vocale du système.
+
+Au coup d’envoi, sur un but, à la mi-temps ou au résultat, le salon diffuse
+l’annonce confirmée immédiatement. En parallèle, Chester demande au modèle
+local d’appeler une fois `get_match_context`. L’outil lit le score, le chrono
+et jusqu’à trois événements confirmés au moment de l’action. Le modèle reçoit
+le résultat et formule une réaction courte. Le salon affiche l’appel, le score
+lu et la réaction validée. Chaque appel exécuté produit un journal `tool.json`
+avec son résultat et sa durée dans `build/agents/`. Le budget des deux échanges
+est de 30 secondes. Si le modèle échoue ou expire, l’annonce initiale suffit.
+
+Pour la démo, lancer Occulte–Zeus avec les sous-titres activés. Au coup d’envoi,
+attendre l’affichage de `get_match_context`. Sur le premier but, montrer le
+nouveau score lu par l’outil et la réaction de Chester. Laisser LM Studio
+chargé avant la démonstration.
 
 ## Agents et connexion
 

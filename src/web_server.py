@@ -23,8 +23,29 @@ def chester_reaction(session_id, epoch, event_id, previous=None):
     event = next((item for item in commentary.get('events', ()) if item['id'] == event_id), None)
     if not event or time.time() - event['at'] > 4 or not CHESTER_MODEL.acquire(blocking=False):
         return {}
+    context = None
+
+    def read_match_context():
+        nonlocal context
+        current = (ARENA.latest or {}).get('commentary', {})
+        if (session_id != ARENA.session.session_id or session_id != current.get('session_id')
+                or epoch != current.get('epoch')):
+            raise ValueError('La rencontre a changé.')
+        recent = [item for item in commentary['events'] if item['id'] <= event_id][-3:]
+        context = {
+            'score': event['match_score'],
+            'clock_seconds': event['clock_seconds'],
+            'events': [{key: item[key] for key in ('id', 'kind', 'side', 'frame')} for item in recent],
+        }
+        return context
+
     try:
-        return generate_reaction(ARENA.agent, event['kind'], event['text'], previous)
+        result = generate_reaction(ARENA.agent, event['kind'], previous, match_context=read_match_context)
+        current = (ARENA.latest or {}).get('commentary', {})
+        if (session_id != ARENA.session.session_id or session_id != current.get('session_id')
+                or epoch != current.get('epoch')):
+            return {}
+        return {**result, 'tool': {'name': 'get_match_context', 'context': context}}
     except (OSError, RuntimeError, ValueError):
         return {}
     finally:
