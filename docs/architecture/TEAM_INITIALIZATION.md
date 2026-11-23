@@ -44,4 +44,4 @@ team association 1. Byron is native unit 190 and his short display name is Aphro
 `inspect_party_memory` provides read-only parsing of an ARM9 emulator memory dump
 to validate actual initialized units and levels. Static template checks alone do
 not establish that the final ROM created the roster; runtime acceptance belongs
-in `RUNTIME_VERIFICATION.md` with the exact tested ROM hash.
+in `../verification/RUNTIME_VERIFICATION.md` with the exact tested ROM hash.

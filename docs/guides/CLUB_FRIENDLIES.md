@@ -2,7 +2,8 @@
 
 ## Lancer sans navigateur
 
-**Ouvrir le Club dans melonDS.cmd** construit le profil `club_native` et ouvre
+Installez melonDS avec `python src/setup_tools.py --only melonds`, puis
+double-cliquez sur **Ouvrir le Club dans melonDS.cmd**. Le lanceur construit le profil `club_native` et ouvre
 sa ROM dans `melonDS.exe`. Dans la cour devant le local, l'objet lumineux
 lance le Défi Mystère. Parler à Seymour puis répondre Oui
 ouvre une route native de deux rencontres : **Occulte vs Zeus** et
@@ -43,6 +44,7 @@ Les six équipes du salon peuvent recruter jusqu’à onze joueurs chacune. Celi
 les fautes proches et demande une précision quand plusieurs noms correspondent. La recrue arrive au niveau 30 avec les
 statistiques, techniques et visuels du joueur d'origine.
 
+Celia résout les demandes à partir du catalogue local, sans modèle.
 Les recrutements confirmés sont enregistrés dans `build/club/recruitment.save`.
 L'arène charge une ROM propre à la session pour aligner les recrues.
 

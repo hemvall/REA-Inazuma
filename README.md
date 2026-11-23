@@ -12,12 +12,14 @@ InazumIA est un projet de fans autour d’*Inazuma Eleven 2 : Tempête de Glace*
 
 - **Prépare la rencontre.** Choisis les équipes ou donne une consigne au coach. L’organisateur peut écrire six répliques de capitaines qui s’affichent dans le jeu avant le coup d’envoi. La préparation manuelle utilise un dialogue prédéfini.
 - **Joue ou délègue.** Prends les commandes au clavier ou au tactile. Essaie le pilote déterministe ou le pilote IA, puis reprends la main à tout moment. Les pilotes sont expérimentaux et peuvent s’arrêter avant la fin du match.
-- **Enchaîne les affiches.** Le bouton **Nouvelle rencontre** restaure le checkpoint initial. Les équipes et le dialogue suivants sont préparés en mémoire dans la même session.
-- **Passe voir Hillman.** Dans le navigateur, **Entrer dans le local** te laisse rejoindre Hillman. Parle-lui pour ouvrir sa route native et ses deux matchs amicaux. [Matchs amicaux du club](CLUB_FRIENDLIES.md)
+- **Écoute le match.** Active le commentaire vocal ou garde les sous-titres. Chester et Neuille annoncent les actions reconnues et font le bilan à la mi-temps et au coup de sifflet final.
+- **Recrute avec Celia.** Propose un joueur dans le panneau de recrutement. Après confirmation, il peut rejoindre l’équipe au prochain match préparé en arène.
+- **Enchaîne les affiches.** Le bouton **Nouvelle rencontre** restaure le checkpoint initial. Les équipes et le dialogue suivants sont préparés en mémoire. Un changement de recrutement peut nécessiter une ROM de session actualisée.
+- **Passe voir Hillman.** Dans le navigateur, **Entrer dans le local** te laisse rejoindre Hillman. Parle-lui pour ouvrir sa route native et ses deux matchs amicaux. [Matchs amicaux du club](docs/guides/CLUB_FRIENDLIES.md)
 
 ## Prise en main
 
-Il te faut **Windows**, **Python 3.11+**, ta ROM française de *Tempête de Glace* (**BEBF, révision 0**) et le cœur **melonDS Libretro** validé par le projet. Les empreintes SHA-256 des deux fichiers figurent dans les [prérequis de livraison](DELIVERY.md#prérequis).
+Il te faut **Windows**, **Python 3.11+**, ta ROM française de *Tempête de Glace* (**BEBF, révision 0**) et le cœur **melonDS Libretro** validé par le projet. Les empreintes SHA-256 des deux fichiers figurent dans les [prérequis de livraison](docs/guides/DELIVERY.md#prérequis).
 
 ```powershell
 git clone https://github.com/hemvall/REA-Inazuma.git
@@ -25,10 +27,10 @@ cd REA-Inazuma
 ```
 
 1. Place ta ROM dans `rom/original.nds` et le cœur validé dans `local/tools/melonds-core/melonds_libretro.dll`.
-2. Ouvre **Lancer InazumIA.cmd**. Le lanceur prépare l’arène et ouvre le salon sur `http://127.0.0.1:18765`.
+2. Installe les dépendances ROM avec `python -m pip install -r requirements-rom.txt`, puis ouvre **Lancer InazumIA.cmd**. Le lanceur prépare l’arène et ouvre le salon sur `http://127.0.0.1:18765`.
 3. Sélectionne **Occulte** et **Zeus**, clique sur **Préparer le match**, puis sur **Lancer le dialogue**.
 
-Le parcours manuel fonctionne sans modèle. Le coach et le pilote IA utilisent le moteur configuré dans le salon. Le client MCP est facultatif. [Configurer LM Studio, Codex CLI ou MCP](WEB_AND_MCP.md)
+Le parcours manuel et le pilote déterministe fonctionnent sans modèle. Le coach, le pilote IA et les réactions générées de Chester utilisent le moteur local. Le client MCP est facultatif. [Configurer LM Studio ou MCP](docs/guides/WEB_AND_MCP.md)
 
 ## Architecture
 
@@ -37,16 +39,20 @@ Le parcours manuel fonctionne sans modèle. Le coach et le pilote IA utilisent l
 | [Salon web](web/) | Sélection des équipes, affichage des deux écrans et commandes DS. |
 | [Session et émulation](src/game_session.py) | Worker isolé, entrées DS, captures et checkpoints. |
 | [Service d’arène](src/arena_service.py) | Préparation des rencontres en mémoire, dialogue des capitaines et délégation du jeu. |
+| [Commentaire](src/chester.py) | Événements confirmés et bilans de match. Le navigateur gère les sous-titres et la voix. |
+| [Recrutement](src/recruitment.py) | Résolution des demandes de Celia et préparation des recrues. |
 | [Serveur MCP](src/mcp_server.py) | Accès à la même session depuis un client compatible. |
 
 Le pilote s’appuie sur l’état du match lu en mémoire et sur la reconnaissance des menus. Le worker traduit les actions reconnues en entrées DS. Le lanceur construit l’arène à partir de la ROM originale lors de la préparation initiale.
 
 ## Documentation
 
-- [Salon web et MCP](WEB_AND_MCP.md) — commandes, configuration des modèles et protocole.
-- [Livraison](DELIVERY.md) — versions attendues, empreintes et construction.
-- [Vérifications](DELIVERY_VERIFICATION.md) — essais réalisés et limites observées.
-- [Défi Mystère](RUN_SCENARIO.md) — scénario historique jouable jusqu’au match. Le retour automatique après le match reste bloqué. [Vérification du scénario](RUNTIME_VERIFICATION.md)
+- [Salon web et MCP](docs/guides/WEB_AND_MCP.md) — commandes, configuration des modèles et protocole.
+- [Livraison](docs/guides/DELIVERY.md) — versions attendues, empreintes et construction.
+- [Vérifications](docs/verification/VERIFICATION.md) — procédures, résultats de l’audit et preuves historiques.
+- [Défi Mystère](docs/guides/RUN_SCENARIO.md) — scénario historique jouable jusqu’au match. Le retour automatique après le match reste bloqué. [Vérification du scénario](docs/verification/RUNTIME_VERIFICATION.md)
+- [Architecture et implémentation](docs/architecture/) — conception, scène autonome et initialisation des équipes.
+- [Plans et suivi](docs/plans/) — historique de développement, MCP et commentateur Chester.
 
 Les ROM, sauvegardes, ressources extraites et binaires d’émulation restent locaux. InazumIA est un projet non officiel.
 
@@ -74,11 +80,9 @@ into the scene. **Their automatic runtime entry is still blocked after the
 match**: the diagnostic native return currently leaves the lower screen black.
 This build is not accepted as a complete playable episode.
 
-**Run:** double-click `Ouvrir le Club dans melonDS.cmd`, choose **Nouvelle partie**,
-enter a save-file name and confirm **OK**. Use a fresh game. Skip the original
-opening movie with A or Start, then advance the original introduction notices.
-See [RUN_SCENARIO.md](RUN_SCENARIO.md) for controls and
-[RUNTIME_VERIFICATION.md](RUNTIME_VERIFICATION.md) for observed runtime evidence.
+**Run:** open `build/inazuma_mystery.nds` in portable melonDS and choose
+**Nouvelle partie**. See the [scenario guide](docs/guides/RUN_SCENARIO.md) for
+the build and controls. The Club launcher opens the separate Club profile.
 
 ## Input and output
 
@@ -93,8 +97,8 @@ The Downloads source remains unchanged.
 - `build/scene_semantics.json`: callback, resource and text-binding checks.
 - `story/standalone_scene.json`: authored French text and measured character IDs.
 - `story/five_minute_scenario.md`: readable French script with stage directions.
-- `TEAM_INITIALIZATION.md`: native roster/level evidence and memory layout.
-- `Ouvrir le Club dans melonDS.cmd`: portable melonDS launcher.
+- `docs/architecture/TEAM_INITIALIZATION.md`: native roster/level evidence and memory layout.
+- `Ouvrir le Club dans melonDS.cmd`: portable melonDS launcher for the Club profile.
 
 ROMs, extracted resources, private manifests, emulator states and downloaded
 tools are ignored by Git. Do not commit or redistribute copyrighted ROM assets.
@@ -102,18 +106,9 @@ The earlier `inazuma_scene_experimental.nds` is a historical candidate.
 
 ## Build
 
-Python 3.11+ works; Python 3.12+ is recommended. No Python dependencies are needed
-for building or validating. xdelta3 is needed to produce the patch. Portable
-official tools are downloaded by `python src/setup_tools.py`; the build finds
-the downloaded xdelta3 without changing PATH.
-
-```powershell
-python src/inspect_rom.py
-python src/prepare_scene.py
-python src/build.py --manifest local/scene_patch.json
-python src/validate_scene.py
-python -m unittest discover -s tests -v
-```
+See the [scenario build guide](docs/guides/RUN_SCENARIO.md#rebuild) for the
+xdelta3 setup and build commands, and the
+[verification index](docs/verification/VERIFICATION.md) for the test suite.
 
 Build refuses the wrong original hash, checks original resource bytes, applies
 resource edits without moving NitroFS files, checks reversal byte for byte,
@@ -157,21 +152,21 @@ The native MCH/MCHT archives are now preserved byte for byte. The earlier
 experimental result bypass has been removed. Regular-challenge mode returns to
 the chapter restoration callback, which captures the outcome before continuation. The authored aftermath uses persistent outcome
 flags and a chapter map-arrival queue. Runtime return remains blocked; see the
-current evidence and limitations in `RUNTIME_VERIFICATION.md`.
+current evidence and limitations in `docs/verification/RUNTIME_VERIFICATION.md`.
 
 `src/emulator_probe.py` is a small libretro test host. It executes the actual ROM,
 feeds emulated DS input and writes framebuffer PNGs, without controlling Windows
 apps. It needs the separately downloaded melonDS libretro DLL. The input
-sequence is `tests/scenario_replay.jsonl`; this is a regression aid, not a bundled
-save state or a substitute for the ROM.
+sequence `tests/exploration_replay.jsonl` targets the exploration build.
+`tests/scenario_replay.jsonl` records the earlier illustrated route. The
+sequences contain controller input.
 
-The launcher now uses standalone melonDS (tested binary: 1.1). The automated
-probe uses the separate Libretro melonDS port (tested: 0.9.3 4081e83), not the
-same executable or core version. Install either with:
+The Club launcher uses portable melonDS. The automated probe uses the
+[verified melonDS Libretro core](docs/guides/DELIVERY.md#prérequis)
+(version 0.9.3 4081e83). Install portable melonDS with:
 
 ```powershell
 python src/setup_tools.py --only melonds
-python src/setup_tools.py --only melonds-core
 ```
 
 Standalone settings stay in `local/tools/melonds/portable/`. The probe uses DS

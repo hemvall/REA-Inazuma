@@ -15,4 +15,4 @@
 - The ball, controller and lightning icons are inline SVG graphics in
   `web/index.html`, drawn on integer-coordinate grids.
 
-The lobby loads these files locally and does not depend on a font or image CDN.
+The source ZIP includes these assets. The lobby loads these files locally and does not depend on a font or image CDN.

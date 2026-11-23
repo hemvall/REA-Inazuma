@@ -1,4 +1,4 @@
-"""Exercise the live shared service. Requires a running web server and Codex auth."""
+"""Exercise the live shared service. Requires a running web server and the configured organiser model if no match is ready."""
 import base64
 import argparse
 import json

@@ -1,5 +1,7 @@
 # Runtime verification — 2026-11-17
 
+> Document historique. Voir le [index des vérifications actuelles](VERIFICATION.md).
+
 ## Latest regular-challenge checkpoint
 
 Native result/XP scripts are restored unchanged; the early return bypass has

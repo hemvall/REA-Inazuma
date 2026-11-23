@@ -12,6 +12,12 @@ def main():
     for directory in ('src','web','profiles','story','tests'):
         files.extend(p for p in (ROOT/directory).rglob('*') if p.is_file()
                      and '__pycache__' not in p.parts and p.suffix in ('.py','.js','.css','.html','.json','.jsonl','.md'))
+    files.extend(p for p in (ROOT/'web/assets').iterdir()
+                 if p.is_file() and p.suffix in ('.png', '.ttf', '.txt'))
+    files.extend(p for p in (ROOT/'docs').rglob('*.md') if p.is_file())
+    chester_sample = ROOT/'docs/plans/chester-essai-voix.mp3'
+    if chester_sample.is_file():
+        files.append(chester_sample)
     files.extend(p for p in ROOT.iterdir() if p.is_file() and
                  (p.suffix in ('.md','.cmd') or p.name.startswith('requirements') or p.name in ('.gitignore','.graphifyignore')))
     target=ROOT/'dist/InazumIA-develop-source.zip'

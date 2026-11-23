@@ -6,7 +6,8 @@ from pathlib import Path
 def main():
     root=Path(__file__).resolve().parents[1]
     executable=root/'local/agent-venv/Scripts/python.exe'
-    if not executable.is_file():raise SystemExit('Exécutez d’abord Installer MCP.cmd.')
+    if not executable.is_file():
+        raise SystemExit('Créez d’abord l’environnement MCP : python -m venv local/agent-venv.')
     server={'command':str(executable),'args':[str(root/'src/mcp_server.py')]}
     folder=root/'build';folder.mkdir(exist_ok=True)
     json_path=folder/'mcp-client.json'
