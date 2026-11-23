@@ -37,25 +37,14 @@ personnalisé.
 Depuis le salon web, écris « Raimon peut recruter Xene » à Celia dans
 son panneau de recrutement. Tu peux soumettre un autre nom ou annuler le brouillon, puis
 cliquer sur **Recruter**. La recrue rejoint son équipe à la prochaine
-préparation d'un match en arène, à domicile comme à l'extérieur. Elle sera
-aussi disponible pour les matchs du Club à la prochaine ouverture via
-**Ouvrir le Club des recrues**, dans le panneau de Celia.
-La première recrue rejoint également le groupe qui se déplace dans le local.
-Pour l'inscrire pendant une session Club déjà ouverte, avance devant le coach
-avant de confirmer.
+préparation d'un match en arène, à domicile comme à l'extérieur.
 
 Les six équipes du salon peuvent recruter jusqu’à onze joueurs chacune. Celia reste disponible après chaque confirmation. Le salon accepte
 les fautes proches et demande une précision quand plusieurs noms correspondent. La recrue arrive au niveau 30 avec les
 statistiques, techniques et visuels du joueur d'origine.
 
-Choisis **Mon équipe du Club** chez le coach pour jouer avec l’équipe du
-dernier recrutement et ses recrues. L'adversaire est Zeus, ou Raimon si Zeus a
-recruté. **Retour au local** restaure l'effectif du Club.
-
-La reprise du Club web lit `build/club/recruitment.save`. Cette archive
-locale lie les fiches confirmées, le hash de la ROM Club et l'état natif. La
-confirmation construit une ROM propre à la session. Le profil Club autonome
-et la ROM source restent indépendants de cette sauvegarde.
+Les recrutements confirmés sont enregistrés dans `build/club/recruitment.save`.
+L'arène charge une ROM propre à la session pour aligner les recrues.
 
 La ROM française BEBF révision 0 a pour SHA-256
 `1e67c699a6b3ecfb5230e8c2245746879fab57123277651da74b4cc9b8ba25d3`.

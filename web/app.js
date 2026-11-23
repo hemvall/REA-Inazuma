@@ -110,7 +110,6 @@ function controls(){
   arena.querySelector('.chester-controls').hidden=routeBoard;
   for(const id of ['home','away','swapTeams'])$(id).disabled=jobRunning||clubRoute||profile==='club';
   $('enterClub').disabled=jobRunning||!!session;
-  $('enterRecruitmentClub').disabled=jobRunning||!!session;
   $('reset').textContent=clubRoute?'Retour à la route':profile==='club'?'Retour au local':'Nouvelle rencontre';
   $('reset').hidden=routeBoard;
   $('stadiumStage').classList.toggle('is-preparing',jobRunning&&!session);
@@ -147,9 +146,7 @@ function renderRecruitment(state) {
     : recruitmentAvailable() ? 'Aucune recrue inscrite'
     : 'Recrutement disponible hors match';
   const draft=recruitment?.result ? null : recruitment?.draft;
-  $('recruitmentHint').textContent=state.session_id&&state.profile==='club'&&!confirmed.length
-    ? 'Place-toi devant le coach pour confirmer.'
-    : 'Disponible au prochain match préparé en arène ou à la réouverture du local.';
+  $('recruitmentHint').textContent='Disponible au prochain match préparé en arène.';
   $('recruitmentCancel').hidden=!recruitment||!!recruitment.result;
   $('recruitmentPreview').hidden=!draft;
   if(draft){
@@ -244,13 +241,11 @@ async function pumpInputs(){
   setTimeout(pumpInputs,Math.max(0,1000/30-(performance.now()-started)));
 }
 pumpInputs();
-async function enterClub(operation) {
+$('enterClub').onclick=async()=>{
   $('error').textContent='';
-  try{await api(operation);jobRunning=true;controls();await poll();}
+  try{await api('open_club_route');jobRunning=true;controls();await poll();}
   catch(error){$('error').textContent=error.message;}
-}
-$('enterClub').onclick=()=>enterClub('open_club_route');
-$('enterRecruitmentClub').onclick=()=>enterClub('open_club');
+};
 $('chat').onsubmit=async event=>{
   event.preventDefault();running=false;const text=$('prompt').value.trim();if(!text)return;
   message(text,'question');$('prompt').value='';$('error').textContent='';

@@ -63,10 +63,10 @@ class ClubSelectionTests(unittest.TestCase):
         arena.session.open = Mock(return_value={'session_id':'club'})
         arena.checked = Mock()
         arena.agent.organise = Mock()
-        arena.call('open_club', {})
+        arena.call('open_club_route', {})
         arena.thread.join(2)
-        arena.session.open.assert_called_once_with('club', cancel=arena.cancel)
-        arena.checked.assert_called_once_with('observe',session_id='club')
+        arena.session.open.assert_called_once_with('club_web', cancel=arena.cancel)
+        arena.checked.assert_called_once_with('playback', session_id='club', running=True, include_image=False)
         arena.agent.organise.assert_not_called()
         self.assertEqual(arena.job['state'],'complete')
 
@@ -74,7 +74,7 @@ class ClubSelectionTests(unittest.TestCase):
         arena = Arena()
         arena.session.session_id = 'existing'
         arena.session.open = Mock()
-        with self.assertRaises(ValueError): arena.call('open_club', {})
+        with self.assertRaises(ValueError): arena.call('open_club_route', {})
         arena.session.open.assert_not_called()
 
 

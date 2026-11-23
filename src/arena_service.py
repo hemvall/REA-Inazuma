@@ -491,14 +491,6 @@ class Arena:
                 self.checked('playback', session_id=opened['session_id'], running=True, include_image=False)
                 self.update(message='Va voir Hillman et appuie sur A. Réponds Oui pour ouvrir la route.')
             return {'job': self.launch(enter_route, 'Ouverture du local de Hillman…')}
-        if operation=='open_club':
-            if arguments: raise ValueError('Aucun argument attendu')
-            if self.session.session_id: raise ValueError('Fermez la session actuelle avant d’entrer dans le local.')
-            def enter():
-                opened = self.session.open('club', cancel=self.cancel)
-                self.checked('observe', session_id=opened['session_id'])
-                self.update(message='Parlez au coach dans le local : A ou écran tactile. Non propose l’affiche suivante. Après le match, A revient au local.')
-            return {'job':self.launch(enter, 'Ouverture du local du club…')}
         if operation=='select_agent':return self.select_agent(**arguments)
         if operation=='capabilities':return self.capabilities()
         if operation=='list_teams':return {'teams':self.list_teams()}
