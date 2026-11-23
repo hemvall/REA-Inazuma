@@ -170,7 +170,8 @@
         </div>
     </dialog>
     <section id="inventory" aria-labelledby="inventory-title" hidden>
-      <div class="section-heading"><div><h2 id="inventory-title">Inventaire</h2><p>Retrouve les joueurs de ton club et leur place dans l’équipe.</p></div><span id="inventory-count" class="formation"></span></div>
+      <div class="section-heading"><div><h2 id="inventory-title" tabindex="-1">Inventaire</h2><p>Revends des joueurs pour récupérer des crédits.</p></div><span id="inventory-count" class="formation"></span></div>
+      <p id="inventory-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
       <ul class="player-list" id="inventory-list"></ul>
     </section>
     <p class="storage-note">Le club est sauvegardé dans ce navigateur.</p>
@@ -181,7 +182,17 @@
       <form method="dialog"><button type="submit" aria-label="Fermer">Fermer</button></form>
     </div>
     <p id="picker-error" role="alert" hidden></p>
+    <p id="picker-empty" hidden>Ton effectif est vide. Parle à Célia pour recruter.</p>
     <ul class="player-list" id="picker-list"></ul>
+  </dialog>
+  <dialog class="pixel-panel club-popup" id="club-sale" aria-labelledby="sale-title" aria-describedby="sale-details">
+    <div class="dialog-heading"><h2 id="sale-title">Confirmer la revente</h2></div>
+    <p id="sale-details"></p>
+    <p id="sale-error" role="alert" hidden></p>
+    <div class="sale-actions">
+      <form method="dialog"><button type="submit" autofocus>Annuler</button></form>
+      <button type="button" class="button-primary" id="sale-confirm">Confirmer la revente</button>
+    </div>
   </dialog>
 </div>
 <script type="module" src="/club.js"></script><script type="module" src="/app.js"></script></body></html>

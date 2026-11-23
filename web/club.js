@@ -1,5 +1,6 @@
 const STORAGE = 'inazuma-fc:v1';
 const STARTING_CREDITS = 3800;
+const SCOUT_RESALE_CREDITS = 50;
 const slots = ['AT', 'AT', 'MIL', 'MIL', 'MIL', 'MIL', 'DEF', 'DEF', 'DEF', 'DEF', 'GB',
   'Banc', 'Banc', 'Banc', 'Banc', 'Banc'];
 const scouts = [
@@ -44,27 +45,39 @@ const $ = id => document.getElementById(id);
 const picker = $('picker');
 const club = $('club-window');
 const catalogue = $('recruitment-catalogue');
+const sale = $('club-sale');
 const formatter = new Intl.NumberFormat('fr-FR');
 let activeSlot = null;
+let sellingId = null;
 
-function balance(state) {
-  return STARTING_CREDITS - state.recruits.reduce((sum, id) => sum + players.get(id).price, 0);
+function ownedPlayers(state) {
+  return [...state.recruits, ...scoutIds.filter(id => !state.soldScouts.includes(id))];
+}
+
+function resalePrice(player) {
+  return player.price ? Math.floor(player.price / 2) : SCOUT_RESALE_CREDITS;
 }
 
 function load() {
   const value = JSON.parse(localStorage.getItem(STORAGE) ?? 'null');
-  if (value === null) return {recruits: [], lineup: [...scoutIds]};
+  if (value === null) return {recruits: [], soldScouts: [], credits: STARTING_CREDITS, lineup: [...scoutIds]};
   if (!Array.isArray(value.recruits) || !Array.isArray(value.lineup)
       || value.recruits.some(id => !recruits.some(player => player.id === id))
-      || new Set(value.recruits).size !== value.recruits.length
-      || value.lineup.length !== slots.length || new Set(value.lineup).size !== slots.length
-      || value.lineup.some(id => !scoutIds.includes(id) && !value.recruits.includes(id))
-      || balance(value) < 0) throw new Error('Sauvegarde du club illisible.');
+      || new Set(value.recruits).size !== value.recruits.length) throw new Error('Sauvegarde du club illisible.');
+  value.soldScouts ??= [];
+  value.credits ??= STARTING_CREDITS - value.recruits.reduce((total, id) => total + players.get(id).price, 0);
+  const assigned = value.lineup.filter(id => id !== null);
+  if (!Array.isArray(value.soldScouts) || value.soldScouts.some(id => !scoutIds.includes(id))
+      || new Set(value.soldScouts).size !== value.soldScouts.length
+      || !Number.isSafeInteger(value.credits) || value.credits < 0
+      || value.lineup.length !== slots.length || new Set(assigned).size !== assigned.length
+      || assigned.some(id => !ownedPlayers(value).includes(id))) throw new Error('Sauvegarde du club illisible.');
   return value;
 }
 
 function feedback(text, error = false) {
   const message = error && picker.open ? $('picker-error')
+    : error && sale.open ? $('sale-error')
     : catalogue.open ? $('catalogue-feedback') : $('feedback');
   message.textContent = text;
   message.hidden = false;
@@ -118,10 +131,11 @@ function squadSlot(id, index) {
   const button = node('button', 'slot');
   button.type = 'button';
   button.dataset.slot = index;
-  button.setAttribute('aria-label', `${slotName(index)} — ${playerName(player)}. Changer de joueur`);
-  button.title = playerName(player);
-  button.dataset.rarity = player.rarity;
-  button.append(portrait(player), node('span', 'slot-name', player.name));
+  const label = player ? playerName(player) : 'Place libre';
+  button.setAttribute('aria-label', `${slotName(index)} — ${label}. Choisir un joueur`);
+  button.title = label;
+  const visual = player ? portrait(player) : node('span', 'club-portrait empty-slot', '+');
+  button.append(visual, node('span', 'slot-name', player?.name ?? label));
   button.onclick = () => {
     activeSlot = index;
     $('picker-error').hidden = true;
@@ -150,7 +164,7 @@ function renderShop() {
   const filter = $('rarity').value;
   $('shop-list').replaceChildren(...recruits.filter(player => !filter || player.rarity === filter).map(player => {
     const owned = state.recruits.includes(player.id);
-    const afford = balance(state) >= player.price;
+    const afford = state.credits >= player.price;
     const button = node('button', 'purchase', owned ? 'Recruté' : afford ? 'Acheter' : 'Budget insuffisant');
     button.type = 'button';
     button.disabled = owned || !afford;
@@ -159,7 +173,8 @@ function renderShop() {
       const focused = document.activeElement === button;
       const saved = await update(copy => {
         if (copy.recruits.includes(player.id)) throw new Error('Ce joueur appartient déjà au club.');
-        if (balance(copy) < player.price) throw new Error('Crédits insuffisants.');
+        if (copy.credits < player.price) throw new Error('Crédits insuffisants.');
+        copy.credits -= player.price;
         copy.recruits.push(player.id);
         return `Célia confirme le recrutement de ${playerName(player)}. Tu peux retrouver le joueur dans ton inventaire.`;
       });
@@ -171,7 +186,9 @@ function renderShop() {
 
 function renderPicker() {
   const selecting = activeSlot;
-  $('picker-list').replaceChildren(...[...state.recruits, ...scoutIds].map(id => {
+  const owned = ownedPlayers(state);
+  $('picker-empty').hidden = owned.length > 0;
+  $('picker-list').replaceChildren(...owned.map(id => {
     const player = players.get(id);
     const position = state.lineup.indexOf(id);
     const button = node('button', 'choose', position === selecting ? 'Actuel' : 'Choisir');
@@ -180,6 +197,7 @@ function renderPicker() {
     button.setAttribute('aria-label', `${button.textContent} — ${playerName(player)}`);
     button.onclick = async () => {
       const saved = await update(copy => {
+        if (!ownedPlayers(copy).includes(id)) throw new Error('Ce joueur ne fait plus partie du club.');
         const source = copy.lineup.indexOf(id);
         if (source >= 0) copy.lineup[source] = copy.lineup[selecting];
         copy.lineup[selecting] = id;
@@ -191,15 +209,30 @@ function renderPicker() {
   }));
 }
 
+function confirmSale(player) {
+  sellingId = player.id;
+  $('sale-error').hidden = true;
+  const credits = formatter.format(resalePrice(player));
+  $('sale-details').textContent = `Revendre ${playerName(player)} pour ${credits} crédits ? Le joueur quittera ton effectif.`;
+  sale.showModal();
+}
+
 function render() {
-  $('balance').textContent = formatter.format(balance(state));
+  $('balance').textContent = formatter.format(state.credits);
   $('pitch').replaceChildren(...state.lineup.slice(0, 11).map(squadSlot));
   $('bench').replaceChildren(...state.lineup.slice(11).map((id, index) => squadSlot(id, index + 11)));
-  const owned = [...state.recruits, ...scoutIds];
+  const owned = ownedPlayers(state);
   $('inventory-count').textContent = `${owned.length} joueurs`;
+  $('inventory-empty').hidden = owned.length > 0;
   $('inventory-list').replaceChildren(...owned.map(id => {
+    const player = players.get(id);
     const index = state.lineup.indexOf(id);
-    return playerRow(players.get(id), index >= 0 ? slotName(index) : 'En réserve');
+    const price = formatter.format(resalePrice(player));
+    const button = node('button', 'resell', `Revendre · ${price} cr.`);
+    button.type = 'button';
+    button.setAttribute('aria-label', `Revendre ${playerName(player)} pour ${price} crédits`);
+    button.onclick = () => confirmSale(player);
+    return playerRow(player, index >= 0 ? slotName(index) : 'En réserve', button);
   }));
   renderShop();
   if (picker.open) renderPicker();
@@ -225,6 +258,24 @@ for (const button of document.querySelectorAll('[data-view]')) {
 const openClub = $('open-club');
 openClub.onclick = () => club.showModal();
 club.addEventListener('close', () => openClub.focus());
+$('sale-confirm').onclick = async () => {
+  const id = sellingId;
+  const saved = await update(copy => {
+    if (!ownedPlayers(copy).includes(id)) throw new Error('Ce joueur ne fait plus partie du club.');
+    const player = players.get(id);
+    const price = resalePrice(player);
+    if (player.price) copy.recruits = copy.recruits.filter(recruit => recruit !== id);
+    else copy.soldScouts.push(id);
+    copy.lineup = copy.lineup.map(assigned => assigned === id ? null : assigned);
+    copy.credits += price;
+    return `${playerName(player)} a été revendu. +${formatter.format(price)} crédits.`;
+  });
+  if (saved && sellingId === id) {
+    sale.close();
+    $('inventory-title').focus();
+  }
+};
+sale.addEventListener('close', () => { sellingId = null; });
 $('open-recruitment').onclick = () => {
   $('catalogue-feedback').hidden = true;
   catalogue.showModal();
