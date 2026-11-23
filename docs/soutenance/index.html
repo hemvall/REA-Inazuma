@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InazumIA · Soutenance technique</title>
+<link rel="stylesheet" href="slides.css">
+</head>
+<body>
+<main id="deck">
+  <section class="slide cover" id="s1">
+    <div class="cover-copy"><h1>Inazum<span>IA</span></h1>
+    <p class="lead">Préparer, jouer et commenter une rencontre de football Nintendo DS depuis le navigateur.</p></div>
+    <div class="fixture">
+      <div><img src="../../web/assets/team-occult.png" alt=""><b>Occulte</b></div>
+      <strong>VS</strong>
+      <div><img src="../../web/assets/team-zeus.png" alt=""><b>Zeus</b></div>
+    </div>
+  </section>
+
+  <section class="slide" id="plan">
+    <h2>Plan de l’oral</h2>
+    <ol class="plan-list">
+      <li><strong>L’application</strong><span>Du salon web au moteur Nintendo DS</span></li>
+      <li><strong>Les agents IA</strong><span>Coach, pilote et Chester</span></li>
+      <li><strong>La démonstration</strong><span>Occulte contre Zeus</span></li>
+      <li><strong>Le bilan</strong><span>MCP, limite et amélioration</span></li>
+    </ol>
+  </section>
+
+  <section class="slide cover divider" id="part-application">
+    <p class="label">Partie 1</p>
+    <h2>L’application</h2>
+    <p class="lead">Du salon web au moteur Nintendo DS</p>
+  </section>
+
+  <section class="slide" id="s2">
+    <h2>Le salon de match</h2>
+    <figure class="wide"><img src="captures/salon.png" alt="Salon web InazumIA avec l’affiche Occulte–Zeus avant le coup d’envoi">
+    </figure>
+  </section>
+
+  <section class="slide" id="s3">
+    <h2>Du navigateur à la DS</h2>
+    <div class="flow" role="group" aria-label="Le navigateur communique avec le backend, qui pilote le worker melonDS">
+      <div class="node"><strong>Navigateur</strong><small>HTML · CSS · JavaScript</small></div><span class="arrow" aria-hidden="true">⇄</span>
+      <div class="node primary"><strong>API Python</strong><small>Salon et session</small></div><span class="arrow" aria-hidden="true">⇄</span>
+      <div class="node"><strong>Worker melonDS</strong><small>Émulation et entrées DS</small></div>
+    </div>
+    <div class="columns">
+      <p><b>Vers le jeu</b><br>Requêtes JSON, clavier et tactile.</p>
+      <p><b>Vers le salon</b><br>État de la session et flux vidéo.</p>
+    </div>
+  </section>
+
+  <section class="slide cover divider" id="part-agents">
+    <p class="label">Partie 2</p>
+    <h2>Les agents IA</h2>
+    <p class="lead">Coach, pilote et Chester</p>
+  </section>
+
+  <section class="slide" id="s4">
+    <h2>Coach IA · Préparer le match</h2>
+    <figure class="coach-illustration">
+      <div class="coach-request">
+        <img src="../../web/assets/hillman.png" alt="Seymour Hillman, le coach">
+        <blockquote>« Fais s’affronter Occulte et Zeus. »</blockquote>
+      </div>
+      <div class="fixture">
+        <div><img src="../../web/assets/captain-talisman.png" alt="Talisman"><b>Occulte</b></div>
+        <strong>VS</strong>
+        <div><img src="../../web/assets/captain-aphrodite.png" alt="Aphrodite"><b>Zeus</b></div>
+      </div>
+    </figure>
+    <div class="flow">
+      <div class="node">Consigne et catalogue</div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node primary">Deux équipes et six répliques</div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node">Affiche et dialogue injectés</div>
+    </div>
+    <p class="band"><b>Les trois agents partagent la même session.</b> LangChain appelle LM Studio et valide le JSON.</p>
+  </section>
+
+  <section class="slide" id="s5">
+    <h2>Pilote IA · Jouer à la place du joueur</h2>
+    <div class="split">
+      <div>
+        <ol class="steps">
+          <li><strong>Détecter le duel</strong><span>Le worker liste les actions légales.</span></li>
+          <li><strong>Choisir une action</strong><span>Le modèle sélectionne un identifiant.</span></li>
+          <li><strong>Jouer l’action</strong><span>Le worker vérifie l’état et traduit le choix en entrée tactile.</span></li>
+        </ol>
+        <p class="band"><b>8 s</b> · La règle locale prend le relais en cas d’échec.</p>
+      </div>
+      <div class="pair">
+        <figure><img src="captures/duel.png" alt="Écrans DS sur un duel d’attaque"><figcaption>Choix du duel</figcaption></figure>
+        <span class="arrow" aria-hidden="true">→</span>
+        <figure><img src="captures/technique.png" alt="Écrans DS avec le menu de techniques ouvert"><figcaption>Menu de techniques</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s6">
+    <h2>Chester · Commenter les actions du match</h2>
+    <div class="flow compact">
+      <div class="node">But confirmé</div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node primary"><code>get_match_context</code></div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node">Réaction en sous-titre</div>
+    </div>
+    <div class="evidence">
+      <img src="../../web/assets/chester.png" alt="">
+      <div>
+        <p class="label">Trace de l’appel d’outil</p>
+        <dl class="match-data">
+          <div><dt>Score</dt><dd>1–1</dd></div>
+          <div><dt>Chrono</dt><dd>5:45</dd></div>
+          <div><dt>Événement</dt><dd>But de l’équipe extérieure</dd></div>
+        </dl>
+        <blockquote>« Le but égalisateur arrive juste à temps pour renverser la tendance ! »</blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="neuille">
+    <h2>Mode Neuille · Changer le ton du modèle</h2>
+    <div class="flow compact">
+      <div class="node">Style choisi dans le salon</div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node primary">Consigne de style dans le prompt</div><span class="arrow" aria-hidden="true">→</span>
+      <div class="node">Réplique générée puis vérifiée</div>
+    </div>
+    <div class="columns">
+      <p><b>Chester</b><br>Commentaire vif et précis, 12 mots maximum.</p>
+      <p><b>Neuille</b><br>Accroche familière et comparaison absurde, 10 mots maximum.</p>
+    </div>
+    <p class="band"><b>Exemple donné au modèle</b> · « Oh na, défense en mode avion ! »</p>
+  </section>
+
+  <section class="slide cover divider" id="part-demo">
+    <p class="label">Partie 3</p>
+    <h2>La démonstration</h2>
+    <div class="fixture">
+      <div><img src="../../web/assets/team-occult.png" alt=""><b>Occulte</b></div>
+      <strong>VS</strong>
+      <div><img src="../../web/assets/team-zeus.png" alt=""><b>Zeus</b></div>
+    </div>
+  </section>
+
+  <section class="slide cover" id="s7">
+    <h2>Démonstration · Occulte contre Zeus</h2>
+    <div class="demo-layout">
+      <div>
+        <ol class="demo">
+          <li>Envoyer la consigne au coach</li>
+          <li>Lancer le dialogue</li>
+          <li>Déléguer un duel</li>
+        </ol>
+        <a class="launch" href="http://127.0.0.1:18765" target="_blank" rel="noopener">Ouvrir le salon local ↗</a>
+      </div>
+      <figure>
+        <video controls playsinline preload="metadata" aria-label="Démonstration du coach et du premier duel">
+          <source src="captures/demo-coach-duel.mp4" type="video/mp4">
+        </video>
+        <figcaption>Capture de l’application · 32 s</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="slide cover divider" id="part-bilan">
+    <p class="label">Partie 4</p>
+    <h2>Le bilan</h2>
+    <p class="lead">MCP, limite et amélioration</p>
+  </section>
+
+  <section class="slide" id="s8">
+    <h2>Bilan</h2>
+    <div class="closing">
+      <article><h3>Bonus MCP</h3><p>Un client externe accède à la même session via l’API web.</p></article>
+      <article><h3>Limite</h3><p>Le pilote peut rendre la main si la situation de jeu échappe au worker.</p></article>
+      <article><h3>Amélioration</h3><p>Étendre le jeu libre et mesurer les blocages sur des replays reproductibles.</p></article>
+    </div>
+  </section>
+</main>
+<nav aria-label="Navigation du diaporama">
+  <button id="prev" type="button" aria-label="Diapositive précédente">←</button>
+  <output id="count" aria-live="polite"></output>
+  <button id="next" type="button" aria-label="Diapositive suivante">→</button>
+  <button id="fullscreen" type="button" aria-label="Basculer le plein écran">⛶</button>
+</nav>
+<script>
+const slides = [...document.querySelectorAll('.slide')];
+const previous = document.getElementById('prev');
+const next = document.getElementById('next');
+const count = document.getElementById('count');
+let index = 0;
+
+function show(target) {
+  index = Math.max(0, Math.min(target, slides.length - 1));
+  slides.forEach((slide, position) => {
+    slide.hidden = position !== index;
+    if (slide.hidden) slide.querySelector('video')?.pause();
+  });
+  previous.disabled = index === 0;
+  next.disabled = index === slides.length - 1;
+  count.textContent = (index + 1) + ' / ' + slides.length;
+  history.replaceState(null, '', '#' + slides[index].id);
+}
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
+function fromHash() {
+  show(slides.findIndex(slide => '#' + slide.id === location.hash));
+}
+
+previous.onclick = () => show(index - 1);
+next.onclick = () => show(index + 1);
+document.getElementById('fullscreen').onclick = toggleFullscreen;
+addEventListener('hashchange', fromHash);
+addEventListener('keydown', event => {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.target.closest('video')) return;
+  if (event.code === 'Space' && event.target.closest('a, button')) return;
+  const targets = { ArrowLeft: index - 1, ArrowRight: index + 1, Space: index + 1, Home: 0, End: slides.length - 1 };
+  if (event.code in targets) {
+    event.preventDefault();
+    show(targets[event.code]);
+  }
+  if (event.key.toLowerCase() === 'f') toggleFullscreen();
+});
+fromHash();
+</script>
+</body>
+</html>
